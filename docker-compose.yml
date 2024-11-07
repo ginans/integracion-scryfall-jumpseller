@@ -1,0 +1,14 @@
+version: '3'
+services:
+  db:
+    container_name: "mongo-${DB_NAME}"
+    image: mongo:8
+    restart: always
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    environment:
+      MONGODB_DATABASE: "nest-${DB_NAME}"
+    volumes:
+      - ./mongo:/data/db
+
+

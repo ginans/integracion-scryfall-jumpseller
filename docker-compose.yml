@@ -5,7 +5,7 @@ services:
     image: mongo:8
     restart: always
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "27017:27017"
     environment:
       MONGODB_DATABASE: "nest-${DB_NAME}"
     volumes:

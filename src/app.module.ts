@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { SalesModule } from './sales/sales.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
     AgilizarModule,
     AuthModule,
     MailModule,
+    SalesModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtService],

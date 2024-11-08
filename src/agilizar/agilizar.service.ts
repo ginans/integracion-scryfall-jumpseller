@@ -1,27 +1,53 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAgilizarDto } from './dto/create-agilizar.dto';
-import { UpdateAgilizarDto } from './dto/update-agilizar.dto';
+import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { SellResponse } from './interface/SellResponse.interface';
+import { catchError, firstValueFrom } from 'rxjs';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class AgilizarService {
-  create(createAgilizarDto: CreateAgilizarDto) {
-    return 'This action adds a new agilizar';
+  private readonly logger = new Logger(AgilizarService.name);
+  constructor(private readonly http: HttpService) {}
+
+  private getDefaultDates(
+    from?: string,
+    to?: string,
+  ): { from: string; to: string; } {
+    if (!to || !from) {
+      const date = new Date();
+      const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+      return { to: formattedDate, from: formattedDate };
+    }
+    return { to, from };
   }
 
-  findAll() {
-    return `This action returns all agilizar`;
+  async getVentas(from?: string, to?: string): Promise<SellResponse> {
+    const dates = this.getDefaultDates(from, to);
+    const { data } = await firstValueFrom(
+      this.http
+        .get<SellResponse>(`get_reporteVentas/${dates.from}/${dates.to}`)
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(error.message);
+            throw error;
+          }),
+        ),
+    );
+    return data;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} agilizar`;
+  async getCompras(to?: string, from?: string): Promise<SellResponse> {
+    const dates = this.getDefaultDates(to, from);
+    const { data } = await firstValueFrom(
+      this.http
+        .get<SellResponse>(`get_reporteCompras/${dates.from}/${dates.to}`)
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(error.message);
+            throw error;
+          }),
+        ),
+    );
+    return data;
   }
-
-  update(id: number, updateAgilizarDto: UpdateAgilizarDto) {
-    return `This action updates a #${id} agilizar`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} agilizar`;
-  }
-
 }

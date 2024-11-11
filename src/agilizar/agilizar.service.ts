@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { SellResponse } from './interface/SellResponse.interface';
 import { catchError, firstValueFrom } from 'rxjs';
@@ -12,7 +16,7 @@ export class AgilizarService {
   private getDefaultDates(
     from?: string,
     to?: string,
-  ): { from: string; to: string; } {
+  ): { from: string; to: string } {
     if (!to || !from) {
       const date = new Date();
       const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
@@ -29,7 +33,9 @@ export class AgilizarService {
         .pipe(
           catchError((error: AxiosError) => {
             this.logger.error(error.message);
-            throw error;
+            throw new ServiceUnavailableException(
+              `Error al obtener las ventas, ${error.message}`,
+            );
           }),
         ),
     );

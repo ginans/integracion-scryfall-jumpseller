@@ -14,7 +14,7 @@ export class SalesService {
   async checkNewSales() {
     const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
       '2024-09-01',
-      '2024-09-05',
+      '2024-11-10',
     );
     for (const sale of data) {
       const saleExists = await this.model.exists({ OBJECT_ID: sale.OBJECT_ID });
@@ -26,7 +26,22 @@ export class SalesService {
   }
 
   async findAll() {
-    return await this.model.find().exec();
+    const sales = await this.model.find().exec();
+    return sales.map((sale) => ({
+      uuid: sale._id,
+      order_id: sale.OBJECT_ID,
+      client_name: sale?.Cliente?.[0]?.nombre ?? null,
+      sucursal_name: sale?.Sucursal?.[0]?.nombre ?? null,
+      sale_status: sale?.VentaEstado?.[0]?.nombre ?? null,
+      status: sale.esta_activo,
+      delivery_date: sale.fecha_entrega,
+      checkin_date: sale.fecha_ingreso,
+      iva: sale.iva,
+      neto: sale.neto,
+      nr_document: sale.numero_documento,
+      status_payment: sale.pagado ? 'Pagado' : 'Pendiente',
+      total: sale.total,
+    }));
   }
 
   async findOne(id: string) {

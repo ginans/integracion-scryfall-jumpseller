@@ -3,8 +3,6 @@ import {
   Post,
   Body,
   Headers,
-  Put,
-  Param,
   Get,
   UseGuards,
 } from '@nestjs/common';
@@ -12,7 +10,6 @@ import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { RecoverPassDto } from './dto/recover.dto';
 import { ReplacePassDto } from './dto/replace-pass.dto';
-import { UpdateUserDto } from 'src/users/dto/update-user.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -23,6 +20,10 @@ export class AuthController {
   @Post('login')
   signIn(@Body() login: CreateAuthDto) {
     return this.authService.signIn(login.email, login.password);
+  }
+  @Get('session')
+  session(@Headers('Authorization') token: string) {
+    return this.authService.session(token);
   }
 
   @Post('user')

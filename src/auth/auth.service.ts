@@ -52,7 +52,11 @@ export class AuthService {
       throw new UnauthorizedException('Token inválido');
     }
   }
-  async signIn(email: string, password: string, store_id?: number) {
+  async session(token: string) {
+    console.log(token);
+    return 'ok';
+  }
+  async signIn(email: string, password: string) {
     const User = await this.userService.findByEmail(email);
     if (!User) throw new BadRequestException('Correo o contraseña incorrecto');
     const validarPass = await this.compare(password, User.password);
@@ -68,7 +72,14 @@ export class AuthService {
     const access_token = await this.createToken(payload);
     await this.createRegister({ email });
     await this.userService.updateLogin(User._id);
-    return { email, name, access_token };
+    return {
+      access_token,
+      user: {
+        id: User._id,
+        email: User.email,
+        name: User.name,
+      },
+    };
   }
   async recoverPass(body: RecoverPassDto) {
     const user = await this.userService.findByEmail(body.email);
@@ -106,7 +117,13 @@ export class AuthService {
     const randomPassword = this.generateRandomPassword();
     const password = await this.hashPassword(randomPassword);
     const status = true;
-    const createUser = { ...createUserDto, password, status, rol: 'admin', lastLogin: new Date() };
+    const createUser = {
+      ...createUserDto,
+      password,
+      status,
+      rol: 'admin',
+      lastLogin: new Date(),
+    };
     const userCreate = await this.userService.registerDB(createUser);
     const payload = {
       sub: userCreate._id,

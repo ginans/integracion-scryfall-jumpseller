@@ -13,7 +13,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         baseURL: configService.get<string>('url_fullerton'),
         headers: {
           'Content-Type': 'application/json',
-          token: '85e05bc1-d942-4132-a78e-ac0738533a52',
+          token: '8c441520-79fd-40bb-a0bf-b1248c835b43',
         },
       }),
       inject: [ConfigService],

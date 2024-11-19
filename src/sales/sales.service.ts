@@ -3,6 +3,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Sale } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
 import { Model } from 'mongoose';
+import { formatDate } from '../common/formatDate';
+import { GetReporteVentasResult } from '../agilizar/interface/SellResponse.interface';
+import { ClientsService } from '../clients/clients.service';
+import { ClientInterface } from '../clients/interface/client.interface';
+import { ProductsService } from '../products/products.service';
+import { ProductInterface } from '../products/interface/product.interface';
 
 @Injectable()
 export class SalesService {
@@ -10,6 +16,8 @@ export class SalesService {
     @InjectModel(Sale.name)
     private readonly model: Model<Sale>,
     private readonly agilizar: AgilizarService,
+    private readonly client: ClientsService,
+    private readonly product: ProductsService,
   ) {}
   async checkNewSales() {
     const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
@@ -24,7 +32,6 @@ export class SalesService {
       message: 'Sales checked',
     };
   }
-
   async findAll() {
     const sales = await this.model.find().exec();
     return sales.map((sale) => ({
@@ -32,8 +39,9 @@ export class SalesService {
       order_id: sale.OBJECT_ID,
       client_name: sale?.Cliente?.[0]?.nombre ?? null,
       sucursal_name: sale?.Sucursal?.[0]?.nombre ?? null,
+      user_name: sale?.Usuario?.[0]?.nombre ?? null,
       sale_status: sale?.VentaEstado?.[0]?.nombre ?? null,
-      status: sale.esta_activo,
+      status: sale.esta_activo ? 'Activo' : 'Inactivo',
       delivery_date: sale.fecha_entrega,
       checkin_date: sale.fecha_ingreso,
       iva: sale.iva,
@@ -43,10 +51,91 @@ export class SalesService {
       total: sale.total,
     }));
   }
-
   async findOne(id: string) {
     const sale = await this.model.findById(id).exec();
     if (sale) return sale;
     throw new NotFoundException('Sale not found');
+  }
+  async findOneByOrderId(id: number): Promise<Sale | null> {
+    const sale = await this.model.findOne({ OBJECT_ID: id }).exec();
+    if (!sale) return null;
+    return sale;
+  }
+  async test(date: { to?: string; from?: string }) {
+    console.log(date);
+    const today: string = date.to ?? formatDate(new Date());
+    const yesterday: Date = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const formatYesterdayDay = date.from ?? formatDate(yesterday);
+    const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
+      formatYesterdayDay,
+      today,
+    );
+    if (data.length === 0) return 'No hay ventas';
+    for (const sale of data) {
+      const saleExists = await this.model.exists({ OBJECT_ID: sale.OBJECT_ID });
+      if (saleExists) continue;
+      await this.distributeSales(sale);
+    }
+    return 'Nuevas ordenes distribuidas';
+  }
+  async distributeSales(sale: GetReporteVentasResult) {
+    const saleExists = await this.findOneByOrderId(sale.OBJECT_ID);
+    if (saleExists) return;
+
+    const client = await this.client.findClientByUuid(sale.cliente_id);
+    if (!client && sale.Cliente && sale.Cliente.length > 0) {
+      const clientData = sale.Cliente[0];
+      const newClient: ClientInterface = {
+        checkInDate: clientData.fecha_ingreso,
+        clientType: clientData.tipo_cliente_id,
+        contact: clientData.contacto,
+        email: clientData.email,
+        giro: clientData.giro_id,
+        houseNumber: clientData.fono_casa,
+        lastname: clientData.apellido,
+        name: clientData.nombre,
+        obs: clientData.observaciones,
+        phoneNumber: clientData.fono_celular,
+        rut: clientData.rut,
+        status: clientData.esta_activo,
+        uuid: clientData.cliente_id,
+        web: clientData.direccion_web,
+      };
+      await this.client.createClient(newClient);
+    }
+    if (sale.DetalleVenta.length === 0) return;
+    for (const product of sale.DetalleVenta) {
+      const productExists = await this.product.findProductByUuid(
+        product.producto_id,
+      );
+      if (!productExists) {
+        if (product.Producto.length === 0) return;
+        const productData = product.Producto[0];
+        const newProduct: ProductInterface = {
+          barcode: productData.codigo_barra,
+          brandId: productData.marca_id,
+          catalog: productData.catalogo,
+          ivaSpecific: productData.iva_especifico,
+          ivaUnitary: productData.iva_unitario,
+          name: productData.nombre,
+          nameAttribute: productData.nombre_atributo,
+          price: product.precio_unitario,
+          productFamilyId: productData.producto_familia_id,
+          productSubFamilyId: productData.producto_subfamilia_id,
+          sku: productData.sku,
+          skuOld: productData.sku_old,
+          status: productData.esta_activo,
+          type: productData.tipo,
+          unity: productData.unidad_medida_id,
+          uuid: productData.producto_id,
+          visibility: productData.visible,
+          wcProductId: productData.wc_producto_id,
+          weight: productData.peso,
+        };
+        await this.product.createProduct(newProduct);
+      }
+    }
+    await this.model.create(sale);
   }
 }

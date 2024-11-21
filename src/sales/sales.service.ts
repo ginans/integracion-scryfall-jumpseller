@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sale } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
@@ -9,6 +13,8 @@ import { ClientsService } from '../clients/clients.service';
 import { ClientInterface } from '../clients/interface/client.interface';
 import { ProductsService } from '../products/products.service';
 import { ProductInterface } from '../products/interface/product.interface';
+import axios from 'axios';
+import { date } from 'joi';
 
 @Injectable()
 export class SalesService {
@@ -137,5 +143,110 @@ export class SalesService {
       }
     }
     await this.model.create(sale);
+  }
+  async generateSale(id: number) {
+    const sale = await this.findOneByOrderId(id);
+    if (!sale) throw new NotFoundException('Sale not found');
+    const details = sale.DetalleVenta.map((product) => {
+      return {
+        type: 'A',
+        isExempt: false,
+        code: product.Producto[0].sku,
+        count: product.cantidad,
+        productName: product.Producto[0].nombre,
+        productNameBarCode: product.Producto[0].codigo_barra,
+        price: `${product.precio_unitario}`,
+        discount: {
+          type: 0,
+          value: '-0',
+        },
+        unit: 'UN',
+        analysis: {
+          accountNumber: '',
+          businessCenter: 'FULVENVEN000000',
+          classifier01: '',
+          classifier02: '',
+        },
+        useBatch: false,
+        batchInfo: [],
+      };
+    });
+    const body = {
+      documentType: 'BOLETAELECRS',
+      firstFolio: 0,
+      lastFolio: 0,
+      externalDocumentID: `${sale.numero_documento}`,
+      emissionDate: {
+        day: 20,
+        month: 11,
+        year: 2024,
+      },
+      firstFeePaid: {
+        day: 20,
+        month: 11,
+        year: 2024,
+      },
+      clientFile: `${sale.Cliente[0].rut}`,
+      contactIndex: 'DIRECCION GENERICA',
+      paymentCondition: 'CONTADO',
+      sellerFileId: 'VENDEDOR',
+      clientAnalysis: {
+        accountNumber: 'string', //TODO AccountNumber
+        businessCenter: 'FULVENVEN000000',
+        classifier01: '',
+        classifier02: '',
+      },
+      billingCoin: 'PESO',
+      billingRate: 1,
+      shopId: 'Local',
+      priceList: '1',
+      giro: `${sale.Cliente[0].giro_id}`,
+      district: 'Generico',
+      city: 'Generico',
+      contact: -1,
+      attachedDocuments: [],
+      storage: {
+        code: 'BODEGACENTRAL', //TODO Preguntar a que bodega se refiere
+        motive: 'Venta de productos',
+        storageAnalysis: {
+          accountNumber: '',
+          businessCenter: 'FULVENVEN000000',
+          classifier01: 'classifier01',
+          classifier02: 'classifier02',
+        },
+      },
+      details: details,
+      saleTaxes: [
+        {
+          code: 'IVA',
+          value: 19,
+          taxeAnalysis: {
+            accountNumber: 'string', //TODO De donde sale este numero 2120301001
+            businessCenter: 'FULVENVEN000000',
+            classifier01: '',
+            classifier02: '',
+          },
+        },
+      ],
+      ventaRecDesGlobal: [],
+      gloss: '',
+      customFields: [],
+      isTransferDocument: false,
+    };
+    const headers = {
+      Authorization:
+        'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1laWQiOiJBRDEyM0ZULUhHREY1Ni1LSTIzS0wtS0pUUDk4NzYtSEdUMTIiLCJ1bmlxdWVfbmFtZSI6ImNsaWVudC5sZWdhY3lAZGVmb250YW5hLmNvbSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vYWNjZXNzY29udHJvbHNlcnZpY2UvMjAxMC8wNy9jbGFpbXMvaWRlbnRpdHlwcm92aWRlciI6IkFTUC5ORVQgSWRlbnRpdHkiLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6IkdIVEQyMzQtS0xISjc4NjgtRkc0OTIzLUhKRzA4RlQ1NiIsImNvbXBhbnkiOiIyMDI0MDgyNjIyNDExNDYwMDAwMSIsImNsaWVudCI6IjIwMjQwODI2MjI0MTE0NjAwMDAxIiwib2xkc2VydmljZSI6InZpc2lvbmFyeTIiLCJ1c2VyIjoiQVBQVE9NQVRPUiIsInNlc3Npb24iOiIxNzMyMTA3NTEzIiwic2VydmljZSI6InZpc2lvbmFyeTIiLCJjb3VudHJ5IjoiQ0wiLCJjb21wYW55X25hbWUiOiJGdWxsZXJ0b24iLCJjb21wYW55X2NvdW50cnkiOiJDTCIsInVzZXJfbmFtZSI6ImFwcHRvbWF0b3IiLCJleHBpcmF0aW9uX2RhdGUiOjE3NjQ1NDcyMDAsImNsaWVudF9jb25kaXRpb24iOiJTIiwicm9sZXNQb3MiOiJbXCJ1c3VhcmlvXCIsXCJ1c3VhcmlvZXJwXCJdIiwicnV0X3VzdWFyaW8iOiJBZG1pbmlzdHJhZG9yIiwiaXNzIjoiaHR0cHM6Ly8qLmRlZm9udGFuYS5jb20iLCJhdWQiOiIwOTkxNTNjMjYyNTE0OWJjOGVjYjNlODVlMDNmMDAyMiIsImV4cCI6MTc2MzY0MzUxMywibmJmIjoxNzMyMTA3NTEzfQ.HZSmeMSTuyi46xFU12Aa7978QYxwrx5JbUnkfj-p0WU',
+    };
+    try {
+      const response = await axios.post(
+        'https://replapi.defontana.com/api/Sale/SaveSale',
+        body,
+        { headers },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error registering client', error.response.data);
+      throw new BadRequestException('Error registering sale');
+    }
   }
 }

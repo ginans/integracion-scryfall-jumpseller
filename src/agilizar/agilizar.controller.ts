@@ -9,4 +9,8 @@ export class AgilizarController {
   getSell(): Promise<SellResponse> {
     return this.agilizarService.getVentas();
   }
+  @Get('get-token')
+  getToken(): Promise<string> {
+    return this.agilizarService.generateToken();
+  }
 }

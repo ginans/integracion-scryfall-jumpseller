@@ -11,6 +11,7 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
+  
   async seed() {
     await this.user.deleteMany();
     const password = await this.auth.hashPassword('12345678');

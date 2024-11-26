@@ -7,11 +7,18 @@ import { HttpService } from '@nestjs/axios';
 import { SellResponse } from './interface/SellResponse.interface';
 import { catchError, firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
+import { InjectModel } from '@nestjs/mongoose';
+import { Agilizar } from './entities/agilizar.entity';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AgilizarService {
   private readonly logger = new Logger(AgilizarService.name);
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    @InjectModel(Agilizar.name)
+    private readonly model: Model<Agilizar>,
+    private readonly http: HttpService,
+  ) {}
 
   private getDefaultDates(
     from?: string,
@@ -24,12 +31,49 @@ export class AgilizarService {
     }
     return { to, from };
   }
-
-  async getVentas(from?: string, to?: string): Promise<SellResponse> {
-    const dates = this.getDefaultDates(from, to);
+  async generateToken(): Promise<string> {
     const { data } = await firstValueFrom(
       this.http
-        .get<SellResponse>(`get_reporteVentas/${dates.from}/${dates.to}`)
+        .post<{ GenerarTokenResult: string }>(
+          'GenerarToken',
+          {},
+          {
+            headers: {
+              client_id: process.env.CLIENT_ID_FULLERTON,
+              secret_key: process.env.SECRET_KEY_FULLERTON,
+            },
+          },
+        )
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(error.message);
+            throw new ServiceUnavailableException(
+              `Error al obtener el token, ${error.message}`,
+            );
+          }),
+        ),
+    );
+    await this.model.deleteMany({});
+    await this.model.create({ token: data.GenerarTokenResult });
+    return data.GenerarTokenResult;
+  }
+  async getToken(): Promise<string> {
+    const token = await this.model.findOne({});
+    if (!token) {
+      return this.generateToken();
+    }
+    return token.token;
+  }
+  async getVentas(from?: string, to?: string): Promise<SellResponse> {
+    const dates = this.getDefaultDates(from, to);
+    const token: string = await this.getToken();
+    const { data } = await firstValueFrom(
+      this.http
+        .get<SellResponse>(`get_reporteVentas/${dates.from}/${dates.to}`, {
+          headers: {
+            token,
+          },
+        })
         .pipe(
           catchError((error: AxiosError) => {
             this.logger.error(error.message);
@@ -41,7 +85,6 @@ export class AgilizarService {
     );
     return data;
   }
-
   async getCompras(to?: string, from?: string): Promise<SellResponse> {
     const dates = this.getDefaultDates(to, from);
     const { data } = await firstValueFrom(

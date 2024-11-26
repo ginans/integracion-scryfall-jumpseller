@@ -14,8 +14,6 @@ import { ClientInterface } from '../clients/interface/client.interface';
 import { ProductsService } from '../products/products.service';
 import { ProductInterface } from '../products/interface/product.interface';
 import axios from 'axios';
-import { date } from 'joi';
-
 @Injectable()
 export class SalesService {
   constructor(
@@ -68,7 +66,6 @@ export class SalesService {
     return sale;
   }
   async test(date: { to?: string; from?: string }) {
-    console.log(date);
     const today: string = date.to ?? formatDate(new Date());
     const yesterday: Date = new Date();
     yesterday.setDate(yesterday.getDate() - 1);

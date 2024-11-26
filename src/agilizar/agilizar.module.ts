@@ -3,17 +3,21 @@ import { AgilizarService } from './agilizar.service';
 import { AgilizarController } from './agilizar.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Agilizar, AgilizarSchema } from './entities/agilizar.entity';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   controllers: [AgilizarController],
   imports: [
+    MongooseModule.forFeature([
+      { name: Agilizar.name, schema: AgilizarSchema },
+    ]),
     HttpModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         baseURL: configService.get<string>('url_fullerton'),
         headers: {
           'Content-Type': 'application/json',
-          token: '5fd15a5d-72b4-4fa0-89e5-d030b5dcb86d',
         },
       }),
       inject: [ConfigService],

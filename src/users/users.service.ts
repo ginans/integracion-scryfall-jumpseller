@@ -1,10 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { User, UserDocument } from './entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
 @Injectable()
 export class UsersService {
   constructor(
@@ -17,18 +16,27 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
+    return this.userModel.find().select('-password').exec();
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.userModel.findById(id).exec();
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+    return this.userModel
+      .findById(new Types.ObjectId(id))
+      .select('-password')
+      .exec();
   }
 
   async update(
     id: string,
     userDto: Partial<UpdateUserDto>,
   ): Promise<User | null> {
-    return this.userModel.findByIdAndUpdate(id, userDto, { new: true }).exec();
+    return this.userModel
+      .findByIdAndUpdate(new Types.ObjectId(id), userDto, { new: true })
+      .select('-password')
+      .exec();
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -36,14 +44,17 @@ export class UsersService {
   }
 
   async updateStatus(id: string): Promise<User | null> {
-    const user: UserDocument = await this.userModel.findById(id).exec();
+    const user: UserDocument = await this.userModel
+      .findById(new Types.ObjectId(id))
+      .select('-password')
+      .exec();
     if (!user) return null;
     user.status = !user.status;
     return user.save();
   }
 
   async updatePass(id: string, password: string): Promise<User | null> {
-    const user = await this.userModel.findById(id).exec();
+    const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
     if (!user) return null;
     user.password = password;
     return user.save();
@@ -54,13 +65,17 @@ export class UsersService {
   }
 
   async deleteById(id: string): Promise<User> {
-    return this.userModel.findByIdAndDelete(id).exec();
+    return this.userModel.findByIdAndDelete(new Types.ObjectId(id)).exec();
   }
 
   async updateLogin(id: string): Promise<User | null> {
-    const user = await this.userModel.findById(id).exec();
-    if (!user) return null;
-    user.lastLogin = new Date();
-    return user.save();
+    try {
+      const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
+      if (!user) return null;
+      user.lastLogin = new Date();
+      return user.save();
+    } catch (error) {
+      return null;
+    }
   }
 }

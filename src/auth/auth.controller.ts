@@ -23,28 +23,23 @@ export class AuthController {
   }
   @Get('session')
   session(@Headers('Authorization') token: string) {
-    return this.authService.session(token);
+    return this.authService.validateToken(token);
   }
-
   @Post('user')
   @UseGuards(JwtAuthGuard)
-  createUser(
-    @Headers('Authorization') token: string,
-    @Body() createUserDto: CreateUserDto,
-  ) {
-    return this.authService.createUser(createUserDto, token);
+  createUser(@Body() createUserDto: CreateUserDto) {
+    return this.authService.createUser(createUserDto);
   }
   @Post('recover_pass')
   SendEmail(@Body() body: RecoverPassDto) {
     return this.authService.recoverPass(body);
   }
   @Post('new-password')
-  changePass(@Body() body: ReplacePassDto) {
-    return this.authService.changePass(body);
-  }
-  @Get('users')
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.authService.findAll();
+  changePass(
+    @Body() body: ReplacePassDto,
+    @Headers('Authorization') token: string,
+  ) {
+    return this.authService.changePass(body, token);
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AuthService } from './auth/auth.service';
 import { UsersService } from './users/users.service';
+import { UserRole } from './users/enums/user-role.enum';
 
 @Injectable()
 export class AppService {
@@ -8,10 +9,7 @@ export class AppService {
     private readonly user: UsersService,
     private readonly auth: AuthService,
   ) {}
-  getHello(): string {
-    return 'Hello World!';
-  }
-  
+
   async seed() {
     await this.user.deleteMany();
     const password = await this.auth.hashPassword('12345678');
@@ -19,11 +17,9 @@ export class AppService {
       name: 'Sistemas',
       email: 'sistemas@fixlabs.cl',
       password,
-      rol: 'admin',
-      lastLogin: new Date(),
-      status: true,
+      rol: UserRole.Admin,
     };
-    await this.user.registerDB(user);
+    await this.user.create(user);
     return 'Seed Data';
   }
 }

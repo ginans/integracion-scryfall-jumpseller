@@ -15,7 +15,7 @@ import { ReplacePassDto } from './dto/replace-pass.dto';
 import { MailService } from '../mail/mail.service';
 import { RecoverPassDto } from './dto/recover.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { UserInterface } from 'src/users/interface/user.interface';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -27,17 +27,14 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly mailService: MailService,
   ) {}
-  async createRegister(login: { email: string }) {
+  private async createRegister(login: { email: string }) {
     const newDocument = new this.model(login);
     await newDocument.save();
   }
-  async findAll() {
-    return await this.userService.findAll();
-  }
-  async compare(passOrigin: string, hashPassword: string) {
+  async compare(passOrigin: string, hashPassword: string): Promise<boolean> {
     return await argon2.verify(hashPassword, passOrigin);
   }
-  async hashPassword(password: string) {
+  async hashPassword(password: string): Promise<string> {
     return await argon2.hash(password);
   }
   async createToken(payload: { sub: string; email: string; name: string }) {
@@ -52,10 +49,6 @@ export class AuthService {
       throw new UnauthorizedException('Token inválido');
     }
   }
-  async session(token: string) {
-    console.log(token);
-    return 'ok';
-  }
   async signIn(email: string, password: string) {
     const User = await this.userService.findByEmail(email);
     if (!User) throw new BadRequestException('Correo o contraseña incorrecto');
@@ -63,15 +56,14 @@ export class AuthService {
     if (!validarPass)
       throw new UnauthorizedException('Correo/contraseña incorrecto');
     if (!User.status) throw new UnauthorizedException('Usuario deshabilitado');
-    const { name } = User;
     const payload = {
-      sub: User._id,
+      sub: User._id.toString(),
       email: User.email,
-      name,
+      name: User.name,
     };
     const access_token = await this.createToken(payload);
     await this.createRegister({ email });
-    await this.userService.updateLogin(User._id);
+    await this.userService.updateLogin(User._id.toString());
     return {
       access_token,
       user: {
@@ -89,7 +81,7 @@ export class AuthService {
       };
     }
     const payload = {
-      sub: user._id,
+      sub: user._id.toHexString(),
       email: user.email,
       name: user.name,
     };
@@ -99,68 +91,28 @@ export class AuthService {
       message: 'Enviamos a tu correo el método de recuperación',
     };
   }
-  async changePass(body: ReplacePassDto) {
-    const { password, token } = body;
+  async changePass(body: ReplacePassDto, token: string) {
+    const { password } = body;
     const user = await this.validateToken(token);
     const userDB = await this.userService.findByEmail(user.email);
     const hashPassword = await this.hashPassword(password);
     userDB.password = hashPassword;
-    await this.userService.updatePass(userDB._id, hashPassword);
+    await this.userService.updatePass(userDB._id.toHexString(), hashPassword);
     return {
       message: 'Contraseña cambiada correctamente',
     };
   }
-  async createUser(createUserDto: CreateUserDto, token: string) {
-    await this.validateToken(token);
+  async createUser(createUserDto: CreateUserDto) {
     const user = await this.userService.findByEmail(createUserDto.email);
-    if (user) throw new UnauthorizedException('Usuario Ya Existe');
-    const randomPassword = this.generateRandomPassword();
-    const password = await this.hashPassword(randomPassword);
-    const status = true;
-    const createUser = {
-      ...createUserDto,
-      password,
-      status,
-      rol: 'admin',
-      lastLogin: new Date(),
-    };
-    const userCreate = await this.userService.registerDB(createUser);
-    const payload = {
-      sub: userCreate._id,
-      email: userCreate.email,
-      name: userCreate.name,
-    };
-    const access_token = await this.createToken({
-      sub: String(payload.sub),
-      email: payload.email,
-      name: payload.name,
-    });
-    try {
-      this.mailService.sendMail(
-        createUser.email,
-        createUser.name,
-        access_token,
-      );
-      return userCreate;
-    } catch (error) {
-      this.logger.error('Error al enviar correo', error);
-      return userCreate;
-    }
+    if (user) throw new BadRequestException('Usuario Ya Existe');
+    createUserDto.password = await this.hashPassword(createUserDto.password);
+    return await this.userService.create(createUserDto);
   }
-  generateRandomPassword(): string {
-    const characters =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    const charactersLength = characters.length;
-    for (let i = 0; i < 8; i++) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
-  }
-  async validateUser(id: string): Promise<UserInterface> {
-    const user = await this.userService.findOne(id);
+  async validateUser(id: string): Promise<User> {
+    const user = await this.userService.findById(id);
+    if (!user) throw new UnauthorizedException('Token inválido');
     if (!user.status) throw new UnauthorizedException('Usuario deshabilitado');
-    delete user.password;
+    user.password = undefined;
     return user;
   }
 }

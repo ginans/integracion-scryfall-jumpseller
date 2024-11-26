@@ -29,11 +29,6 @@ export class UsersController {
     return this.usersService.findById(id);
   }
 
-  @Post()
-  createUser(@Body() user: CreateUserDto) {
-    return this.usersService.create(user);
-  }
-
   @Put(':id')
   updateUser(@Param('id') id: string, @Body() user: UpdateUserDto) {
     return this.usersService.update(id, user);
@@ -42,14 +37,6 @@ export class UsersController {
   @Patch(':id/status')
   updateUserStatus(@Param('id') id: string) {
     return this.usersService.updateStatus(id);
-  }
-
-  @Patch(':id/password')
-  updateUserPassword(
-    @Param('id') id: string,
-    @Body('password') password: string,
-  ) {
-    return this.usersService.updatePass(id, password);
   }
 
   @Delete(':id')

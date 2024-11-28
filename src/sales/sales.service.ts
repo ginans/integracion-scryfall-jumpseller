@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Sale } from './entities/sale.entity';
+import { Sale, SaleDocument } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
 import { Model } from 'mongoose';
 import { formatDate } from '../common/formatDate';
@@ -18,7 +18,7 @@ import axios from 'axios';
 export class SalesService {
   constructor(
     @InjectModel(Sale.name)
-    private readonly model: Model<Sale>,
+    private readonly model: Model<SaleDocument>,
     private readonly agilizar: AgilizarService,
     private readonly client: ClientsService,
     private readonly product: ProductsService,
@@ -36,6 +36,7 @@ export class SalesService {
       message: 'Sales checked',
     };
   }
+  //TODO: Validar si cambio el Modelo
   async findAll() {
     const sales = await this.model.find().exec();
     return sales.map((sale) => ({
@@ -57,8 +58,8 @@ export class SalesService {
   }
   async findOne(id: string) {
     const sale = await this.model.findById(id).exec();
-    if (sale) return sale;
-    throw new NotFoundException('Sale not found');
+    if (!sale) throw new NotFoundException('Sale not found');
+    return sale;
   }
   async findOneByOrderId(id: number): Promise<Sale | null> {
     const sale = await this.model.findOne({ OBJECT_ID: id }).exec();
@@ -82,10 +83,9 @@ export class SalesService {
     }
     return 'Nuevas ordenes distribuidas';
   }
-  async distributeSales(sale: GetReporteVentasResult) {
+  private async distributeSales(sale: GetReporteVentasResult) {
     const saleExists = await this.findOneByOrderId(sale.OBJECT_ID);
     if (saleExists) return;
-
     const client = await this.client.findClientByUuid(sale.cliente_id);
     if (!client && sale.Cliente && sale.Cliente.length > 0) {
       const clientData = sale.Cliente[0];
@@ -144,6 +144,7 @@ export class SalesService {
   async generateSale(id: number) {
     const sale = await this.findOneByOrderId(id);
     if (!sale) throw new NotFoundException('Sale not found');
+    const businessCenter = 'FULVENVEN000000';
     const details = sale.DetalleVenta.map((product) => {
       return {
         type: 'A',
@@ -159,8 +160,8 @@ export class SalesService {
         },
         unit: 'UN',
         analysis: {
-          accountNumber: '',
-          businessCenter: 'FULVENVEN000000',
+          accountNumber: '3110101001',
+          businessCenter: businessCenter,
           classifier01: '',
           classifier02: '',
         },
@@ -174,22 +175,22 @@ export class SalesService {
       lastFolio: 0,
       externalDocumentID: `${sale.numero_documento}`,
       emissionDate: {
-        day: 20,
+        day: 26,
         month: 11,
         year: 2024,
       },
       firstFeePaid: {
-        day: 20,
+        day: 26,
         month: 11,
         year: 2024,
       },
-      clientFile: `${sale.Cliente[0].rut}`,
+      clientFile: `${sale.Cliente[0].cliente_id}`,
       contactIndex: 'DIRECCION GENERICA',
       paymentCondition: 'CONTADO',
       sellerFileId: 'VENDEDOR',
       clientAnalysis: {
-        accountNumber: 'string', //TODO AccountNumber
-        businessCenter: 'FULVENVEN000000',
+        accountNumber: '3110101001',
+        businessCenter: 'FULVEN000000000',
         classifier01: '',
         classifier02: '',
       },
@@ -197,17 +198,17 @@ export class SalesService {
       billingRate: 1,
       shopId: 'Local',
       priceList: '1',
-      giro: `${sale.Cliente[0].giro_id}`,
+      giro: `${sale.Cliente?.[0]?.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
       district: 'Generico',
       city: 'Generico',
       contact: -1,
       attachedDocuments: [],
       storage: {
-        code: 'BODEGACENTRAL', //TODO Preguntar a que bodega se refiere
+        code: 'BODEGACENTRAL',
         motive: 'Venta de productos',
         storageAnalysis: {
           accountNumber: '',
-          businessCenter: 'FULVENVEN000000',
+          businessCenter: businessCenter,
           classifier01: 'classifier01',
           classifier02: 'classifier02',
         },
@@ -218,8 +219,8 @@ export class SalesService {
           code: 'IVA',
           value: 19,
           taxeAnalysis: {
-            accountNumber: 'string', //TODO De donde sale este numero 2120301001
-            businessCenter: 'FULVENVEN000000',
+            accountNumber: '2120301001',
+            businessCenter: businessCenter,
             classifier01: '',
             classifier02: '',
           },
@@ -230,9 +231,10 @@ export class SalesService {
       customFields: [],
       isTransferDocument: false,
     };
+    const token =
+      '';
     const headers = {
-      Authorization:
-        'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1laWQiOiJBRDEyM0ZULUhHREY1Ni1LSTIzS0wtS0pUUDk4NzYtSEdUMTIiLCJ1bmlxdWVfbmFtZSI6ImNsaWVudC5sZWdhY3lAZGVmb250YW5hLmNvbSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vYWNjZXNzY29udHJvbHNlcnZpY2UvMjAxMC8wNy9jbGFpbXMvaWRlbnRpdHlwcm92aWRlciI6IkFTUC5ORVQgSWRlbnRpdHkiLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6IkdIVEQyMzQtS0xISjc4NjgtRkc0OTIzLUhKRzA4RlQ1NiIsImNvbXBhbnkiOiIyMDI0MDgyNjIyNDExNDYwMDAwMSIsImNsaWVudCI6IjIwMjQwODI2MjI0MTE0NjAwMDAxIiwib2xkc2VydmljZSI6InZpc2lvbmFyeTIiLCJ1c2VyIjoiQVBQVE9NQVRPUiIsInNlc3Npb24iOiIxNzMyMTA3NTEzIiwic2VydmljZSI6InZpc2lvbmFyeTIiLCJjb3VudHJ5IjoiQ0wiLCJjb21wYW55X25hbWUiOiJGdWxsZXJ0b24iLCJjb21wYW55X2NvdW50cnkiOiJDTCIsInVzZXJfbmFtZSI6ImFwcHRvbWF0b3IiLCJleHBpcmF0aW9uX2RhdGUiOjE3NjQ1NDcyMDAsImNsaWVudF9jb25kaXRpb24iOiJTIiwicm9sZXNQb3MiOiJbXCJ1c3VhcmlvXCIsXCJ1c3VhcmlvZXJwXCJdIiwicnV0X3VzdWFyaW8iOiJBZG1pbmlzdHJhZG9yIiwiaXNzIjoiaHR0cHM6Ly8qLmRlZm9udGFuYS5jb20iLCJhdWQiOiIwOTkxNTNjMjYyNTE0OWJjOGVjYjNlODVlMDNmMDAyMiIsImV4cCI6MTc2MzY0MzUxMywibmJmIjoxNzMyMTA3NTEzfQ.HZSmeMSTuyi46xFU12Aa7978QYxwrx5JbUnkfj-p0WU',
+      Authorization: `Bearer ${token}`,
     };
     try {
       const response = await axios.post(
@@ -240,9 +242,11 @@ export class SalesService {
         body,
         { headers },
       );
-      return response.data;
+      return {
+        response: response.data,
+        body,
+      };
     } catch (error) {
-      console.error('Error registering client', error.response.data);
       throw new BadRequestException('Error registering sale');
     }
   }

@@ -9,10 +9,12 @@ import {
   VentaEstado,
 } from '../../agilizar/interface/SellResponse.interface';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Sale extends Document {
+export class Sale {
+  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
+  _id: Types.ObjectId;
   @Prop()
   Cliente: Cliente[];
   @Prop()
@@ -102,5 +104,5 @@ export class Sale extends Document {
   @Prop()
   venta_internet_id: string;
 }
-
+export type SaleDocument = HydratedDocument<Sale>;
 export const SaleSchema = SchemaFactory.createForClass(Sale);

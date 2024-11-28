@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { User, UserDocument } from './entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -23,10 +23,12 @@ export class UsersService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid ID format');
     }
-    return this.userModel
+    const user = await this.userModel
       .findById(new Types.ObjectId(id))
       .select('-password')
       .exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   async update(

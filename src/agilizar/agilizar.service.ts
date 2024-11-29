@@ -10,6 +10,7 @@ import { AxiosError } from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
 import { Agilizar } from './entities/agilizar.entity';
 import { Model } from 'mongoose';
+import { OrderResponse } from '../order/interface/order-response.interface';
 
 @Injectable()
 export class AgilizarService {
@@ -85,11 +86,11 @@ export class AgilizarService {
     );
     return data;
   }
-  async getCompras(to?: string, from?: string): Promise<SellResponse> {
+  async getCompras(to?: string, from?: string): Promise<OrderResponse> {
     const dates = this.getDefaultDates(to, from);
     const { data } = await firstValueFrom(
       this.http
-        .get<SellResponse>(`get_reporteCompras/${dates.from}/${dates.to}`)
+        .get<OrderResponse>(`get_reporteCompras/${dates.from}/${dates.to}`)
         .pipe(
           catchError((error: AxiosError) => {
             this.logger.error(error.message);

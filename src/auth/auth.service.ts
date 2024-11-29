@@ -75,11 +75,8 @@ export class AuthService {
   }
   async recoverPass(body: RecoverPassDto) {
     const user = await this.userService.findByEmail(body.email);
-    if (!user) {
-      return {
-        message: 'Enviamos a tu correo el método de recuperación',
-      };
-    }
+    if (!user)
+      return { message: 'Enviamos a tu correo el método de recuperación'};
     const payload = {
       sub: user._id.toHexString(),
       email: user.email,

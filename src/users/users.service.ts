@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { User, UserDocument } from './entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -76,7 +80,7 @@ export class UsersService {
       if (!user) return null;
       user.lastLogin = new Date();
       return user.save();
-    } catch (error) {
+    } catch {
       return null;
     }
   }

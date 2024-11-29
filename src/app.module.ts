@@ -17,6 +17,7 @@ import { DefontanaModule } from './defontana/defontana.module';
 import { CommonModule } from './common/common.module';
 import { ClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ProductsModule } from './products/products.module';
     CommonModule,
     ClientsModule,
     ProductsModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtService],

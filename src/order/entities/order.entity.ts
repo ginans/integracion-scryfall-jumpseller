@@ -34,6 +34,44 @@ export class Order {
   proveedor_id: number;
   @Prop()
   tipo_documento_id: number;
+  @Prop({
+    default: true,
+  })
+  isNational: boolean;
+  @Prop({
+    default: 'pending',
+  })
+  status: string;
+  @Prop({
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  defontanaNumber: number;
+  @Prop({
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  cif_id: number | null;
+  @Prop({
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  admission_rights_id: number | null;
+  @Prop({
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  customs_clearance_costs_id: number | null;
+  @Prop({
+    required: false,
+    nullable: true,
+    default: null,
+  })
+  insurance_warehouse_id: number | null;
 }
 export type OrderDocument = HydratedDocument<Order>;
 export const OrderSchema = SchemaFactory.createForClass(Order);

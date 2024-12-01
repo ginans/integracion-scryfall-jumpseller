@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { Order, OrderDocument } from './entities/order.entity';
 import { InjectModel } from '@nestjs/mongoose';
@@ -30,8 +29,7 @@ export class OrderService {
   }
 
   async findAll() {
-    const sales = await this.model.find().exec();
-    return sales;
+    return await this.model.find().exec();
   }
 
   findOne(id: number) {

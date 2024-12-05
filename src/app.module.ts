@@ -14,7 +14,6 @@ import { JwtService } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { SalesModule } from './sales/sales.module';
 import { DefontanaModule } from './defontana/defontana.module';
-import { CommonModule } from './common/common.module';
 import { ClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
 import { OrderModule } from './order/order.module';
@@ -46,7 +45,6 @@ import { OrderModule } from './order/order.module';
     MailModule,
     SalesModule,
     DefontanaModule,
-    CommonModule,
     ClientsModule,
     ProductsModule,
     OrderModule,

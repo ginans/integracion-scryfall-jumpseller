@@ -90,7 +90,7 @@ describe('UsersService', () => {
     expect(user).toEqual(mockUser);
   });
 
-  it('should update user status', async () => {
+  it('should update user interfaces', async () => {
     jest.spyOn(model, 'findById').mockReturnValue({
       exec: jest.fn().mockResolvedValueOnce(mockUser),
     } as any);

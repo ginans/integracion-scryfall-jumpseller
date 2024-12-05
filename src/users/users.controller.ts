@@ -32,7 +32,7 @@ export class UsersController {
     return this.usersService.update(id, user);
   }
 
-  @Patch(':id/status')
+  @Patch(':id/interfaces')
   updateUserStatus(@Param('id') id: string) {
     return this.usersService.updateStatus(id);
   }

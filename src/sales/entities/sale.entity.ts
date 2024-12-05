@@ -10,6 +10,7 @@ import {
 } from '../../agilizar/interface/SellResponse.interface';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { SaleState } from '../interfaces/sale-state.interface';
 
 @Schema({ timestamps: true })
 export class Sale {
@@ -103,6 +104,21 @@ export class Sale {
   venta_estado_id: number;
   @Prop()
   venta_internet_id: string;
+  @Prop({
+    default: SaleState.PENDIENTE,
+    enum: SaleState,
+  })
+  state: SaleState;
+  @Prop({
+    default: null,
+    required: false,
+  })
+  defontana_id: number | null;
+  @Prop({
+    default: null,
+    required: false,
+  })
+  error: string | null;
 }
 export type SaleDocument = HydratedDocument<Sale>;
 export const SaleSchema = SchemaFactory.createForClass(Sale);

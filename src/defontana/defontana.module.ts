@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { DefontanaService } from './defontana.service';
-import { DefontanaController } from './defontana.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Defontana, DefontanaSchema } from './entities/defontana.entity';
 
 @Module({
-  controllers: [DefontanaController],
+  controllers: [],
   imports: [
     HttpModule.registerAsync({
       imports: [ConfigModule],
@@ -18,6 +19,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
+    MongooseModule.forFeature([
+      { name: Defontana.name, schema: DefontanaSchema },
+    ]),
   ],
   providers: [DefontanaService],
   exports: [DefontanaService],

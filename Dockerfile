@@ -1,21 +1,20 @@
-FROM node:20-alpine
-
-# Establecer el directorio de trabajo
+FROM node:22-alpine AS builder
 WORKDIR /usr/src/app
-
-# Instalar dependencias y herramientas necesarias en una sola capa
+COPY package.json yarn.lock ./
 RUN apk add --no-cache yarn && \
-    yarn global add pm2 && \
-    yarn install --frozen-lockfile
-
-# Copiar el resto de los archivos
+    yarn install --production --frozen-lockfile
 COPY . .
-
-# Construir la aplicación
 RUN yarn run build
-
-# Exponer el puerto
-EXPOSE 8000
-
-# Comando para iniciar la aplicación
+FROM node:22-alpine AS runtime
+WORKDIR /usr/src/app
+RUN apk add --no-cache yarn && \
+    yarn global add pm2
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/package.json ./package.json
+COPY --from=builder /usr/src/app/ecosystem.config.js ./ecosystem.config.js
+ARG PORT=8000
+ENV PORT=$PORT
+EXPOSE $PORT
 CMD ["pm2-runtime", "start", "ecosystem.config.js", "--env", "production"]
+

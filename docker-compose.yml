@@ -1,14 +1,45 @@
-version: '3'
 services:
-  db:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: "nestjs-app-${DB_NAME}"
+    restart: always
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env.production
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - app-network
+    volumes:
+      - ./logs:/usr/src/app/logs
+  mongo:
     container_name: "mongo-${DB_NAME}"
     image: mongo:8
     restart: always
+    env_file:
+      - .env.production
     ports:
-      - "27017:27017"
+      - "${DB_PORT}:${DB_PORT}"
     environment:
+      DB_PORT: "${DB_PORT}"
       MONGODB_DATABASE: "nest-${DB_NAME}"
+
     volumes:
       - ./mongo:/data/db
-
-
+    networks:
+      - app-network
+  redis:
+    container_name: "redis-${DB_NAME}"
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+networks:
+    app-network:
+      driver: bridge

@@ -1,56 +1,87 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { User } from './entities/user.entity';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { User, UserDocument } from './entities/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { UserInterface } from './interface/user.interface';
-
+import { Model, Types } from 'mongoose';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 @Injectable()
 export class UsersService {
-  private logger = new Logger('UsersService');
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
-  async registerDB(user: UserInterface) {
-    const Document: object = user;
-    const newDocument = new this.userModel(Document);
-    await newDocument.save();
-    newDocument.password = null;
-    return newDocument;
-  }
-  async findAll() {
-    return await this.userModel.find().exec();
-  }
-  async findByEmail(email: string): Promise<UserInterface> {
-    return this.userModel.findOne({ email });
-  }
-  async findOne(id: string): Promise<UserInterface> {
-    const user = (await this.userModel.findById(id)) as UserInterface;
-    if (!user) throw new NotFoundException('Usuario no encontrado');
-    return user;
-  }
-  async updateStatus(id: string) {
-    const user = await this.userModel.findById(id);
-    user.status = !user.status;
-    await user.save();
-    return {
-      message: 'Usuario actualizado correctamente',
-    };
-  }
-  async updatePass(id: string, password: string) {
-    const user = await this.userModel.findById(id);
-    user.password = password;
-    await user.save();
-  }
-  async updateInfo(id, user) {
-    await this.userModel.findByIdAndUpdate(id, user);
-  }
-  async deleteMany() {
-    await this.userModel.deleteMany({});
+
+  async create(userDto: CreateUserDto): Promise<User> {
+    const user = new this.userModel(userDto);
+    return user.save();
   }
 
-  async updateLogin(id: string) {
-    const user = await this.userModel.findById(id);
-    user.lastLogin = new Date();
-    await user.save();
+  async findAll(): Promise<User[]> {
+    return this.userModel.find().select('-password').exec();
+  }
+
+  async findById(id: string): Promise<User | null> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ID format');
+    }
+    const user = await this.userModel
+      .findById(new Types.ObjectId(id))
+      .select('-password')
+      .exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async update(
+    id: string,
+    userDto: Partial<UpdateUserDto>,
+  ): Promise<User | null> {
+    return this.userModel
+      .findByIdAndUpdate(new Types.ObjectId(id), userDto, { new: true })
+      .select('-password')
+      .exec();
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  async updateStatus(id: string): Promise<User | null> {
+    const user: UserDocument = await this.userModel
+      .findById(new Types.ObjectId(id))
+      .select('-password')
+      .exec();
+    if (!user) return null;
+    user.status = !user.status;
+    return user.save();
+  }
+
+  async updatePass(id: string, password: string): Promise<User | null> {
+    const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
+    if (!user) return null;
+    user.password = password;
+    return user.save();
+  }
+
+  async deleteMany(): Promise<void> {
+    await this.userModel.deleteMany().exec();
+  }
+
+  async deleteById(id: string): Promise<User> {
+    return this.userModel.findByIdAndDelete(new Types.ObjectId(id)).exec();
+  }
+
+  async updateLogin(id: string): Promise<User | null> {
+    try {
+      const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
+      if (!user) return null;
+      user.lastLogin = new Date();
+      return user.save();
+    } catch {
+      return null;
+    }
   }
 }

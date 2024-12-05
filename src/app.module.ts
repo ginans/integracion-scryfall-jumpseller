@@ -13,6 +13,10 @@ import { MailModule } from './mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { SalesModule } from './sales/sales.module';
+import { DefontanaModule } from './defontana/defontana.module';
+import { ClientsModule } from './clients/clients.module';
+import { ProductsModule } from './products/products.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -40,6 +44,10 @@ import { SalesModule } from './sales/sales.module';
     AuthModule,
     MailModule,
     SalesModule,
+    DefontanaModule,
+    ClientsModule,
+    ProductsModule,
+    OrderModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtService],

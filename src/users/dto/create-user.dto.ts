@@ -1,4 +1,5 @@
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { UserRole } from '../enums/user-role.enum';
 
 export class CreateUserDto {
   @IsNotEmpty({
@@ -14,4 +15,15 @@ export class CreateUserDto {
   })
   @IsEmail()
   email: string;
+  @IsNotEmpty({
+    message: 'password no puede estar vacío.',
+  })
+  password: string;
+  @IsNotEmpty({
+    message: 'rol no puede estar vacío.',
+  })
+  @IsEnum(UserRole, {
+    message: 'rol tiene que ser Admin o User',
+  })
+  rol: UserRole;
 }

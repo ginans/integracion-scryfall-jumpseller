@@ -17,7 +17,7 @@ export class AppService {
       name: 'Sistemas',
       email: 'sistemas@fixlabs.cl',
       password,
-      rol: UserRole.Admin,
+      role: UserRole.Admin,
     };
     await this.user.create(user);
     return 'Seed Data';

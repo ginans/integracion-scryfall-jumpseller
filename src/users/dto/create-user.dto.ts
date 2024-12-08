@@ -25,5 +25,5 @@ export class CreateUserDto {
   @IsEnum(UserRole, {
     message: 'rol tiene que ser Admin o User',
   })
-  rol: UserRole;
+  role: UserRole;
 }

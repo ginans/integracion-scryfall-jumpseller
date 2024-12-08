@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -39,6 +40,8 @@ export class UsersService {
     id: string,
     userDto: Partial<UpdateUserDto>,
   ): Promise<User | null> {
+    console.log(id);
+    console.log(userDto);
     return this.userModel
       .findByIdAndUpdate(new Types.ObjectId(id), userDto, { new: true })
       .select('-password')

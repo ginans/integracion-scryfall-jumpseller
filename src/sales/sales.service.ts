@@ -62,7 +62,7 @@ export class SalesService {
       nr_document: sale.numero_documento,
       total: sale.total,
       state: sale.state,
-      defontana_id: sale.defontana_id ?? '----',
+      defontana_id: sale.defontana_id ?? 0,
       error: sale.error ?? '',
     };
   }

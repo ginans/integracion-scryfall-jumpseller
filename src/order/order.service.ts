@@ -29,7 +29,20 @@ export class OrderService {
   }
 
   async findAll() {
-    return await this.model.find().exec();
+    const orders: OrderDocument[] = await this.model.find().exec();
+    return orders.map((order) => {
+      return {
+        id: order._id,
+        orderId: order.numero_documento,
+        providerName: order.Proveedor?.[0]?.razon_social ?? 'N/A',
+        providerRut: order.Proveedor?.[0]?.rut ?? 'N/A',
+        isNational: order.isNational,
+        documentType: order.TipoDocumento?.[0]?.nombre ?? 'N/A',
+        total: 'Sin Calcular',
+        defontanaId: order.defontanaNumber ?? 0,
+        status: order.status,
+      };
+    });
   }
 
   findOne(id: number) {

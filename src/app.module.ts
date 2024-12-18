@@ -17,6 +17,11 @@ import { DefontanaModule } from './defontana/defontana.module';
 import { ClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
 import { OrderModule } from './order/order.module';
+import { JobsService } from './jobs/jobs.service';
+import { JobsModule } from './jobs/jobs.module';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
 
 @Module({
   imports: [
@@ -38,6 +43,16 @@ import { OrderModule } from './order/order.module';
         },
       },
     }),
+    BullModule.forRoot({
+      connection: {
+        host: EnvConfiguration().cache_host,
+        port: EnvConfiguration().cache_port,
+      },
+    }),
+    BullBoardModule.forRoot({
+      route: '/admin/queues',
+      adapter: ExpressAdapter,
+    }),
     ScheduleModule.forRoot(),
     UsersModule,
     AgilizarModule,
@@ -48,8 +63,9 @@ import { OrderModule } from './order/order.module';
     ClientsModule,
     ProductsModule,
     OrderModule,
+    JobsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, JwtService],
+  providers: [AppService, JwtService, JobsService],
 })
 export class AppModule {}

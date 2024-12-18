@@ -11,6 +11,9 @@ import { HttpService } from '@nestjs/axios';
 import { catchError, firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 import { AuthResponse } from './interfaces/AuthResponse.interface';
+import { ClientInterface } from '../clients/interface/client.interface';
+import { OrderRequestInterface } from './interfaces/defontana-request.interface';
+import { DefontanaResponse } from './interfaces/defontana-response.interface';
 
 @Injectable()
 export class DefontanaService {
@@ -74,26 +77,50 @@ export class DefontanaService {
     );
     return data;
   }
-  async createClient(body): Promise<void> {
+
+  async createClient(client: ClientInterface): Promise<void> {
     const token = await this.getToken();
     const { data } = await firstValueFrom(
       this.http
-        .post<{ success: boolean; message: string }>(`sale/saveclient`, body, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        .post<{ success: boolean; message: string }>(
+          `sale/saveclient`,
+          client,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
         .pipe(
           catchError((error: AxiosError) => {
             this.logger.error(error.message);
             throw new ServiceUnavailableException(
-              `Error al generar Venta, ${error.message}`,
+              `Error al crear Cliente, ${error.message}`,
             );
           }),
         ),
     );
     if (
       !data.success &&
-      data.message !== `El cliente con codigo ${body.fileid} ya existe`
+      data.message !== `El cliente con codigo ${client.fileid} ya existe`
     )
       throw new BadRequestException(data.message);
+  }
+
+  async createOrder(order: OrderRequestInterface) {
+    const token = await this.getToken();
+    const { data } = await firstValueFrom(
+      this.http
+        .post<DefontanaResponse>(`order/saveorder`, order, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(error.message);
+            throw new ServiceUnavailableException(
+              `Error al generar Orden, ${error.message}`,
+            );
+          }),
+        ),
+    );
+    return data.folio;
   }
 }

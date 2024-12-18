@@ -22,4 +22,36 @@ export class AppService {
     await this.user.create(user);
     return 'Seed Data';
   }
+
+  async genericResponse() {
+    return {
+      ok: '1',
+      folio: 10000021,
+      pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+    };
+  }
+
+  async genericResponse2() {
+    return {
+      ok: '1',
+      folio: 10000026,
+      pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+    };
+  }
+
+  async genericResponse3() {
+    return {
+      ok: '1',
+      folio: 10000031,
+      pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+    };
+  }
+
+  async genericResponse4() {
+    return {
+      ok: true,
+      folio: 10000054,
+      pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+    };
+  }
 }

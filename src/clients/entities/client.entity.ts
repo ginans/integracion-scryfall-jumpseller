@@ -1,44 +1,31 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Client extends Document {
+export class Client {
+  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
+  _id: Types.ObjectId;
   @Prop()
-  lastname: string;
-  @Prop({
-    type: Number,
-    unique: true,
-    index: true,
-  })
-  uuid: number;
+  legalCode: string;
   @Prop()
-  contact: string;
-  @Prop()
-  web: string;
-  @Prop()
-  email: string;
-  @Prop()
-  status: boolean;
-  @Prop()
-  checkInDate: string;
-  @Prop()
-  phoneNumber: string;
-  @Prop()
-  houseNumber: string;
-  @Prop()
-  giro: number;
+  fileid: string;
   @Prop()
   name: string;
   @Prop()
-  obs: string;
-  @Prop({
-    type: String,
-    unique: true,
-    index: true,
-  })
-  rut: string;
+  address: string;
   @Prop()
-  clientType: number;
+  district: string;
+  @Prop()
+  email: string;
+  @Prop()
+  business: string;
+  @Prop()
+  rubroId: string;
+  @Prop()
+  giro: string;
+  @Prop()
+  city: string;
 }
 
+export type ClientDocument = HydratedDocument<Client>;
 export const clientSchema = SchemaFactory.createForClass(Client);

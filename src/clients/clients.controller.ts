@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -11,9 +11,5 @@ export class ClientsController {
   @Get()
   findAll() {
     return this.clientsService.findAll();
-  }
-  @Get(':id')
-  createClient(@Param('id') id: string) {
-    return this.clientsService.registerClient(+id);
   }
 }

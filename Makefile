@@ -24,7 +24,7 @@ stop-staging: ## Stop the staging docker container.
 
 .PHONY: build-production
 build-production: ## Build the production docker image.
-	docker build -f docker/production/compose.yaml
+	docker compose -f docker/production/compose.yaml build
 .PHONY: start-production
 start-production: ## Start the production docker container.
 	docker compose -f docker/production/compose.yaml up -d

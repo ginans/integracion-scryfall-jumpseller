@@ -1,17 +1,19 @@
 services:
   app:
     build:
-      context: ./
-      dockerfile: ./docker/production/Dockerfile
+      context: ../../
+      dockerfile: docker/production/Dockerfile
     container_name: "nestjs-app-${DB_NAME}"
     restart: always
     ports:
-      - "${PORT}:3000"
+      - "${PORT}:8000"
     env_file:
-      - ../../.env.production
+      - .env.production
     environment:
-      - NODE_ENV=production
+      - PORT=${PORT}
       - DB_NAME=${DB_NAME}
+      - NODE_ENV=production
+      - CACHE_PORT=${CACHE_PORT}
     depends_on:
       - redis
     networks:
@@ -25,7 +27,7 @@ services:
     ports:
       - "${CACHE_PORT}:6379"
     env_file:
-      - ../../.env.production
+      - .env.production
     environment:
       - NODE_ENV=production
       - CACHE_PORT=${CACHE_PORT}

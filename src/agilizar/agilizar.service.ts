@@ -4,20 +4,20 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { SellResponse } from './interface/SellResponse.interface';
 import { catchError, firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
-import { Agilizar } from './entities/agilizar.entity';
+import { Agilizar, AgilizarDocument } from './entities/agilizar.entity';
 import { Model } from 'mongoose';
 import { OrderResponse } from '../order/interface/order-response.interface';
+import { ISellResponse } from './interface/sell-response.interface';
 
 @Injectable()
 export class AgilizarService {
   private readonly logger = new Logger(AgilizarService.name);
 
   constructor(
-    @InjectModel(Agilizar.name) private readonly model: Model<Agilizar>,
+    @InjectModel(Agilizar.name) private readonly model: Model<AgilizarDocument>,
     private readonly http: HttpService,
   ) {}
 
@@ -64,12 +64,12 @@ export class AgilizarService {
     return token ? token.token : this.generateToken();
   }
 
-  async getVentas(from?: string, to?: string): Promise<SellResponse> {
+  async getVentas(from?: string, to?: string): Promise<ISellResponse> {
     const dates = this.getDefaultDates(from, to);
     const token = await this.getToken();
     const { data } = await firstValueFrom(
       this.http
-        .get<SellResponse>(`get_reporteVentas/${dates.from}/${dates.to}`, {
+        .get<ISellResponse>(`get_reporteVentas/${dates.from}/${dates.to}`, {
           headers: { token },
         })
         .pipe(
@@ -95,7 +95,9 @@ export class AgilizarService {
         .pipe(
           catchError((error: AxiosError) => {
             this.logger.error(error.message);
-            throw error;
+            throw new ServiceUnavailableException(
+              `Error al obtener las compras, ${error.message}`,
+            );
           }),
         ),
     );

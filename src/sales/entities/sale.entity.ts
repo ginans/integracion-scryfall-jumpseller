@@ -7,7 +7,7 @@ import {
   TipoDocumento,
   Usuario,
   VentaEstado,
-} from '../../agilizar/interface/SellResponse.interface';
+} from '../../agilizar/interface/sell-response.interface';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { SaleState } from '../interfaces/sale-state.interface';

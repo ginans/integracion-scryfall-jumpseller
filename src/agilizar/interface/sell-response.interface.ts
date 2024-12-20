@@ -1,8 +1,8 @@
-export interface SellResponse {
-  get_reporteVentasResult: GetReporteVentasResult[];
+export interface ISellResponse {
+  get_reporteVentasResult: IReportSell[];
 }
 
-export interface GetReporteVentasResult {
+export interface IReportSell {
   Cliente: Cliente[] | null;
   DetalleVenta: DetalleVenta[];
   GuiaDespacho: GuiaDespacho[];
@@ -64,12 +64,7 @@ export interface CondicionPago {
   condicion_pago_id: number;
   dias_vencimiento: number;
   esta_activo: boolean;
-  nombre: CondicionPagoNombre;
-}
-
-export enum CondicionPagoNombre {
-  Contado = 'CONTADO',
-  Crédito30Días = 'CRÉDITO 30 DÍAS',
+  nombre: string;
 }
 
 export interface GirosComerciale {
@@ -130,7 +125,7 @@ export interface GuiaDespacho {
   CAMPO_12: string;
   CAMPO_13: string;
   CAMPO_20: string;
-  CAMPO_27: Campo27;
+  CAMPO_27: string;
   CAMPO_28: string;
   CAMPO_29: string;
   CAMPO_30: string;
@@ -145,8 +140,8 @@ export interface GuiaDespacho {
   ENVIO: string;
   ESTADO_DOCUMENTO_ID: number;
   ESTA_FACTURADO: boolean;
-  FECHA_ENTREGA: FechaEntrega;
-  FECHA_FACT: FechaFact;
+  FECHA_ENTREGA: string;
+  FECHA_FACT: string;
   FECHA_TIME_STAMP: string;
   Factura: Factura[];
   LAT: string;
@@ -157,7 +152,7 @@ export interface GuiaDespacho {
   OBSERVACION: string;
   OBSERVACIONDIRECCION: string;
   ORDEN: null;
-  ORIGEN: Origen;
+  ORIGEN: string;
   PAGINAS: number;
   PESO: number;
   SuperFactura: SuperFactura[];
@@ -166,20 +161,6 @@ export interface GuiaDespacho {
   UBICACION: string;
   USUARIO_ID: number;
   VERSION: number;
-}
-
-export enum Campo27 {
-  No = 'NO',
-  Si = 'SI',
-}
-
-export enum FechaEntrega {
-  Date17252496000000400 = '/Date(1725249600000-0400)/',
-  Date17253360000000400 = '/Date(1725336000000-0400)/',
-}
-
-export enum FechaFact {
-  Date621355860000000300 = '/Date(-62135586000000-0300)/',
 }
 
 export interface Factura {
@@ -214,7 +195,7 @@ export interface Factura {
   ESTADO_DOCUMENTO_ID: number;
   ESTA_FACTURADO: boolean;
   FECHA_ENTREGA: null;
-  FECHA_FACT: FechaFact;
+  FECHA_FACT: string;
   FECHA_TIME_STAMP: string;
   LAT: string;
   LONG: string;
@@ -224,7 +205,7 @@ export interface Factura {
   OBSERVACION: string;
   OBSERVACIONDIRECCION: string;
   ORDEN: null;
-  ORIGEN: Origen;
+  ORIGEN: string;
   PAGINAS: number;
   PESO: number;
   SuperFactura: SuperFactura[];
@@ -235,9 +216,6 @@ export interface Factura {
   VERSION: number;
 }
 
-export enum Origen {
-  Superfactura = 'SUPERFACTURA',
-}
 
 export interface SuperFactura {
   OBJECT_ID: number;

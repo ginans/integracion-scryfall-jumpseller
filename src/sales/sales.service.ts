@@ -9,7 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Sale, SaleDocument } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
 import { Model } from 'mongoose';
-import { GetReporteVentasResult } from '../agilizar/interface/SellResponse.interface';
+import { IReportSell } from '../agilizar/interface/sell-response.interface';
 import { ClientsService } from '../clients/clients.service';
 import { ClientInterface } from '../clients/interface/client.interface';
 import { ProductsService } from '../products/products.service';
@@ -318,10 +318,10 @@ export class SalesService {
     );
   }
 
-  private async distributeSales(sale: GetReporteVentasResult) {
+  private async distributeSales(sale: IReportSell) {
     const saleExists = await this.findOneByOrderId(sale.OBJECT_ID);
     if (saleExists) return;
-    const client = await this.client.findClientByUuid(sale.cliente_id);
+    // const client = await this.client.findClientByUuid(sale.cliente_id);
     // if (!client && sale.Cliente && sale.Cliente.length > 0) {
     //   const clientData = sale.Cliente[0];
     //   const newClient: ClientInterface = {

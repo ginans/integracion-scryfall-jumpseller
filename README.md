@@ -57,7 +57,7 @@ $ cp .env.example .env
 
 # Add the following configurations to the .env file
 
-# Create services with the docker-compose.yml file
+# Create services with the compose.yaml file
 $ docker-compose up -d
 ```
 

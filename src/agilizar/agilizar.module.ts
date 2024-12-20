@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AgilizarService } from './agilizar.service';
-import { AgilizarController } from './agilizar.controller';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Agilizar, AgilizarSchema } from './entities/agilizar.entity';
 import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
-  controllers: [AgilizarController],
+  controllers: [],
   imports: [
     MongooseModule.forFeature([
       { name: Agilizar.name, schema: AgilizarSchema },

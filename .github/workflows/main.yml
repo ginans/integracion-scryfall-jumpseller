@@ -10,12 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: 📂 Sync files
-        with:
-          server: ${{ secrets.SERVER_HOST }}
-          username: ftp_user
-          password: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          rsync -avz --delete -e "ssh -p 22022" ./ ftp_user@${{ secrets.SERVER_HOST }}:/var/www/fullerton/
+        env:
+          RSYNC_PASSWORD: ${{ secrets.FTP_PASSWORD }}
 
       - name: 🐋 Execute Docker commands
         uses: appleboy/ssh-action@v1.0.0

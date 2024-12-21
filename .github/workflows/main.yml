@@ -10,11 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: 📂 Sync files
-        run: |
-          rsync -avz --delete -e "ssh -p 22022" ./ ftp_user@152.230.104.5:/var/www/fullerton/
-        env:
-          RSYNC_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.1
+        with:
+          username: root
+          server: 152.230.104.64
+          port: 22022
+          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          local_path: ./*
+          remote_path: /var/www/fullerton/
+          args: '-o ConnectTimeout=5'
 
       - name: 🐋 Execute Docker commands
         uses: appleboy/ssh-action@v1.0.0

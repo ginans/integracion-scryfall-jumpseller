@@ -15,7 +15,7 @@ jobs:
         uses: wlixcc/SFTP-Deploy-Action@v1.2.1
         with:
           username: root
-          server: 152.230.104.64
+          server: fixlabs.work
           port: 22022
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
 

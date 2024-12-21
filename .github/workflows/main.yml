@@ -18,7 +18,7 @@ jobs:
           remote_path: /var/www/fullerton/
           remote_host: ${{ secrets.SERVER_HOST }}
           remote_user: ${{ secrets.SERVER_USER }}
-          remote-password: ${{ secrets.SSH_PRIVATE_KEY }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
           remote_port: 22022
 
       - name: 🐋 Execute Docker commands

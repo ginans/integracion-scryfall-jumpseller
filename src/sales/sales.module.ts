@@ -7,11 +7,13 @@ import { Sale, SaleSchema } from './entities/sale.entity';
 import { ClientsModule } from '../clients/clients.module';
 import { ProductsModule } from '../products/products.module';
 import { DefontanaModule } from '../defontana/defontana.module';
+import { JobsModule } from '../jobs/jobs.module';
 
 @Module({
   controllers: [SalesController],
   providers: [SalesService],
   imports: [
+    JobsModule,
     AgilizarModule,
     DefontanaModule,
     ClientsModule,

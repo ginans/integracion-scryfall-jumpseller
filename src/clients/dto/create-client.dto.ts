@@ -1,18 +1,14 @@
-import { Prop } from '@nestjs/mongoose';
+import { ClientInterface } from '../interface/client.interface';
 
-export class CreateClientDto {
-  lastname: string;
-  uuid: number;
-  contact: string;
-  web: string;
-  email: string;
-  status: boolean;
-  checkInDate: string;
-  phoneNumber: string;
-  houseNumber: string;
-  giro: number;
+export class CreateClientDto implements ClientInterface {
+  legalCode: string;
+  fileid: string;
   name: string;
-  obs: string;
-  rut: string;
-  clientType: number;
+  address: string;
+  district: string;
+  email: string;
+  business: string;
+  rubroId: string;
+  giro: string;
+  city: string;
 }

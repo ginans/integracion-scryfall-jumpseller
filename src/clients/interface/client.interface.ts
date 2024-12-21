@@ -1,16 +1,12 @@
 export interface ClientInterface {
-  lastname: string;
-  uuid: number;
-  contact: string;
-  web: string;
-  email: string;
-  status: boolean;
-  checkInDate: string;
-  phoneNumber: string;
-  houseNumber: string;
-  giro: number;
+  legalCode: string;
+  fileid: string;
   name: string;
-  obs: string;
-  rut: string;
-  clientType: number;
+  address: string;
+  district: string;
+  email: string;
+  business: string;
+  rubroId: string;
+  giro: string;
+  city: string;
 }

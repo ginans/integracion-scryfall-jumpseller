@@ -2,13 +2,14 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sale, SaleDocument } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
 import { Model } from 'mongoose';
-import { GetReporteVentasResult } from '../agilizar/interface/SellResponse.interface';
+import { IReportSell } from '../agilizar/interface/sell-response.interface';
 import { ClientsService } from '../clients/clients.service';
 import { ClientInterface } from '../clients/interface/client.interface';
 import { ProductsService } from '../products/products.service';
@@ -16,8 +17,9 @@ import { ProductInterface } from '../products/interface/product.interface';
 import { formatDate } from '../common/formatDate';
 import { DefontanaService } from '../defontana/defontana.service';
 import { SaleState } from './interfaces/sale-state.interface';
-import { ClientDto } from './dto/client.dto';
 import { ProductDto } from './dto/product.dto';
+import { JobsService } from 'src/jobs/jobs.service';
+import { TicketDto } from './dto/ticket.dto';
 
 @Injectable()
 export class SalesService {
@@ -27,6 +29,7 @@ export class SalesService {
   constructor(
     @InjectModel(Sale.name)
     private readonly model: Model<SaleDocument>,
+    private readonly jobs: JobsService,
     private readonly agilizar: AgilizarService,
     private readonly defontana: DefontanaService,
     private readonly client: ClientsService,
@@ -62,7 +65,7 @@ export class SalesService {
       nr_document: sale.numero_documento,
       total: sale.total,
       state: sale.state,
-      defontana_id: sale.defontana_id ?? '----',
+      defontana_id: sale.defontana_id ?? 0,
       error: sale.error ?? '',
     };
   }
@@ -104,21 +107,128 @@ export class SalesService {
       throw new BadRequestException('Venta ya procesada');
     return sale;
   }
+
+  async generateSale(id: number) {
+    const sale: Sale = await this.validateData(id);
+    try {
+      //await this.jobs.addJob(id);
+      await this.updateSaleState(id, SaleState.PROCESANDO);
+      await this.processData(sale);
+      await this.updateSaleState(id, SaleState.CREADO);
+      return {
+        message: 'Venta generada',
+      };
+    } catch (error) {
+      await this.model.updateOne(
+        { OBJECT_ID: sale.OBJECT_ID },
+        {
+          $set: {
+            error: error.message,
+          },
+        },
+      );
+      await this.updateSaleState(id, SaleState.FALLIDO);
+      throw new BadRequestException('Error al procesar la venta');
+    }
+  }
+
+  async processSale(data: TicketDto) {
+    try {
+      //Pasos:
+      //1. Validar que la venta no haya sido procesada con algun identificador unico
+      const sale = await this.findOneByOrderId(data.Encabezado.IdDoc.TipoDTE);
+      if (!sale) throw new BadRequestException('Venta ya procesada');
+      //2. Validar que no exista un job en cola de esta venta
+      //3. Crear un job en cola con el id de la venta
+      //4. Evaluar si el cliente existe en la BD de clientes
+      const client = await this.client.findClientByRut(
+        data.Encabezado.Emisor.RUTEmisor,
+      );
+      //5. Si no existe, crearlo
+      if (!client) {
+        const clientData: ClientInterface = {
+          legalCode: data.Encabezado.Emisor.RUTEmisor,
+          fileid: '',
+          name: '',
+          address: '',
+          district: '',
+          email: '',
+          business: '',
+          rubroId: '',
+          giro: '',
+          city: '',
+        };
+        //TODO: Crear un cliente en DeFontana
+        await this.defontana.createClient(clientData);
+        //6. Si no puede crearse, retornar un error
+        //TODO: Crear un registro en la BD de clientes
+        await this.client.createClient(clientData);
+      }
+      //7. Crear un Pedido en DeFontana
+      //8. Rescatar NR de pedido de DeFontana
+      //9. Crear un documento PDF con la información de la venta y NR de pedido
+      //10. Retornar la URL del PDF y el NR de pedido(Folio)
+      //11. Crear un registro en la BD de la venta con el NR de pedido
+      //12. Gestionar Métodos de Pago en DeFontana
+      //13 Registro completo
+      return {
+        ok: '1',
+        folio: 10000026,
+        pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+      };
+    } catch (error) {
+      const response = {
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: error.message,
+      };
+      throw new NotAcceptableException(response);
+    }
+  }
+
+  async processSales() {
+    const sales = await this.model
+      .find({ state: { $nin: [SaleState.FALLIDO, SaleState.PAGADO] } })
+      .exec();
+    for (const sale of sales) {
+      try {
+        await this.updateSaleState(sale.OBJECT_ID, SaleState.PROCESANDO);
+        await this.processData(sale);
+        await this.updateSaleState(sale.OBJECT_ID, SaleState.CREADO);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } catch (error) {
+        await this.model.updateOne(
+          { OBJECT_ID: sale.OBJECT_ID },
+          {
+            $set: {
+              error: error.message,
+            },
+          },
+        );
+        await this.updateSaleState(sale.OBJECT_ID, SaleState.FALLIDO);
+      }
+    }
+    return {
+      message: 'Ventas procesadas',
+    };
+  }
+
   private async processData(sale: Sale): Promise<void> {
     const client = sale.Cliente?.[0];
-    const clientDto: ClientDto = {
-      legalCode: client.rut,
-      fileid: `${client.cliente_id}`,
-      name: `${client.nombre} ${client.apellido}`,
-      address: client.direccion_web ?? '',
-      district: '',
-      email: client.email,
-      business: '',
-      rubroId: '',
-      giro: `${client.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
-      city: '',
-    };
-    await this.defontana.createClient(clientDto);
+    // const clientDto: ClientDto = {
+    //   legalCode: client.rut,
+    //   fileid: `${client.cliente_id}`,
+    //   name: `${client.nombre} ${client.apellido}`,
+    //   address: client.direccion_web ?? '',
+    //   district: '',
+    //   email: client.email,
+    //   business: '',
+    //   rubroId: '',
+    //   giro: `${client.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
+    //   city: '',
+    // };
+    // await this.defontana.createClient(clientDto);
     //TODO: Guardar en la BD de clientes
     const details: ProductDto[] = sale.DetalleVenta.map((product) => ({
       type: 'A',
@@ -157,7 +267,7 @@ export class SalesService {
       paymentCondition: 'CONTADO',
       sellerFileId: 'VENDEDOR',
       clientAnalysis: {
-        accountNumber: this.accountNumber,
+        accountNumber: '1110401001',
         businessCenter: this.businessCenter,
         classifier01: '',
         classifier02: '',
@@ -207,30 +317,26 @@ export class SalesService {
       { $set: { defontana_id: defontanaResponse.firstFolio } },
     );
   }
-  private async distributeSales(sale: GetReporteVentasResult) {
+
+  private async distributeSales(sale: IReportSell) {
     const saleExists = await this.findOneByOrderId(sale.OBJECT_ID);
     if (saleExists) return;
-    const client = await this.client.findClientByUuid(sale.cliente_id);
-    if (!client && sale.Cliente && sale.Cliente.length > 0) {
-      const clientData = sale.Cliente[0];
-      const newClient: ClientInterface = {
-        checkInDate: clientData.fecha_ingreso,
-        clientType: clientData.tipo_cliente_id,
-        contact: clientData.contacto,
-        email: clientData.email,
-        giro: clientData.giro_id,
-        houseNumber: clientData.fono_casa,
-        lastname: clientData.apellido,
-        name: clientData.nombre,
-        obs: clientData.observaciones,
-        phoneNumber: clientData.fono_celular,
-        rut: clientData.rut,
-        status: clientData.esta_activo,
-        uuid: clientData.cliente_id,
-        web: clientData.direccion_web,
-      };
-      await this.client.createClient(newClient);
-    }
+    // const client = await this.client.findClientByUuid(sale.cliente_id);
+    // if (!client && sale.Cliente && sale.Cliente.length > 0) {
+    //   const clientData = sale.Cliente[0];
+    //   const newClient: ClientInterface = {
+    //     email: clientData.email,
+    //     giro: `${clientData.giro_id}`,
+    //     name: clientData.nombre,
+    //     legalCode: clientData.rut,
+    //     address: clientData.direccion_web,
+    //     district: clientData.comuna_id,
+    //     business: clientData.razon_social,
+    //     rubroId: clientData.rubro_id,
+    //     city: clientData.ciudad_id,
+    //   };
+    //   await this.client.createClient(newClient);
+    // }
     if (sale.DetalleVenta.length === 0) return;
     for (const product of sale.DetalleVenta) {
       const productExists = await this.product.findProductByUuid(
@@ -264,27 +370,5 @@ export class SalesService {
       }
     }
     await this.model.create({ ...sale, state: 'Registro' });
-  }
-  async generateSale(id: number) {
-    const sale: Sale = await this.validateData(id);
-    try {
-      await this.updateSaleState(id, SaleState.PROCESANDO);
-      await this.processData(sale);
-      await this.updateSaleState(id, SaleState.CREADO);
-      return {
-        message: 'Venta generada',
-      };
-    } catch (error) {
-      await this.model.updateOne(
-        { OBJECT_ID: sale.OBJECT_ID },
-        {
-          $set: {
-            error: error.message,
-          },
-        },
-      );
-      await this.updateSaleState(id, SaleState.FALLIDO);
-      throw new BadRequestException('Error al procesar la venta');
-    }
   }
 }

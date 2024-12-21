@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { SalesService } from './sales.service';
+import { TicketDto } from './dto/ticket.dto';
 
 @Controller('sales')
 export class SalesController {
@@ -11,6 +12,16 @@ export class SalesController {
   @Get('check')
   checkSales() {
     return this.salesService.checkNewSales();
+  }
+
+  @Post('boleta')
+  processSale(@Body() body: TicketDto) {
+    return this.salesService.processSale(body);
+  }
+
+  @Get('process')
+  processSales() {
+    return this.salesService.processSales();
   }
   @Get('test')
   test(@Body() body: { to: string; from: string }) {

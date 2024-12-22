@@ -1,14 +1,14 @@
 services:
   app:
     build:
-      context: ../../
-      dockerfile: docker/production/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: "nestjs-app-${DB_NAME}"
     restart: always
     ports:
       - "${PORT}:8000"
     env_file:
-      - .env.production
+      - .env
     environment:
       - PORT=${PORT}
       - DB_NAME=${DB_NAME}
@@ -26,8 +26,6 @@ services:
     restart: always
     ports:
       - "${CACHE_PORT}:6379"
-    env_file:
-      - .env.production
     environment:
       - NODE_ENV=production
       - CACHE_PORT=${CACHE_PORT}

@@ -19,7 +19,7 @@ services:
     networks:
       - app-network
     volumes:
-      - ./logs:/usr/src/app/logs
+      - ./logs:/app/logs
   redis:
     container_name: "redis-${DB_NAME}"
     image: redis:7

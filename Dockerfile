@@ -1,4 +1,4 @@
-# Establish base image
+# Establecer base image
 FROM node:22-alpine AS base
 
 # Dependencies stage
@@ -6,10 +6,10 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
-# Copy package files
+# Copiar archivos del package
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
+# Instalar dependencias
 RUN npm install -g pnpm @nestjs/cli && \
     pnpm install
 
@@ -17,44 +17,47 @@ RUN npm install -g pnpm @nestjs/cli && \
 FROM base AS builder
 WORKDIR /app
 
-# Copy dependencies and source code
+# Copiar dependencias y código fuente
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the application
+# Construir la aplicación
 RUN npx @nestjs/cli build
 
-# Runner stage (production)
+# Runner stage (producción)
 FROM base AS runner
 WORKDIR /app
 
-# Install PM2 and production dependencies
+# Instalar PM2 y dependencias de producción
 RUN apk add --no-cache npm && \
     npm install -g pm2 pnpm && \
     npm cache clean --force
 
-# Create a non-root user
+# Crear un usuario no-root
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nestjs -u 1001
 
-# Copy production files
+# Crear directorio de logs y asignar permisos
+RUN mkdir -p /app/logs && chown -R nestjs:nestjs /app/logs
+
+# Copiar archivos de producción
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/ecosystem.config.js ./
 
-# Install production dependencies only
+# Instalar dependencias de producción
 RUN pnpm install --prod
 
-# Set user
+# Establecer el usuario
 USER nestjs
 
-# Configure environment
+# Configurar el entorno
 ARG PORT=8000
 ENV PORT=$PORT \
     NODE_ENV=production
 
 EXPOSE $PORT
 
-# Start the application
+# Iniciar la aplicación
 CMD ["pm2-runtime", "start", "ecosystem.config.js", "--env", "production"]

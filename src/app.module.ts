@@ -22,6 +22,8 @@ import { JobsModule } from './jobs/jobs.module';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { RequestLoggerInterceptor } from './common/logger/request-logger.interceptor';
 
 @Module({
   imports: [
@@ -66,6 +68,14 @@ import { ExpressAdapter } from '@bull-board/express';
     JobsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, JwtService, JobsService],
+  providers: [
+    AppService,
+    JwtService,
+    JobsService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggerInterceptor,
+    },
+  ],
 })
 export class AppModule {}

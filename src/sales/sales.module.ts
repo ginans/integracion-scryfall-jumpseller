@@ -8,11 +8,13 @@ import { ClientsModule } from '../clients/clients.module';
 import { ProductsModule } from '../products/products.module';
 import { DefontanaModule } from '../defontana/defontana.module';
 import { JobsModule } from '../jobs/jobs.module';
+import { PaginationModule } from '../common/modules/pagination.module';
 
 @Module({
   controllers: [SalesController],
   providers: [SalesService],
   imports: [
+    PaginationModule,
     JobsModule,
     AgilizarModule,
     DefontanaModule,

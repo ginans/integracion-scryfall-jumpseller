@@ -20,6 +20,9 @@ import { SaleState } from './interfaces/sale-state.interface';
 import { ProductDto } from './dto/product.dto';
 import { JobsService } from 'src/jobs/jobs.service';
 import { TicketDto } from './dto/ticket.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { PaginatedResult } from '../common/interface/paginated-result.interface';
+import { PaginationService } from '../common/services/pagination.service';
 
 @Injectable()
 export class SalesService {
@@ -34,24 +37,33 @@ export class SalesService {
     private readonly defontana: DefontanaService,
     private readonly client: ClientsService,
     private readonly product: ProductsService,
+    private readonly paginationService: PaginationService,
   ) {}
-  async checkNewSales() {
-    const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
-      '2024-09-01',
-      '2024-11-10',
+
+  // async checkNewSales() {
+  //   const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
+  //     '2024-09-01',
+  //     '2024-11-10',
+  //   );
+  //   for (const sale of data) {
+  //     const saleExists = await this.model.exists({ OBJECT_ID: sale.OBJECT_ID });
+  //     if (!saleExists) await this.model.create(sale);
+  //   }
+  //   return {
+  //     message: 'Sales checked',
+  //   };
+  // }
+  async findAllSales(
+    query: PaginationQueryDto,
+  ): Promise<PaginatedResult<Sale>> {
+    return this.paginationService.paginate<Sale>(
+      this.model,
+      query,
+      {}, //Filtros adicionales
+      [], //Populate
     );
-    for (const sale of data) {
-      const saleExists = await this.model.exists({ OBJECT_ID: sale.OBJECT_ID });
-      if (!saleExists) await this.model.create(sale);
-    }
-    return {
-      message: 'Sales checked',
-    };
   }
-  async findAll() {
-    const sales = await this.model.find().exec();
-    return sales.map(this.mapSale);
-  }
+
   private mapSale(sale: SaleDocument) {
     return {
       uuid: sale._id,
@@ -69,11 +81,12 @@ export class SalesService {
       error: sale.error ?? '',
     };
   }
-  async findOne(id: string) {
-    const sale = await this.model.findById(id).exec();
-    if (!sale) throw new NotFoundException('Sale not found');
-    return sale;
-  }
+
+  // async findOne(id: string) {
+  //   const sale = await this.model.findById(id).exec();
+  //   if (!sale) throw new NotFoundException('Sale not found');
+  //   return sale;
+  // }
   async findOneByOrderId(id: number): Promise<Sale | null> {
     return this.model.findOne({ OBJECT_ID: id }).exec();
   }

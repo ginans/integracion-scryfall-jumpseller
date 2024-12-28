@@ -14,11 +14,11 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  SwaggerModule.setup('docs', app, documentFactory);
   const logger = new Logger('NestBootstrap');
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('backend');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   const configService = app.get(ConfigService);
   const port: number = configService.get<number>('port');

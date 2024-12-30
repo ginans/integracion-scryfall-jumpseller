@@ -3,7 +3,6 @@ import {
   Injectable,
   Logger,
   NotAcceptableException,
-  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sale, SaleDocument } from './entities/sale.entity';
@@ -17,11 +16,9 @@ import { ProductInterface } from '../products/interface/product.interface';
 import { formatDate } from '../common/formatDate';
 import { DefontanaService } from '../defontana/defontana.service';
 import { SaleState } from './interfaces/sale-state.interface';
-import { ProductDto } from './dto/product.dto';
 import { JobsService } from 'src/jobs/jobs.service';
 import { TicketDto } from './dto/ticket.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { PaginatedResult } from '../common/interface/paginated-result.interface';
 import { PaginationService } from '../common/services/pagination.service';
 
 @Injectable()
@@ -53,34 +50,29 @@ export class SalesService {
   //     message: 'Sales checked',
   //   };
   // }
-  async findAllSales(
-    query: PaginationQueryDto,
-  ): Promise<PaginatedResult<Sale>> {
-    return this.paginationService.paginate<Sale>(
-      this.model,
-      query,
-      {}, //Filtros adicionales
-      [], //Populate
-    );
+  async findAllSales(query: PaginationQueryDto) {
+    return await this.paginationService.paginate<Sale>(this.model, query, [
+      'numero_documento',
+    ]);
   }
 
-  private mapSale(sale: SaleDocument) {
-    return {
-      uuid: sale._id,
-      order_id: sale.OBJECT_ID,
-      client_name: sale?.Cliente?.[0]?.nombre ?? 'N/A',
-      sucursal_name: sale?.Sucursal?.[0]?.nombre ?? 'N/A',
-      user_name: sale?.Usuario?.[0]?.nombre ?? 'N/A',
-      checkin_date: sale.fecha_ingreso,
-      iva: sale.iva,
-      neto: sale.neto,
-      nr_document: sale.numero_documento,
-      total: sale.total,
-      state: sale.state,
-      defontana_id: sale.defontana_id ?? 0,
-      error: sale.error ?? '',
-    };
-  }
+  // private mapSale(sale: SaleDocument) {
+  //   return {
+  //     uuid: sale._id,
+  //     order_id: sale.OBJECT_ID,
+  //     client_name: sale?.Cliente?.[0]?.nombre ?? 'N/A',
+  //     sucursal_name: sale?.Sucursal?.[0]?.nombre ?? 'N/A',
+  //     user_name: sale?.Usuario?.[0]?.nombre ?? 'N/A',
+  //     checkin_date: sale.fecha_ingreso,
+  //     iva: sale.iva,
+  //     neto: sale.neto,
+  //     nr_document: sale.numero_documento,
+  //     total: sale.total,
+  //     state: sale.state,
+  //     defontana_id: sale.defontana_id ?? 0,
+  //     error: sale.error ?? '',
+  //   };
+  // }
 
   // async findOne(id: string) {
   //   const sale = await this.model.findById(id).exec();
@@ -110,40 +102,40 @@ export class SalesService {
   private async updateSaleState(id: number, state: SaleState) {
     await this.model.updateOne({ OBJECT_ID: id }, { $set: { state } });
   }
-  private async validateData(id: number): Promise<Sale> {
-    const sale: Sale = await this.findOneByOrderId(id);
-    if (!sale) throw new NotFoundException('Sale not found');
-    if (!sale.cliente_id) throw new BadRequestException('Cliente no asociado');
-    if (!sale.DetalleVenta || sale.DetalleVenta.length === 0)
-      throw new BadRequestException('No hay productos asociados a la venta');
-    if (sale.defontana_id || sale.state !== SaleState.PENDIENTE)
-      throw new BadRequestException('Venta ya procesada');
-    return sale;
-  }
+  // private async validateData(id: number): Promise<Sale> {
+  //   const sale: Sale = await this.findOneByOrderId(id);
+  //   if (!sale) throw new NotFoundException('Sale not found');
+  //   if (!sale.cliente_id) throw new BadRequestException('Cliente no asociado');
+  //   if (!sale.DetalleVenta || sale.DetalleVenta.length === 0)
+  //     throw new BadRequestException('No hay productos asociados a la venta');
+  //   if (sale.defontana_id || sale.state !== SaleState.PENDIENTE)
+  //     throw new BadRequestException('Venta ya procesada');
+  //   return sale;
+  // }
 
-  async generateSale(id: number) {
-    const sale: Sale = await this.validateData(id);
-    try {
-      //await this.jobs.addJob(id);
-      await this.updateSaleState(id, SaleState.PROCESANDO);
-      await this.processData(sale);
-      await this.updateSaleState(id, SaleState.CREADO);
-      return {
-        message: 'Venta generada',
-      };
-    } catch (error) {
-      await this.model.updateOne(
-        { OBJECT_ID: sale.OBJECT_ID },
-        {
-          $set: {
-            error: error.message,
-          },
-        },
-      );
-      await this.updateSaleState(id, SaleState.FALLIDO);
-      throw new BadRequestException('Error al procesar la venta');
-    }
-  }
+  // async generateSale(id: number) {
+  //   const sale: Sale = await this.validateData(id);
+  //   try {
+  //     //await this.jobs.addJob(id);
+  //     await this.updateSaleState(id, SaleState.PROCESANDO);
+  //     await this.processData(sale);
+  //     await this.updateSaleState(id, SaleState.CREADO);
+  //     return {
+  //       message: 'Venta generada',
+  //     };
+  //   } catch (error) {
+  //     await this.model.updateOne(
+  //       { OBJECT_ID: sale.OBJECT_ID },
+  //       {
+  //         $set: {
+  //           error: error.message,
+  //         },
+  //       },
+  //     );
+  //     await this.updateSaleState(id, SaleState.FALLIDO);
+  //     throw new BadRequestException('Error al procesar la venta');
+  //   }
+  // }
 
   async processSale(data: TicketDto) {
     try {
@@ -200,136 +192,135 @@ export class SalesService {
     }
   }
 
-  async processSales() {
-    const sales = await this.model
-      .find({ state: { $nin: [SaleState.FALLIDO, SaleState.PAGADO] } })
-      .exec();
-    for (const sale of sales) {
-      try {
-        await this.updateSaleState(sale.OBJECT_ID, SaleState.PROCESANDO);
-        await this.processData(sale);
-        await this.updateSaleState(sale.OBJECT_ID, SaleState.CREADO);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      } catch (error) {
-        await this.model.updateOne(
-          { OBJECT_ID: sale.OBJECT_ID },
-          {
-            $set: {
-              error: error.message,
-            },
-          },
-        );
-        await this.updateSaleState(sale.OBJECT_ID, SaleState.FALLIDO);
-      }
-    }
-    return {
-      message: 'Ventas procesadas',
-    };
-  }
+  // async processSales() {
+  //   const sales = await this.model
+  //     .find({ state: { $nin: [SaleState.FALLIDO, SaleState.PAGADO] } })
+  //     .exec();
+  //   for (const sale of sales) {
+  //     try {
+  //       await this.updateSaleState(sale.OBJECT_ID, SaleState.PROCESANDO);
+  //       await this.processData(sale);
+  //       await this.updateSaleState(sale.OBJECT_ID, SaleState.CREADO);
+  //       await new Promise((resolve) => setTimeout(resolve, 1000));
+  //     } catch (error) {
+  //       await this.model.updateOne(
+  //         { OBJECT_ID: sale.OBJECT_ID },
+  //         {
+  //           $set: {
+  //             error: error.message,
+  //           },
+  //         },
+  //       );
+  //       await this.updateSaleState(sale.OBJECT_ID, SaleState.FALLIDO);
+  //     }
+  //   }
+  //   return {
+  //     message: 'Ventas procesadas',
+  //   };
+  // }
 
-  private async processData(sale: Sale): Promise<void> {
-    const client = sale.Cliente?.[0];
-    // const clientDto: ClientDto = {
-    //   legalCode: client.rut,
-    //   fileid: `${client.cliente_id}`,
-    //   name: `${client.nombre} ${client.apellido}`,
-    //   address: client.direccion_web ?? '',
-    //   district: '',
-    //   email: client.email,
-    //   business: '',
-    //   rubroId: '',
-    //   giro: `${client.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
-    //   city: '',
-    // };
-    // await this.defontana.createClient(clientDto);
-    //TODO: Guardar en la BD de clientes
-    const details: ProductDto[] = sale.DetalleVenta.map((product) => ({
-      type: 'A',
-      isExempt: false,
-      code: product.Producto[0].sku,
-      count: product.cantidad,
-      productName: product.Producto[0].nombre,
-      productNameBarCode: product.Producto[0].codigo_barra,
-      price: `${product.precio_unitario}`,
-      discount: { type: 0, value: '-0' },
-      unit: 'UN',
-      analysis: {
-        accountNumber: this.accountNumber,
-        businessCenter: this.businessCenter,
-        classifier01: '',
-        classifier02: '',
-      },
-      useBatch: false,
-      batchInfo: [
-        //{ amount: product.cantidad, batchNumber: `${product.Producto[0].sku}` },
-      ],
-    }));
-    const body = {
-      documentType: 'BOLETAELECRS',
-      firstFolio: 0,
-      lastFolio: 0,
-      externalDocumentID: `${sale.numero_documento}`,
-      emissionDate: { day: '04', month: '12', year: '2024' },
-      firstFeePaid: { day: '04', month: '12', year: '2024' },
-      clientFile: `${sale.Cliente?.[0]?.cliente_id}`,
-      contactIndex: client.direccion_web
-        ? client.direccion_web
-        : sale.clienteDireccion?.[0]?.direccion
-          ? sale.clienteDireccion?.[0]?.direccion
-          : 'DIRECCION GENERICA',
-      paymentCondition: 'CONTADO',
-      sellerFileId: 'VENDEDOR',
-      clientAnalysis: {
-        accountNumber: '1110401001',
-        businessCenter: this.businessCenter,
-        classifier01: '',
-        classifier02: '',
-      },
-      billingCoin: 'PESO',
-      billingRate: 1,
-      shopId: 'Local',
-      priceList: '1',
-      giro: `${sale.Cliente?.[0]?.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
-      district: 'Generico',
-      city: 'Generico',
-      contact: -1,
-      attachedDocuments: [],
-      storage: {
-        code: 'BODEGACENTRAL',
-        motive: 'Venta de productos',
-        storageAnalysis: {
-          accountNumber: '',
-          businessCenter: this.businessCenter,
-          classifier01: 'classifier01',
-          classifier02: 'classifier02',
-        },
-      },
-      details: details,
-      saleTaxes: [
-        {
-          code: 'IVA',
-          value: 19,
-          taxeAnalysis: {
-            accountNumber: '2120301001',
-            businessCenter: this.businessCenter,
-            classifier01: '',
-            classifier02: '',
-          },
-        },
-      ],
-      ventaRecDesGlobal: [],
-      gloss: '',
-      customFields: [],
-      isTransferDocument: false,
-    };
-    const defontanaResponse = await this.defontana.postSale(body);
-    if (!defontanaResponse.success)
-      throw new BadRequestException(defontanaResponse.message);
-    await this.model.updateOne(
-      { OBJECT_ID: sale.OBJECT_ID },
-      { $set: { defontana_id: defontanaResponse.firstFolio } },
-    );
-  }
+  // private async processData(sale: Sale): Promise<void> {
+  //   const client = sale.Cliente?.[0];
+  // const clientDto: ClientDto = {
+  //   legalCode: client.rut,
+  //   fileid: `${client.cliente_id}`,
+  //   name: `${client.nombre} ${client.apellido}`,
+  //   address: client.direccion_web ?? '',
+  //   district: '',
+  //   email: client.email,
+  //   business: '',
+  //   rubroId: '',
+  //   giro: `${client.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
+  //   city: '',
+  // };
+  // await this.defontana.createClient(clientDto);
+  //   const details: ProductDto[] = sale.DetalleVenta.map((product) => ({
+  //     type: 'A',
+  //     isExempt: false,
+  //     code: product.Producto[0].sku,
+  //     count: product.cantidad,
+  //     productName: product.Producto[0].nombre,
+  //     productNameBarCode: product.Producto[0].codigo_barra,
+  //     price: `${product.precio_unitario}`,
+  //     discount: { type: 0, value: '-0' },
+  //     unit: 'UN',
+  //     analysis: {
+  //       accountNumber: this.accountNumber,
+  //       businessCenter: this.businessCenter,
+  //       classifier01: '',
+  //       classifier02: '',
+  //     },
+  //     useBatch: false,
+  //     batchInfo: [
+  //       //{ amount: product.cantidad, batchNumber: `${product.Producto[0].sku}` },
+  //     ],
+  //   }));
+  //   const body = {
+  //     documentType: 'BOLETAELECRS',
+  //     firstFolio: 0,
+  //     lastFolio: 0,
+  //     externalDocumentID: `${sale.numero_documento}`,
+  //     emissionDate: { day: '04', month: '12', year: '2024' },
+  //     firstFeePaid: { day: '04', month: '12', year: '2024' },
+  //     clientFile: `${sale.Cliente?.[0]?.cliente_id}`,
+  //     contactIndex: client.direccion_web
+  //       ? client.direccion_web
+  //       : sale.clienteDireccion?.[0]?.direccion
+  //         ? sale.clienteDireccion?.[0]?.direccion
+  //         : 'DIRECCION GENERICA',
+  //     paymentCondition: 'CONTADO',
+  //     sellerFileId: 'VENDEDOR',
+  //     clientAnalysis: {
+  //       accountNumber: '1110401001',
+  //       businessCenter: this.businessCenter,
+  //       classifier01: '',
+  //       classifier02: '',
+  //     },
+  //     billingCoin: 'PESO',
+  //     billingRate: 1,
+  //     shopId: 'Local',
+  //     priceList: '1',
+  //     giro: `${sale.Cliente?.[0]?.GirosComerciales?.[0]?.nombre ?? 'GIRO GENERICO'}`,
+  //     district: 'Generico',
+  //     city: 'Generico',
+  //     contact: -1,
+  //     attachedDocuments: [],
+  //     storage: {
+  //       code: 'BODEGACENTRAL',
+  //       motive: 'Venta de productos',
+  //       storageAnalysis: {
+  //         accountNumber: '',
+  //         businessCenter: this.businessCenter,
+  //         classifier01: 'classifier01',
+  //         classifier02: 'classifier02',
+  //       },
+  //     },
+  //     details: details,
+  //     saleTaxes: [
+  //       {
+  //         code: 'IVA',
+  //         value: 19,
+  //         taxeAnalysis: {
+  //           accountNumber: '2120301001',
+  //           businessCenter: this.businessCenter,
+  //           classifier01: '',
+  //           classifier02: '',
+  //         },
+  //       },
+  //     ],
+  //     ventaRecDesGlobal: [],
+  //     gloss: '',
+  //     customFields: [],
+  //     isTransferDocument: false,
+  //   };
+  //   const defontanaResponse = await this.defontana.postSale(body);
+  //   if (!defontanaResponse.success)
+  //     throw new BadRequestException(defontanaResponse.message);
+  //   await this.model.updateOne(
+  //     { OBJECT_ID: sale.OBJECT_ID },
+  //     { $set: { defontana_id: defontanaResponse.firstFolio } },
+  //   );
+  // }
 
   private async distributeSales(sale: IReportSell) {
     const saleExists = await this.findOneByOrderId(sale.OBJECT_ID);

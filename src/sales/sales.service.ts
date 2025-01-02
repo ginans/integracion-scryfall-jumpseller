@@ -20,6 +20,11 @@ import { JobsService } from 'src/jobs/jobs.service';
 import { TicketDto } from './dto/ticket.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PaginationService } from '../common/services/pagination.service';
+import { SortOrder } from '../common/dto/pagination-query.dto';
+import {
+  OrderDetailInterface,
+  OrderRequestInterface,
+} from '../defontana/interfaces/defontana-request.interface';
 
 @Injectable()
 export class SalesService {
@@ -51,11 +56,142 @@ export class SalesService {
   //   };
   // }
   async findAllSales(query: PaginationQueryDto) {
-    return await this.paginationService.paginate<Sale>(this.model, query, [
-      'numero_documento',
-    ]);
+    const allowedSortFields = [
+      'order_id',
+      'client_rut',
+      'seller',
+      'defontana_id',
+    ];
+    if (query.sortBy && !allowedSortFields.includes(query.sortBy))
+      throw new BadRequestException(
+        `Campos de ordenamiento permitidos: ${allowedSortFields.join(', ')}`,
+      );
+    const sortOrder = query.sortOrder || SortOrder.ASC;
+    return await this.paginationService.paginate<Sale>(
+      this.model,
+      { ...query, sortOrder },
+      allowedSortFields,
+    );
   }
-
+  async createSale(data: TicketDto) {
+    try {
+      /*
+        Pasos:
+        1. Validar que la venta no haya sido procesada con algun identificador unico
+        2. Validar que cliente exista en la BD de clientes
+        3. Si no existe, crearlo
+        4. Crear un Pedido en DeFontana
+        5. Rescatar NR de pedido de DeFontana
+        6. Generar una orden de venta en DeFontana
+        7. Rescatar folio de orden de venta y pdf
+        8. Retornar la URL del PDF y el folio
+       */
+      const sale = await this.findOneByOrderId(data.condicionpago.IdVenta);
+      if (sale) throw new Error('Venta ya procesada');
+      let client = await this.client.findClientByRut(
+        data.Encabezado.Receptor.RUTRecep,
+      );
+      if (!client && data.Encabezado.Receptor.RUTRecep) {
+        const clientData: ClientInterface = {
+          legalCode: data.Encabezado.Receptor.RUTRecep,
+          fileid: '',
+          name: data.Encabezado.Receptor.RznSocRecep,
+          address: data.Encabezado.Receptor.DirRecep,
+          district: data.Encabezado.Receptor.CmnaRecep,
+          email: '',
+          business: '',
+          rubroId: '',
+          giro: data.Encabezado.Receptor.GiroRecep,
+          city: data.Encabezado.Receptor.CiudadRecep,
+        };
+        await this.defontana.createClient(clientData);
+        await this.client.createClient(clientData);
+      }
+      client = client ?? (await this.client.findClientByRut('11111111-1'));
+      //Create orderBody for DeFontana
+      const orderBody: OrderRequestInterface = {
+        documentTypeId: 'BOLETAELECRS',
+        number: 0,
+        pricingId: '0',
+        clientFileId: client?.fileid ?? '11111111-1',
+        sellerFileId: 'VENDEDOR',
+        referenceNumber: '0',
+        paymentConditionId: 'CONTADO',
+        billingCoinId: 'PESO',
+        billingRate: 1,
+        shopId: 'Local',
+        priceListId: '1',
+        billingType: '1',
+        giro: client?.giro ?? 'GIRO GENERICO',
+        district: client?.district ?? 'DISTRITO GENERICO',
+        orderDetails: [],
+        taxes: [],
+        creationDate: {
+          day: 0,
+          month: 0,
+          year: 0,
+        },
+        expirationDate: {
+          day: 0,
+          month: 0,
+          year: 0,
+        },
+        glossGeneral: '',
+        glossDispatch: '',
+        glossBill: '',
+        glossPresentation: '',
+        orderRecDesGlobal: [],
+      };
+      //create detail for orderBody
+      for (const detail of data.Detalles) {
+        const detailFormat: OrderDetailInterface = {
+          type: 'A',
+          isExempt: false,
+          isService: false,
+          code: detail.SKU,
+          unit: 'UN',
+          count: detail.QtyItem,
+          price: detail.PrcItem,
+          deliveryTime: {
+            hour: 0,
+            minute: 0,
+          },
+          discount: {
+            value: 0,
+            type: 0,
+          },
+          tax: {
+            code: 'IVA',
+            value: 19,
+          },
+          comment: '',
+          productName: detail.NmbItem,
+          deliveryDate: {
+            day: 0,
+            month: 0,
+            year: 0,
+          },
+        };
+        orderBody.orderDetails.push(detailFormat);
+      }
+      const folio = await this.defontana.createOrder(orderBody);
+      return {
+        ok: '1',
+        folio: folio ?? 10000001,
+        pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+      };
+    } catch (error) {
+      this.logger.error(error.message);
+      console.error(error.stack);
+      const response = {
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: error.message,
+      };
+      throw new NotAcceptableException(response);
+    }
+  }
   // private mapSale(sale: SaleDocument) {
   //   return {
   //     uuid: sale._id,

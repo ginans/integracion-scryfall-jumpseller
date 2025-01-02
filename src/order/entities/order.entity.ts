@@ -5,7 +5,14 @@ import {
   Proveedor,
   TipoDocumento,
 } from '../interface/order-response.interface';
-
+export interface ImportCosts {
+  id: string;
+  provider_id: number;
+  amount: number;
+  document_url: string;
+  folio: number;
+  pdf_url: string;
+}
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
@@ -53,25 +60,13 @@ export class Order {
     nullable: true,
     default: null,
   })
-  cif_id: number | null;
+  error: string | null;
   @Prop({
     required: false,
     nullable: true,
     default: null,
   })
-  admission_rights_id: number | null;
-  @Prop({
-    required: false,
-    nullable: true,
-    default: null,
-  })
-  customs_clearance_costs_id: number | null;
-  @Prop({
-    required: false,
-    nullable: true,
-    default: null,
-  })
-  insurance_warehouse_id: number | null;
+  import_costs: ImportCosts[];
 }
 export type OrderDocument = HydratedDocument<Order>;
 export const OrderSchema = SchemaFactory.createForClass(Order);

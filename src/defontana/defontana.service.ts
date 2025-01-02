@@ -13,7 +13,12 @@ import { AxiosError } from 'axios';
 import { AuthResponse } from './interfaces/AuthResponse.interface';
 import { ClientInterface } from '../clients/interface/client.interface';
 import { OrderRequestInterface } from './interfaces/defontana-request.interface';
-import { DefontanaResponse } from './interfaces/defontana-response.interface';
+import {
+  DefontanaResponse,
+  PurchaseOrderResponse,
+} from './interfaces/defontana-response.interface';
+import { IProvider } from '../order/interface/provider.interface';
+import { IPurchaseOrderRequest } from '../order/interface/purchase-order-request.interface';
 
 @Injectable()
 export class DefontanaService {
@@ -77,7 +82,6 @@ export class DefontanaService {
     );
     return data;
   }
-
   async createClient(client: ClientInterface): Promise<void> {
     const token = await this.getToken();
     const { data } = await firstValueFrom(
@@ -104,7 +108,6 @@ export class DefontanaService {
     )
       throw new BadRequestException(data.message);
   }
-
   async createOrder(order: OrderRequestInterface) {
     const token = await this.getToken();
     const { data } = await firstValueFrom(
@@ -122,5 +125,55 @@ export class DefontanaService {
         ),
     );
     return data.folio;
+  }
+  async createProvider(provider: IProvider): Promise<void> {
+    const token = await this.getToken();
+    const { data } = await firstValueFrom(
+      this.http
+        .post<DefontanaResponse>(`purchaseorder/saveprovider`, provider, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(error.message);
+            throw new ServiceUnavailableException(
+              `Error al crear Proveedor, ${error.message}`,
+            );
+          }),
+        ),
+    );
+    if (
+      !data.success &&
+      data.message !== `Proveedor ${provider.fileid} ya existe en el sistema`
+    )
+      throw new BadRequestException(data.message);
+  }
+  async createPurchaseOrder(purchaseOrder: IPurchaseOrderRequest) {
+    const token = await this.getToken();
+    const { data } = await firstValueFrom(
+      this.http
+        .post<PurchaseOrderResponse>(
+          `purchaseorder/insertpurchaseorder `,
+          purchaseOrder,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        )
+        .pipe(
+          catchError((error: AxiosError) => {
+            console.dir(error.response.data);
+            this.logger.error(error.message);
+            throw new ServiceUnavailableException(
+              `Error al crear Orden de Compra, ${error.message}`,
+            );
+          }),
+        ),
+    );
+    if (
+      !data.success &&
+      data.message !==
+        `Proveedor ${purchaseOrder.comment} ya existe en el sistema`
+    )
+      throw new BadRequestException(data.message);
   }
 }

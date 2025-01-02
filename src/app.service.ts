@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { AuthService } from './auth/auth.service';
 import { UsersService } from './users/users.service';
 import { UserRole } from './users/enums/user-role.enum';
+import { SalesService } from './sales/sales.service';
 
 @Injectable()
 export class AppService {
   constructor(
     private readonly user: UsersService,
     private readonly auth: AuthService,
+    private readonly salesService: SalesService,
   ) {}
 
   async seed() {
@@ -31,12 +33,8 @@ export class AppService {
     };
   }
 
-  async genericResponse2() {
-    return {
-      ok: '1',
-      folio: 10000026,
-      pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
-    };
+  async generateSale(body: any) {
+    return await this.salesService.createSale(body);
   }
 
   async genericResponse3() {

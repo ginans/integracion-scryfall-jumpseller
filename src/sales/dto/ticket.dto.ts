@@ -1,6 +1,14 @@
+interface CondicionPago {
+  CondicionPago: string;
+  Vendedor: string;
+  IdVenta: number;
+  numdoc: number;
+}
+
 export class TicketDto {
   Encabezado: Encabezado;
   Detalles: Detalle[];
+  condicionpago: CondicionPago;
 }
 
 interface Encabezado {
@@ -43,4 +51,6 @@ interface Detalle {
   UnmdItem: string;
   PrcItem: number;
   MontoItem: number;
+  SKU: string;
+  barCode: string;
 }

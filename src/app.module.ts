@@ -24,7 +24,6 @@ import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestLoggerInterceptor } from './common/logger/request-logger.interceptor';
-import { RegistersModule } from './registers/registers.module';
 
 @Module({
   imports: [
@@ -67,7 +66,6 @@ import { RegistersModule } from './registers/registers.module';
     ProductsModule,
     OrderModule,
     JobsModule,
-    RegistersModule,
   ],
   controllers: [AppController],
   providers: [

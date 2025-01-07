@@ -7,6 +7,12 @@ export class Agilizar {
   _id: Types.ObjectId;
   @Prop()
   token: string;
+  @Prop()
+  url: string;
+  @Prop()
+  client_id: string;
+  @Prop()
+  secret_key: string;
 }
 
 export type AgilizarDocument = HydratedDocument<Agilizar>;

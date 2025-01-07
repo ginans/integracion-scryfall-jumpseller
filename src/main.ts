@@ -14,7 +14,7 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, documentFactory);
+  SwaggerModule.setup('backend/docs', app, documentFactory);
   const logger = new Logger('NestBootstrap');
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();

@@ -94,7 +94,7 @@ export class SalesService {
       if (!client && data.Encabezado.Receptor.RUTRecep) {
         const clientData: ClientInterface = {
           legalCode: data.Encabezado.Receptor.RUTRecep,
-          fileid: '',
+          fileid: data.Encabezado.Receptor.RUTRecep,
           name: data.Encabezado.Receptor.RznSocRecep,
           address: data.Encabezado.Receptor.DirRecep,
           district: data.Encabezado.Receptor.CmnaRecep,
@@ -107,13 +107,20 @@ export class SalesService {
         await this.defontana.createClient(clientData);
         await this.client.createClient(clientData);
       }
-      client = client ?? (await this.client.findClientByRut('11111111-1'));
+      client = client ?? (await this.client.findClientByRut('11.111.111-1'));
+      //Obtener dia, mes y año actual
+      const today = new Date();
+      const date = {
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+      };
       //Create orderBody for DeFontana
       const orderBody: OrderRequestInterface = {
         documentTypeId: 'BOLETAELECRS',
-        number: 0,
+        //number: 0,
         pricingId: '0',
-        clientFileId: client?.fileid ?? '11111111-1',
+        clientFileId: client.fileid,
         sellerFileId: 'VENDEDOR',
         referenceNumber: '0',
         paymentConditionId: 'CONTADO',
@@ -122,20 +129,12 @@ export class SalesService {
         shopId: 'Local',
         priceListId: '1',
         billingType: '1',
-        giro: client?.giro ?? 'GIRO GENERICO',
-        district: client?.district ?? 'DISTRITO GENERICO',
+        giro: client.giro,
+        district: client.district,
         orderDetails: [],
         taxes: [],
-        creationDate: {
-          day: 0,
-          month: 0,
-          year: 0,
-        },
-        expirationDate: {
-          day: 0,
-          month: 0,
-          year: 0,
-        },
+        creationDate: date,
+        expirationDate: date,
         glossGeneral: '',
         glossDispatch: '',
         glossBill: '',
@@ -153,8 +152,8 @@ export class SalesService {
           count: detail.QtyItem,
           price: detail.PrcItem,
           deliveryTime: {
-            hour: 0,
-            minute: 0,
+            hour: 22,
+            minute: 30,
           },
           discount: {
             value: 0,
@@ -166,11 +165,7 @@ export class SalesService {
           },
           comment: '',
           productName: detail.NmbItem,
-          deliveryDate: {
-            day: 0,
-            month: 0,
-            year: 0,
-          },
+          deliveryDate: date,
         };
         orderBody.orderDetails.push(detailFormat);
       }
@@ -182,7 +177,6 @@ export class SalesService {
       };
     } catch (error) {
       this.logger.error(error.message);
-      console.error(error.stack);
       const response = {
         ok: '0',
         folio: null,

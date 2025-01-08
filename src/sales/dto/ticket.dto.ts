@@ -1,33 +1,22 @@
-interface CondicionPago {
-  CondicionPago: string;
-  Vendedor: string;
-  IdVenta: number;
-  numdoc: number;
-}
-
 export class TicketDto {
   Encabezado: Encabezado;
   Detalles: Detalle[];
   condicionpago: CondicionPago;
 }
-
 interface Encabezado {
   IdDoc: IdDoc;
   Emisor: Emisor;
   Receptor: Receptor;
   Totales: Totales;
 }
-
 interface IdDoc {
   TipoDTE: number;
   TpoImpresion: string;
   IndTraslado: number;
 }
-
 interface Emisor {
   RUTEmisor: string;
 }
-
 interface Receptor {
   RUTRecep: string | null;
   RznSocRecep: string | null;
@@ -36,14 +25,12 @@ interface Receptor {
   CmnaRecep: string | null;
   CiudadRecep: string | null;
 }
-
 interface Totales {
   IVA: number;
   TasaIVA: number;
   ImptoReten: any[];
   MntTotal: number;
 }
-
 interface Detalle {
   NmbItem: string;
   DscItem: string;
@@ -53,4 +40,10 @@ interface Detalle {
   MontoItem: number;
   SKU: string;
   barCode: string;
+}
+interface CondicionPago {
+  CondicionPago: string;
+  Vendedor: string;
+  IdVenta: number;
+  numdoc: number;
 }

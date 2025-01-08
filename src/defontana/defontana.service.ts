@@ -102,6 +102,7 @@ export class DefontanaService {
           }),
         ),
     );
+    console.log(data);
     if (
       !data.success &&
       data.message !== `El cliente con codigo ${client.fileid} ya existe`
@@ -117,6 +118,7 @@ export class DefontanaService {
         })
         .pipe(
           catchError((error: AxiosError) => {
+            console.error(error.response.data);
             this.logger.error(error.message);
             throw new ServiceUnavailableException(
               `Error al generar Orden, ${error.message}`,
@@ -124,6 +126,8 @@ export class DefontanaService {
           }),
         ),
     );
+    console.dir(data);
+    if (!data.success) throw new BadRequestException(data.message);
     return data.folio;
   }
   async createProvider(provider: IProvider): Promise<void> {

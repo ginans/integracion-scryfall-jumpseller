@@ -1,6 +1,6 @@
 export interface OrderRequestInterface {
   documentTypeId: string;
-  number: number;
+  number?: number;
   pricingId: string;
   clientFileId: string;
   sellerFileId: string;

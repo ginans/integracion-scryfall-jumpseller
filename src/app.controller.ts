@@ -1,5 +1,6 @@
-import {Body, Controller, Get, Post} from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
+import { TicketDto } from './sales/dto/ticket.dto';
 
 @Controller()
 export class AppController {
@@ -18,7 +19,7 @@ export class AppController {
     return this.appService.generateSale(body);
   }
   @Post('boleta')
-  boleta(@Body() body: any) {
+  boleta(@Body() body: TicketDto) {
     return this.appService.generateSale(body);
   }
   @Post('traspaso')
@@ -33,5 +34,9 @@ export class AppController {
   @Post('notacredito')
   notacredito() {
     return this.appService.genericResponse4();
+  }
+  @Get('test')
+  testController() {
+    return this.appService.test();
   }
 }

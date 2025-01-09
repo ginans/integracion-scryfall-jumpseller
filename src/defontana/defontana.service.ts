@@ -180,4 +180,30 @@ export class DefontanaService {
     )
       throw new BadRequestException(data.message);
   }
+  // async getPdf(folio: number) {
+  //   const token = await this.getToken();
+  //   const { data } = await firstValueFrom(
+  //     this.http
+  //       .post<{
+  //         documentType: null;
+  //         firstFolio: number;
+  //         lastFolio: number;
+  //         ted: null;
+  //         success: boolean;
+  //         message: string;
+  //         exceptionMessage: null;
+  //       }>(`sale/savesale`, folio, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       })
+  //       .pipe(
+  //         catchError((error: AxiosError) => {
+  //           this.logger.error(error.message);
+  //           throw new ServiceUnavailableException(
+  //             `Error al generar Venta, ${error.message}`,
+  //           );
+  //         }),
+  //       ),
+  //   );
+  //   return data;
+  // }
 }

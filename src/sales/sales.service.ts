@@ -17,14 +17,13 @@ import { formatDate } from '../common/formatDate';
 import { DefontanaService } from '../defontana/defontana.service';
 import { SaleState } from './interfaces/sale-state.interface';
 import { JobsService } from 'src/jobs/jobs.service';
-import { TicketDto } from './dto/ticket.dto';
+import { IDetalle, IReceptor, TicketDto } from './dto/ticket.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { PaginationService } from '../common/services/pagination.service';
-import { SortOrder } from '../common/dto/pagination-query.dto';
 import {
   OrderDetailInterface,
   OrderRequestInterface,
 } from '../defontana/interfaces/defontana-request.interface';
+import { ProductDto } from './dto/product.dto';
 
 @Injectable()
 export class SalesService {
@@ -39,7 +38,6 @@ export class SalesService {
     private readonly defontana: DefontanaService,
     private readonly client: ClientsService,
     private readonly product: ProductsService,
-    private readonly paginationService: PaginationService,
   ) {}
 
   // async checkNewSales() {
@@ -56,22 +54,18 @@ export class SalesService {
   //   };
   // }
   async findAllSales(query: PaginationQueryDto) {
-    const allowedSortFields = [
-      'order_id',
-      'client_rut',
-      'seller',
-      'defontana_id',
-    ];
-    if (query.sortBy && !allowedSortFields.includes(query.sortBy))
-      throw new BadRequestException(
-        `Campos de ordenamiento permitidos: ${allowedSortFields.join(', ')}`,
-      );
-    const sortOrder = query.sortOrder || SortOrder.ASC;
-    return await this.paginationService.paginate<Sale>(
-      this.model,
-      { ...query, sortOrder },
-      allowedSortFields,
-    );
+    const data = await this.model.find().exec();
+    return {
+      items: data,
+      meta: {
+        totalItems: data.length,
+        itemsPerPage: 5,
+        totalPages: data.length / 5,
+        currentPage: 1,
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+    };
   }
   async createSale(data: TicketDto) {
     try {
@@ -91,88 +85,55 @@ export class SalesService {
       let client = await this.client.findClientByRut(
         data.Encabezado.Receptor.RUTRecep,
       );
-      if (!client && data.Encabezado.Receptor.RUTRecep) {
-        const clientData: ClientInterface = {
-          legalCode: data.Encabezado.Receptor.RUTRecep,
-          fileid: data.Encabezado.Receptor.RUTRecep,
-          name: data.Encabezado.Receptor.RznSocRecep,
-          address: data.Encabezado.Receptor.DirRecep,
-          district: data.Encabezado.Receptor.CmnaRecep,
-          email: '',
-          business: '',
-          rubroId: '',
-          giro: data.Encabezado.Receptor.GiroRecep,
-          city: data.Encabezado.Receptor.CiudadRecep,
-        };
-        await this.defontana.createClient(clientData);
-        await this.client.createClient(clientData);
-      }
+      if (!client && data.Encabezado.Receptor.RUTRecep)
+        await this.createClient(data.Encabezado.Receptor);
       client = client ?? (await this.client.findClientByRut('11.111.111-1'));
-      //Obtener dia, mes y año actual
-      const today = new Date();
-      const date = {
-        day: today.getDate(),
-        month: today.getMonth() + 1,
-        year: today.getFullYear(),
-      };
+
+      //TODO: Preguntar por este flujo
       //Create orderBody for DeFontana
-      const orderBody: OrderRequestInterface = {
-        documentTypeId: 'BOLETAELECRS',
-        //number: 0,
-        pricingId: '0',
-        clientFileId: client.fileid,
-        sellerFileId: 'VENDEDOR',
-        referenceNumber: '0',
-        paymentConditionId: 'CONTADO',
-        billingCoinId: 'PESO',
-        billingRate: 1,
-        shopId: 'Local',
-        priceListId: '1',
-        billingType: '1',
-        giro: client.giro,
-        district: client.district,
-        orderDetails: [],
-        taxes: [],
-        creationDate: date,
-        expirationDate: date,
-        glossGeneral: '',
-        glossDispatch: '',
-        glossBill: '',
-        glossPresentation: '',
-        orderRecDesGlobal: [],
-      };
-      //create detail for orderBody
-      for (const detail of data.Detalles) {
-        const detailFormat: OrderDetailInterface = {
-          type: 'A',
-          isExempt: false,
-          isService: false,
-          code: detail.SKU,
-          unit: 'UN',
-          count: detail.QtyItem,
-          price: detail.PrcItem,
-          deliveryTime: {
-            hour: 22,
-            minute: 30,
-          },
-          discount: {
-            value: 0,
-            type: 0,
-          },
-          tax: {
-            code: 'IVA',
-            value: 19,
-          },
-          comment: '',
-          productName: detail.NmbItem,
-          deliveryDate: date,
-        };
-        orderBody.orderDetails.push(detailFormat);
-      }
-      const folio = await this.defontana.createOrder(orderBody);
+      // const orderBody = this.createOrder(
+      //   client.fileid,
+      //   client.giro,
+      //   client.district,
+      //   data.Detalles,
+      // );
+      // //Crear Venta en DeFontana
+      // const folio = await this.defontana.createOrder(orderBody);
+
+      //Crear Venta en DeFontana
+      const saleBody = this.createSaleBody(
+        data.Detalles,
+        data.condicionpago.IdVenta,
+        client,
+      );
+      const defontanaResponse = await this.defontana.postSale(saleBody);
+      if (!defontanaResponse.success)
+        throw new BadRequestException(defontanaResponse.message);
+      //Registrar venta en BD
+      await this.model.create({
+        document_type: data.Encabezado.IdDoc.TipoDTE,
+        emisor_rut: data.Encabezado.Emisor.RUTEmisor,
+        client_rut: client.legalCode,
+        client_rznSoc: client.name,
+        client_giro: client.giro,
+        client_direction: client.address,
+        client_comune: client.district,
+        client_city: client.city,
+        total: data.Encabezado.Totales.MntTotal,
+        iva: data.Encabezado.Totales.IVA,
+        details: data.Detalles,
+        payment_method: data.condicionpago.CondicionPago,
+        seller: data.condicionpago.Vendedor,
+        order_id: data.condicionpago.IdVenta,
+        state: SaleState.CREADO,
+        defontana_id: defontanaResponse.firstFolio,
+        error: null,
+      });
+      //Obtener PDF
+      //const pdf = await this.defontana.getPDF(folio);
       return {
         ok: '1',
-        folio: folio ?? 10000001,
+        folio: defontanaResponse.firstFolio,
         pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
       };
     } catch (error) {
@@ -504,5 +465,174 @@ export class SalesService {
       }
     }
     await this.model.create({ ...sale, state: 'Registro' });
+  }
+  private async createClient(client: IReceptor) {
+    const newClient: ClientInterface = {
+      legalCode: client.RUTRecep,
+      fileid: client.RUTRecep,
+      name: client.RznSocRecep,
+      address: client.DirRecep,
+      district: client.CmnaRecep,
+      email: '',
+      business: '',
+      rubroId: '',
+      giro: client.GiroRecep,
+      city: client.CiudadRecep,
+    };
+    await this.defontana.createClient(newClient);
+    await this.client.createClient(newClient);
+  }
+  private createOrder(
+    fileid: string,
+    giro: string,
+    district: string,
+    details: IDetalle[],
+  ): OrderRequestInterface {
+    const today = new Date();
+    const date = {
+      day: today.getDate(),
+      month: today.getMonth() + 1,
+      year: today.getFullYear(),
+    };
+    const orderBody: OrderRequestInterface = {
+      documentTypeId: 'BOLETAELECRS',
+      pricingId: '0',
+      clientFileId: fileid,
+      sellerFileId: 'VENDEDOR',
+      referenceNumber: '0',
+      paymentConditionId: 'CONTADO',
+      billingCoinId: 'PESO',
+      billingRate: 1,
+      shopId: 'Local',
+      priceListId: '1',
+      billingType: '1',
+      giro: giro,
+      district: district,
+      orderDetails: [],
+      taxes: [],
+      creationDate: date,
+      expirationDate: date,
+      glossGeneral: '',
+      glossDispatch: '',
+      glossBill: '',
+      glossPresentation: '',
+      orderRecDesGlobal: [],
+    };
+    for (const detail of details) {
+      const detailFormat: OrderDetailInterface = {
+        type: 'A',
+        isExempt: false,
+        isService: false,
+        code: detail.SKU,
+        unit: 'UN',
+        count: detail.QtyItem,
+        price: detail.PrcItem,
+        deliveryTime: {
+          hour: 22,
+          minute: 30,
+        },
+        discount: {
+          value: 0,
+          type: 0,
+        },
+        tax: {
+          code: 'IVA',
+          value: 19,
+        },
+        comment: '',
+        productName: detail.NmbItem,
+        deliveryDate: date,
+      };
+      orderBody.orderDetails.push(detailFormat);
+    }
+    return orderBody;
+  }
+
+  private createSaleBody(
+    details: IDetalle[],
+    IdVenta: number,
+    client: ClientInterface,
+  ) {
+    const detailsFormat: ProductDto[] = details.map((detail) => ({
+      type: 'A',
+      isExempt: false,
+      code: detail.SKU,
+      count: detail.QtyItem,
+      productName: detail.NmbItem,
+      productNameBarCode: detail.barCode,
+      price: `${detail.PrcItem}`,
+      discount: { type: 0, value: '-0' },
+      unit: 'UN',
+      analysis: {
+        accountNumber: this.accountNumber,
+        businessCenter: this.businessCenter,
+        classifier01: '',
+        classifier02: '',
+      },
+      useBatch: false,
+      batchInfo: [
+        //{ amount: product.cantidad, batchNumber: `${product.Producto[0].sku}` },
+      ],
+    }));
+    const today = new Date();
+    const date = {
+      day: `${today.getDate()}`,
+      month: `${today.getMonth() + 1}`,
+      year: `${today.getFullYear()}`,
+    };
+    return {
+      documentType: 'BOLETAELECRS',
+      firstFolio: 0,
+      lastFolio: 0,
+      externalDocumentID: `${IdVenta}`,
+      emissionDate: date,
+      firstFeePaid: date,
+      clientFile: `${client.fileid}`,
+      contactIndex: client.address,
+      paymentCondition: 'CONTADO',
+      sellerFileId: 'VENDEDOR',
+      clientAnalysis: {
+        accountNumber: '1110401001',
+        businessCenter: this.businessCenter,
+        classifier01: '',
+        classifier02: '',
+      },
+      billingCoin: 'PESO',
+      billingRate: 1,
+      shopId: 'Local',
+      priceList: '1',
+      giro: `${client.giro}`,
+      district: `${client.district}`,
+      city: `${client.city}`,
+      contact: -1,
+      attachedDocuments: [],
+      storage: {
+        code: 'BODEGACENTRAL',
+        motive: 'Venta de productos',
+        storageAnalysis: {
+          accountNumber: '',
+          businessCenter: this.businessCenter,
+          classifier01: 'classifier01',
+          classifier02: 'classifier02',
+        },
+      },
+      details: detailsFormat,
+      saleTaxes: [
+        {
+          code: 'IVA',
+          value: 19,
+          taxeAnalysis: {
+            accountNumber: '2120301001',
+            businessCenter: this.businessCenter,
+            classifier01: '',
+            classifier02: '',
+          },
+        },
+      ],
+      ventaRecDesGlobal: [],
+      gloss: '',
+      customFields: [],
+      isTransferDocument: false,
+    };
   }
 }

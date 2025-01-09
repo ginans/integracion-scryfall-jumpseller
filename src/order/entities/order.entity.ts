@@ -2,8 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import {
   IngresoDetalle,
-  Proveedor,
-  TipoDocumento,
+  IProveedor,
+  ITipoDocumento,
 } from '../interface/order-response.interface';
 export interface ImportCosts {
   id: string;
@@ -20,9 +20,9 @@ export class Order {
   @Prop()
   IngresoDetalle: IngresoDetalle[];
   @Prop()
-  Proveedor: Proveedor[];
+  Proveedor: IProveedor[];
   @Prop()
-  TipoDocumento: TipoDocumento[];
+  TipoDocumento: ITipoDocumento[];
   @Prop({
     type: Boolean,
   })

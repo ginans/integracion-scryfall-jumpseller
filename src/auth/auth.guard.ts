@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { Reflector } from '@nestjs/core';
 import { Payload } from './interface/payload.interface';
 import { UsersService } from 'src/users/users.service';
 import { jwtConstants } from './constants';
@@ -16,16 +15,13 @@ import { jwtConstants } from './constants';
 export class AuthGuard implements CanActivate {
   constructor(
     private jwtService: JwtService,
-    private reflector: Reflector,
     private readonly userService: UsersService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
-    if (!token) {
-      throw new BadRequestException('Token es requerido');
-    }
+    if (!token) throw new BadRequestException('Token es requerido');
     try {
       const payload: Payload = await this.jwtService.verifyAsync(token, {
         secret: jwtConstants.secret,

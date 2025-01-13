@@ -1,7 +1,6 @@
 export interface OrderResponse {
   readonly get_reporteComprasResult: GetReporteComprasResult[];
 }
-
 export interface GetReporteComprasResult {
   readonly IngresoDetalle: IngresoDetalle[];
   readonly Proveedor: IProveedor[];
@@ -16,7 +15,6 @@ export interface GetReporteComprasResult {
   readonly proveedor_id: number;
   readonly tipo_documento_id: number;
 }
-
 export interface IngresoDetalle {
   readonly Producto: IProducto[];
   readonly bodega_id: number;
@@ -32,7 +30,6 @@ export interface IngresoDetalle {
   readonly producto_id: number;
   readonly stock: number;
 }
-
 export interface IProducto {
   readonly catalogo: string;
   readonly codigo_barra: string;
@@ -52,7 +49,6 @@ export interface IProducto {
   readonly visible: boolean;
   readonly wc_producto_id: null;
 }
-
 export interface IProveedor {
   readonly comuna_id: number;
   readonly condicion_pago_id: number;
@@ -67,7 +63,6 @@ export interface IProveedor {
   readonly rut: string;
   readonly telefono: string;
 }
-
 export interface ITipoDocumento {
   readonly area_documental_id: number;
   readonly codigo_tipo_documento: string;

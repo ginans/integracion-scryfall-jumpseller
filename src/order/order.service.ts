@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Order, OrderDocument } from './entities/order.entity';
+import { Order, OrderDocument, OrderState } from './entities/order.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AgilizarService } from '../agilizar/agilizar.service';
@@ -21,8 +21,8 @@ export class OrderService {
   ) {}
   async checkNewOrders() {
     const { get_reporteComprasResult: data } = await this.agilizar.getCompras(
-      '2024-09-01',
-      '2024-11-10',
+      '2024-01-01',
+      '2025-01-10',
     );
     for (const order of data) {
       const orderExists = await this.model.exists({
@@ -34,26 +34,93 @@ export class OrderService {
       message: 'Order checked',
     };
   }
-
   async findAllOrders(query: PaginationQueryDto) {
-    const orders: OrderDocument[] = await this.model.find().exec();
-    return orders.map((order) => {
-      return {
-        id: order._id,
-        orderId: order.numero_documento,
-        providerName: order.Proveedor?.[0]?.razon_social ?? 'N/A',
-        providerRut: order.Proveedor?.[0]?.rut ?? 'N/A',
-        isNational: order.isNational,
-        documentType: order.TipoDocumento?.[0]?.nombre ?? 'N/A',
-        total: 'Sin Calcular',
-        defontanaId: order.defontanaNumber ?? 0,
-        status: order.status,
-      };
-    });
+    const { limit, page, filters, sortOrder, sortBy, search } = query;
+    //Aplicar Filtros
+    const filter = {};
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        filter[key] = filters[key];
+      });
+    }
+    //Aplicar Busqueda
+    if (search) {
+      const searchString = search.toString();
+      filter['$or'] = [
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $toString: '$numero_documento' },
+              regex: searchString,
+              options: 'i',
+            },
+          },
+        },
+        // Add other numeric fields if necessary
+      ];
+    }
+    // if (search) {
+    //   filter['$or'] = [
+    //     { numero_documento: { $regex: search, $options: 'number' } },
+    //     // { 'Proveedor.rut': { $regex: `${search}`, $options: 'i' } },
+    //     // { 'TipoDocumento.nombre': { $regex: `${search}`, $options: 'i' } },
+    //     // { defontanaNumber: isNaN(Number(search)) ? null : Number(search) },
+    //   ];
+    // }
+    //Aplicar Orden
+    const sort = {};
+    if (sortOrder && sortBy) {
+      sort[sortBy] = sortOrder;
+    }
+    //Paginacion
+    const total = await this.model.countDocuments(filter);
+    const data: Order[] = await this.model
+      .find(filter)
+      .sort(sort)
+      .skip(limit * (page - 1))
+      .limit(limit)
+      .exec();
+    return {
+      items: data,
+      meta: {
+        totalItems: total,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        hasNextPage: total > limit * page,
+        hasPreviousPage: page > 1,
+      },
+    };
   }
-
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async getResumeToDocuments() {
+    return {
+      total: await this.model.countDocuments(),
+      national: await this.model.countDocuments({ isNational: true }),
+      international: await this.model.countDocuments({ isNational: false }),
+      completed: await this.model.countDocuments({
+        status: OrderState.FACTURA_CREADA,
+      }),
+      pending: await this.model.countDocuments({
+        status: OrderState.PENDIENTE,
+      }),
+    };
+  }
+  async getAttachmentToForm() {
+    //Retornar listado de ordenes, solo el id, y el numero de documento
+    const attachment = {
+      orders: await this.model
+        .find({ status: OrderState.PENDIENTE })
+        .select('numero_documento')
+        .exec(),
+      providers: await this.providers.getProviderForAttachment(),
+    };
+    return attachment;
+  }
+  async findAllNationalOrders() {
+    return await this.model.find({ isNational: true }).exec();
+  }
+  async findAllInternationalOrders() {
+    return await this.model.find({ isNational: false }).exec();
   }
   async processNewOrder(data: any) {
     /*
@@ -151,7 +218,7 @@ export class OrderService {
         await this.defontana.createPurchaseOrder(purchaseOrder);
       return { message: 'Order created', purchaseOrderNumber };
     } catch (error) {
-      order.status = SaleState.FALLIDO;
+      order.status = OrderState.FALLIDO;
       order.error = error.message;
       await order.save();
       return { message: 'Error' };

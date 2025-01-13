@@ -14,7 +14,6 @@ import { UsersService } from 'src/users/users.service';
 import { ReplacePassDto } from './dto/replace-pass.dto';
 import { MailService } from '../mail/mail.service';
 import { RecoverPassDto } from './dto/recover.dto';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -70,13 +69,14 @@ export class AuthService {
         id: User._id,
         email: User.email,
         name: User.name,
+        role: User.role,
       },
     };
   }
   async recoverPass(body: RecoverPassDto) {
     const user = await this.userService.findByEmail(body.email);
     if (!user)
-      return { message: 'Enviamos a tu correo el método de recuperación'};
+      return { message: 'Enviamos a tu correo el método de recuperación' };
     const payload = {
       sub: user._id.toHexString(),
       email: user.email,
@@ -98,12 +98,6 @@ export class AuthService {
     return {
       message: 'Contraseña cambiada correctamente',
     };
-  }
-  async createUser(createUserDto: CreateUserDto) {
-    const user = await this.userService.findByEmail(createUserDto.email);
-    if (user) throw new BadRequestException('Usuario Ya Existe');
-    createUserDto.password = await this.hashPassword(createUserDto.password);
-    return await this.userService.create(createUserDto);
   }
   async validateUser(id: string): Promise<User> {
     const user = await this.userService.findById(id);

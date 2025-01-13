@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
+import * as argon2 from 'argon2';
 @Injectable()
 export class UsersService {
   constructor(
@@ -21,41 +21,43 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.userModel.find().select('-password').exec();
+    return this.userModel.find().exec();
   }
 
   async findById(id: string): Promise<User | null> {
-    if (!Types.ObjectId.isValid(id)) {
+    if (!Types.ObjectId.isValid(id))
       throw new BadRequestException('Invalid ID format');
-    }
-    const user = await this.userModel
-      .findById(new Types.ObjectId(id))
-      .select('-password')
-      .exec();
+    const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
+  async createUser(userDto: CreateUserDto): Promise<User> {
+    const userExist = await this.findByEmail(userDto.email);
+    if (userExist) throw new BadRequestException('Usuario Ya Existe');
+    userDto.password = await this.hashPassword(userDto.password);
+    const user = await this.userModel.create(userDto);
+    user.password = undefined;
+    return user;
+  }
   async update(
     id: string,
     userDto: Partial<UpdateUserDto>,
   ): Promise<User | null> {
-    console.log(id);
-    console.log(userDto);
+    if (userDto.password)
+      userDto.password = await this.hashPassword(userDto.password);
     return this.userModel
       .findByIdAndUpdate(new Types.ObjectId(id), userDto, { new: true })
-      .select('-password')
       .exec();
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).exec();
+    return this.userModel.findOne({ email }).select('+password').exec();
   }
 
   async updateStatus(id: string): Promise<User | null> {
     const user: UserDocument = await this.userModel
       .findById(new Types.ObjectId(id))
-      .select('-password')
       .exec();
     if (!user) return null;
     user.status = !user.status;
@@ -86,5 +88,8 @@ export class UsersService {
     } catch {
       return null;
     }
+  }
+  private async hashPassword(password: string): Promise<string> {
+    return await argon2.hash(password);
   }
 }

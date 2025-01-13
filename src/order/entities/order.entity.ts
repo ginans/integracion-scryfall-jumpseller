@@ -13,6 +13,14 @@ export interface ImportCosts {
   folio: number;
   pdf_url: string;
 }
+export enum OrderState {
+  PENDIENTE = 'Pendiente',
+  PROCESANDO = 'Procesando',
+  PROVEEDOR_CREADO = 'Proveedor Creado',
+  ORDEN_CREADA = 'Orden Creada',
+  FACTURA_CREADA = 'Factura Creada',
+  FALLIDO = 'Fallido',
+}
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
@@ -46,15 +54,15 @@ export class Order {
   })
   isNational: boolean;
   @Prop({
-    default: 'pending',
+    default: OrderState.PENDIENTE,
   })
-  status: string;
+  status: OrderState;
   @Prop({
     required: false,
     nullable: true,
     default: null,
   })
-  defontanaNumber: number;
+  defontanaNumber: number | null;
   @Prop({
     required: false,
     nullable: true,

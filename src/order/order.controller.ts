@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { QueryResumeDto } from './dto/query-resume.dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
@@ -12,8 +13,8 @@ export class OrderController {
     return this.orderService.findAllOrders(query);
   }
   @Get('resume')
-  getResumeForOrders() {
-    return this.orderService.getResumeToDocuments();
+  getResumeForOrders(@Query() query: QueryResumeDto) {
+    return this.orderService.getResumeToDocuments(query);
   }
   @Get('form')
   getAttachmentToForm() {

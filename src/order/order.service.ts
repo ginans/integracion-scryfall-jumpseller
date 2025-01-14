@@ -9,6 +9,7 @@ import { SaleState } from '../sales/interfaces/sale-state.interface';
 import { ProvidersService } from '../providers/providers.service';
 import { ProviderInterface } from '../providers/interface/provider.interface';
 import { IPurchaseOrderRequest } from './interface/purchase-order-request.interface';
+import { QueryResumeDto } from './dto/query-resume.dto';
 
 @Injectable()
 export class OrderService {
@@ -35,7 +36,7 @@ export class OrderService {
     };
   }
   async findAllOrders(query: PaginationQueryDto) {
-    const { limit, page, filters, sortOrder, sortBy, search } = query;
+    const { limit = 10, page, filters, sortOrder, sortBy, search } = query;
     //Aplicar Filtros
     const filter = {};
     if (filters) {
@@ -92,16 +93,17 @@ export class OrderService {
       },
     };
   }
-  async getResumeToDocuments() {
+
+  async getResumeToDocuments(query: QueryResumeDto) {
     return {
-      total: await this.model.countDocuments(),
-      national: await this.model.countDocuments({ isNational: true }),
-      international: await this.model.countDocuments({ isNational: false }),
+      total: await this.model.countDocuments({ isNational: query.isNational }),
       completed: await this.model.countDocuments({
         status: OrderState.FACTURA_CREADA,
+        isNational: query.isNational,
       }),
       pending: await this.model.countDocuments({
         status: OrderState.PENDIENTE,
+        isNational: query.isNational,
       }),
     };
   }

@@ -9,16 +9,31 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "dev": "nest start --watch",
+
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
+
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+
+    "docker:dev": "docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml up -d",
+    "docker:dev:build": "docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml build",
+    "docker:dev:stop": "docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml down",
+    "docker:dev:logs": "./docker-scripts.sh logs dev",
+
+    "docker:prod": "docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml up -d",
+    "docker:prod:build": "docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml build",
+    "docker:prod:stop": "docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml down",
+    "docker:prod:logs": "./docker-scripts.sh logs prod",
+
+    "docker:stop:all": "./docker-scripts.sh stop dev && ./docker-scripts.sh stop prod"
   },
   "dependencies": {
     "@bull-board/api": "^6.5.3",

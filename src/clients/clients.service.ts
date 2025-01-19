@@ -26,4 +26,18 @@ export class ClientsService {
   async createClient(client: ClientInterface) {
     return await this.model.create(client);
   }
+  async createDefaultClient() {
+    return await this.model.create({
+      legalCode: '11111111-1',
+      fileid: '1',
+      name: 'Cliente de Prueba',
+      address: 'Calle Falsa 123',
+      district: 'Springfield',
+      email: 'test@gmail.com',
+      business: 'Cliente de Prueba',
+      rubroId: '1',
+      giro: 'Cliente de Prueba',
+      city: 'Springfield',
+    });
+  }
 }

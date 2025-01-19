@@ -32,5 +32,6 @@ jobs:
           port: 22022
           script: |
             cd /var/www/fullerton/
-            docker-compose build
-            docker-compose up -d
+            docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml build
+            docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml down
+            docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml up -d

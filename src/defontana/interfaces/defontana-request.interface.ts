@@ -1,6 +1,6 @@
 export interface OrderRequestInterface {
   documentTypeId: string;
-  number: number;
+  number?: number;
   pricingId: string;
   clientFileId: string;
   sellerFileId: string;
@@ -63,4 +63,56 @@ export interface OrderRecDesGlobalInterface {
   name: string;
   percentage: number;
   value: number;
+}
+
+export interface PurchaseInterface {
+  documentTypeId: string;
+  documentEmissionDate: string;
+  documentDueDate: string;
+  accountingDate: string;
+  providerId: string;
+  referencedDocument: number;
+  documentNumber: number;
+  documentPlatformId: string;
+  paymentConditionId: string;
+  address: string;
+  shopId: string;
+  providerTypeId: string;
+  providerAccountBusinessCenterId: string;
+  providerAccountClassifier01: string;
+  providerAccountClassifier02: string;
+  amountBeforeTaxes: number;
+  amountExempt: number;
+  amountTotal: number;
+  purchaseDetails: PurchaseDetailInterface[];
+  taxes: TaxPurchaseInterface[];
+  modifier: number;
+  nonRecoverableTaxCode: string;
+  comment: string;
+  customFields: any[];
+}
+
+export interface PurchaseDetailInterface {
+  accountId: string;
+  expenseAmount: number;
+  isService: boolean;
+  comment: string;
+  itemId: string;
+  quantity: number;
+  detailAnalysis: AnalysisInterface;
+}
+
+export interface TaxPurchaseInterface {
+  code: string;
+  value: number;
+  percentaje: number;
+  isIncrease: boolean;
+  taxesAnalysis: AnalysisInterface;
+}
+
+export interface AnalysisInterface {
+  fileId: string;
+  classifier01: string;
+  classifier02: string;
+  businessCenterId: string;
 }

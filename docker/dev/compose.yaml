@@ -1,0 +1,38 @@
+name: nestjs-app-dev
+version: '3.8'
+services:
+  app:
+    build:
+      context: ../../  # Importante: contexto sube dos niveles
+      dockerfile: docker/dev/Dockerfile
+    # container_name: "nestjs-app-dev-${DB_NAME}"
+    image: nestjs-app-dev
+    ports:
+      - "${PORT}:8000"
+    env_file:
+      - .env  # Ajustamos la ruta
+    environment:
+      - PORT=${PORT}
+      - DB_NAME=${DB_NAME}
+      - NODE_ENV=development
+      - CACHE_PORT=${CACHE_PORT}
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    volumes:
+      - ../../:/app  # Ajustamos la ruta
+      - /app/node_modules
+      - ../../logs:/app/logs  # Ajustamos la ruta
+
+  redis:
+    # container_name: "redis-dev-${DB_NAME}"
+    image: redis:7
+    ports:
+      - "${CACHE_PORT}:6379"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

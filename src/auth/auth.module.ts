@@ -15,6 +15,9 @@ import { MailModule } from 'src/mail/mail.module';
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     UsersModule,
     MongooseModule.forFeature([{ name: Auth.name, schema: AuthSchema }]),
     PassportModule,
@@ -22,7 +25,7 @@ import { MailModule } from 'src/mail/mail.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: '2h' },
+        signOptions: { expiresIn: `${configService.get('JWT_HOURS_EXPIRE')}h` },
       }),
       inject: [ConfigService],
     }),

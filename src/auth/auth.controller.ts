@@ -10,13 +10,17 @@ import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { RecoverPassDto } from './dto/recover.dto';
 import { ReplacePassDto } from './dto/replace-pass.dto';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  @ApiOperation({ summary: 'autenticar usuario con credenciales' })
+  @ApiResponse({
+    status: 200,
+    description: 'Operación exitosa',
+  })
   @Post('login')
   signIn(@Body() login: CreateAuthDto) {
     return this.authService.signIn(login.email, login.password);
@@ -24,11 +28,6 @@ export class AuthController {
   @Get('session')
   session(@Headers('Authorization') token: string) {
     return this.authService.validateToken(token);
-  }
-  @Post('user')
-  @UseGuards(JwtAuthGuard)
-  createUser(@Body() createUserDto: CreateUserDto) {
-    return this.authService.createUser(createUserDto);
   }
   @Post('recover_pass')
   SendEmail(@Body() body: RecoverPassDto) {

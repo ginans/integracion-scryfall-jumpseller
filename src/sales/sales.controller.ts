@@ -1,34 +1,16 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { SalesService } from './sales.service';
-import { TicketDto } from './dto/ticket.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { Sale } from './entities/sale.entity';
+import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 
 @Controller('sales')
 export class SalesController {
   constructor(private readonly salesService: SalesService) {}
   @Get()
-  findAll() {
-    return this.salesService.findAll();
-  }
-  @Get('check')
-  checkSales() {
-    return this.salesService.checkNewSales();
-  }
-
-  @Post('boleta')
-  processSale(@Body() body: TicketDto) {
-    return this.salesService.processSale(body);
-  }
-
-  @Get('process')
-  processSales() {
-    return this.salesService.processSales();
-  }
-  @Get('test')
-  test(@Body() body: { to: string; from: string }) {
-    return this.salesService.test(body);
-  }
-  @Get(':id')
-  generateBoleta(@Param('id') id: string) {
-    return this.salesService.generateSale(+id);
+  async getSales(
+    @Query() query: PaginationQueryDto,
+  ): Promise<PaginatedResponse<Sale>> {
+    return await this.salesService.findAllSales(query);
   }
 }

@@ -11,15 +11,22 @@ import { Agilizar, AgilizarDocument } from './entities/agilizar.entity';
 import { Model } from 'mongoose';
 import { OrderResponse } from '../order/interface/order-response.interface';
 import { ISellResponse } from './interface/sell-response.interface';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AgilizarService {
   private readonly logger = new Logger(AgilizarService.name);
+  private client_id: string;
+  private secret_key: string;
 
   constructor(
     @InjectModel(Agilizar.name) private readonly model: Model<AgilizarDocument>,
     private readonly http: HttpService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.client_id = this.configService.get('CLIENT_ID_FULLERTON');
+    this.secret_key = this.configService.get('SECRET_KEY_FULLERTON');
+  }
 
   private getDefaultDates(
     from?: string,
@@ -39,10 +46,7 @@ export class AgilizarService {
           'GenerarToken',
           {},
           {
-            headers: {
-              client_id: process.env.CLIENT_ID_FULLERTON,
-              secret_key: process.env.SECRET_KEY_FULLERTON,
-            },
+            headers: { client_id: this.client_id, secret_key: this.secret_key },
           },
         )
         .pipe(

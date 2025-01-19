@@ -2,10 +2,25 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import {
   IngresoDetalle,
-  Proveedor,
-  TipoDocumento,
+  IProveedor,
+  ITipoDocumento,
 } from '../interface/order-response.interface';
-
+export interface ImportCosts {
+  id: string;
+  provider_id: number;
+  amount: number;
+  document_url: string;
+  folio: number;
+  pdf_url: string;
+}
+export enum OrderState {
+  PENDIENTE = 'Pendiente',
+  PROCESANDO = 'Procesando',
+  PROVEEDOR_CREADO = 'Proveedor Creado',
+  ORDEN_CREADA = 'Orden Creada',
+  FACTURA_CREADA = 'Factura Creada',
+  FALLIDO = 'Fallido',
+}
 @Schema({ timestamps: true })
 export class Order {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
@@ -13,9 +28,9 @@ export class Order {
   @Prop()
   IngresoDetalle: IngresoDetalle[];
   @Prop()
-  Proveedor: Proveedor[];
+  Proveedor: IProveedor[];
   @Prop()
-  TipoDocumento: TipoDocumento[];
+  TipoDocumento: ITipoDocumento[];
   @Prop({
     type: Boolean,
   })
@@ -39,39 +54,27 @@ export class Order {
   })
   isNational: boolean;
   @Prop({
-    default: 'pending',
+    default: OrderState.PENDIENTE,
   })
-  status: string;
+  status: OrderState;
   @Prop({
     required: false,
     nullable: true,
     default: null,
   })
-  defontanaNumber: number;
+  defontanaNumber: number | null;
   @Prop({
     required: false,
     nullable: true,
     default: null,
   })
-  cif_id: number | null;
+  error: string | null;
   @Prop({
     required: false,
     nullable: true,
     default: null,
   })
-  admission_rights_id: number | null;
-  @Prop({
-    required: false,
-    nullable: true,
-    default: null,
-  })
-  customs_clearance_costs_id: number | null;
-  @Prop({
-    required: false,
-    nullable: true,
-    default: null,
-  })
-  insurance_warehouse_id: number | null;
+  import_costs: ImportCosts[];
 }
 export type OrderDocument = HydratedDocument<Order>;
 export const OrderSchema = SchemaFactory.createForClass(Order);

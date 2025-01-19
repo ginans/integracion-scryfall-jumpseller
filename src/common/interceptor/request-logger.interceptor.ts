@@ -12,7 +12,13 @@ import { winstonConfig } from './winston.config';
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
   private logger: winston.Logger;
-
+  private allowedUrls: string[] = [
+    '/backend/v1/boleta',
+    '/backend/v1/factura',
+    '/backend/v1/despacho',
+    '/backend/v1/notacredito',
+    '/backend/v1/traspaso',
+  ];
   constructor() {
     this.logger = winston.createLogger(winstonConfig);
   }
@@ -20,7 +26,7 @@ export class RequestLoggerInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const { method, url, body, headers } = request;
-
+    if (!this.allowedUrls.includes(url)) return next.handle();
     const logData = {
       timestamp: new Date().toISOString(),
       method,

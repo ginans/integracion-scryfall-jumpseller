@@ -1,26 +1,15 @@
 import { Module } from '@nestjs/common';
 import { DefontanaService } from './defontana.service';
-import { HttpModule } from '@nestjs/axios';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Defontana, DefontanaSchema } from './entities/defontana.entity';
+import { DefontanaToken, DefontanaTokenSchema } from './entities/defontana.entity';
+import {DefontanaCredential, DefontanaCredentialSchema} from "./entities/defontana.credential.entity";
 
 @Module({
   controllers: [],
   imports: [
-    HttpModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        baseURL: configService.get<string>('url_defontana'),
-        headers: {
-          'Content-Type': 'application/json',
-          token: `bearer ${configService.get<string>('')}`,
-        },
-      }),
-      inject: [ConfigService],
-    }),
     MongooseModule.forFeature([
-      { name: Defontana.name, schema: DefontanaSchema },
+      { name: DefontanaToken.name, schema: DefontanaTokenSchema },
+      { name: DefontanaCredential.name, schema: DefontanaCredentialSchema },
     ]),
   ],
   providers: [DefontanaService],

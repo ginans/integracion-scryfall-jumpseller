@@ -38,11 +38,8 @@ lerna-debug.log*
 
 # dotenv environment variable files
 docker/dev/.env
-.env.development.local
-.env.test.local
-.env.production.local
 docker/prod/.env.production
-.env.local
+.env
 
 # temp directory
 .temp

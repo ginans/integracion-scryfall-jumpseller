@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { Sale } from './entities/sale.entity';
-import { PaginatedResponse } from '../common/interface/paginated-response.interface';
+import { PaginatedResponse } from '../common/interfaces/paginated-response.interface';
 
 @Controller('sales')
 export class SalesController {

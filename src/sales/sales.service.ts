@@ -106,9 +106,9 @@ export class SalesService {
         data.condicionpago.IdVenta,
         client,
       );
-      const defontanaResponse = await this.defontana.postSale(saleBody);
-      if (!defontanaResponse.success)
-        throw new BadRequestException(defontanaResponse.message);
+      //const defontanaResponse = await this.defontana.createSale(saleBody);
+      // if (!defontanaResponse.success)
+      //   throw new BadRequestException(defontanaResponse.message);
       //Registrar venta en BD
       await this.model.create({
         document_type: data.Encabezado.IdDoc.TipoDTE,
@@ -126,14 +126,14 @@ export class SalesService {
         seller: data.condicionpago.Vendedor,
         order_id: data.condicionpago.IdVenta,
         state: SaleState.CREADO,
-        defontana_id: defontanaResponse.firstFolio,
+        defontana_id: 0,
         error: null,
       });
       //Obtener PDF
       //const pdf = await this.defontana.getPDF(folio);
       return {
         ok: '1',
-        folio: defontanaResponse.firstFolio,
+        folio: 0,
         pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
       };
     } catch (error) {

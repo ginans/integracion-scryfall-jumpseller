@@ -1,10 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Defontana extends Document {
-  @Prop()
-  token: string;
-}
+export class DefontanaToken {
+  @Prop({ required: true })
+  access_token: string;
 
-export const DefontanaSchema = SchemaFactory.createForClass(Defontana);
+  @Prop({ required: true })
+  token_type: string;
+}
+export type DefontanaTokenDocument = HydratedDocument<DefontanaToken>
+export const DefontanaTokenSchema = SchemaFactory.createForClass(DefontanaToken);

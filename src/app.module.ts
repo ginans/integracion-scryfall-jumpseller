@@ -23,7 +23,10 @@ import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { RequestLoggerInterceptor } from './common/logger/request-logger.interceptor';
+import { RequestLoggerInterceptor } from './common/interceptor/request-logger.interceptor';
+import { ImportCostsModule } from './import-costs/import-costs.module';
+import { LoggerService } from './common/logger/logger.service';
+import { LoggerModule } from './common/logger/logger.module';
 
 @Module({
   imports: [
@@ -66,6 +69,8 @@ import { RequestLoggerInterceptor } from './common/logger/request-logger.interce
     ProductsModule,
     OrderModule,
     JobsModule,
+    ImportCostsModule,
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [
@@ -76,6 +81,7 @@ import { RequestLoggerInterceptor } from './common/logger/request-logger.interce
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggerInterceptor,
     },
+    LoggerService,
   ],
 })
 export class AppModule {}

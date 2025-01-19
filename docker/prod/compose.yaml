@@ -1,14 +1,16 @@
+name: nestjs-app-prod
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: "nestjs-app-${DB_NAME}"
+      context: ../../
+      dockerfile: docker/prod/Dockerfile
+    container_name: "nestjs-app-prod-${DB_NAME}"
     restart: always
+    image: nestjs-app-prod
     ports:
       - "${PORT}:8000"
     env_file:
-      - .env
+      - .env.production
     environment:
       - PORT=${PORT}
       - DB_NAME=${DB_NAME}
@@ -19,10 +21,12 @@ services:
     networks:
       - app-network
     volumes:
-      - ./logs:/app/logs
+#      - .:/app  # Ajustamos la ruta
+      - ./logs:/app/logs  # Ajustamos la ruta
+
   redis:
-    container_name: "redis-${DB_NAME}"
-    image: redis:7
+    container_name: "redis-prod-${DB_NAME}"
+    image: redis:8.0-M02-alpine3.21
     restart: always
     ports:
       - "${CACHE_PORT}:6379"
@@ -31,6 +35,7 @@ services:
       - CACHE_PORT=${CACHE_PORT}
     networks:
       - app-network
+
 networks:
-    app-network:
-      driver: bridge
+  app-network:
+    driver: bridge

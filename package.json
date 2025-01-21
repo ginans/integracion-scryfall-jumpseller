@@ -28,9 +28,9 @@
     "docker:dev:stop": "docker compose --env-file docker/dev/.env -f docker/dev/compose.yaml down",
     "docker:dev:logs": "./docker-scripts.sh logs dev",
 
-    "docker:prod": "docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml up -d",
-    "docker:prod:build": "docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml build",
-    "docker:prod:stop": "docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml down",
+    "docker:prod": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml up -d",
+    "docker:prod:build": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml build",
+    "docker:prod:stop": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml down",
     "docker:prod:logs": "./docker-scripts.sh logs prod",
 
     "docker:stop:all": "./docker-scripts.sh stop dev && ./docker-scripts.sh stop prod"

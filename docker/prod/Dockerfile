@@ -38,7 +38,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nestjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nestjs:nodejs /app/ecosystem.config.js ./ecosystem.config.js
-COPY --from=builder --chown=nestjs:nodejs /app/docker/prod/.env.production ./.env
+COPY --from=builder --chown=nestjs:nodejs /app/docker/prod/.env ./.env
 
 # Instalamos dependencias como el usuario nestjs
 USER nestjs

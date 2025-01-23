@@ -1,6 +1,6 @@
 export interface IPurchaseOrderRequest {
   providerID: string;
-  providerData: IProviderData;
+  providerData?: IProviderData;
   serie: string;
   number: number;
   businessCenter: string;

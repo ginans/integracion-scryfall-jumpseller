@@ -39,20 +39,6 @@ export class SalesService {
     private readonly client: ClientsService,
     private readonly product: ProductsService,
   ) {}
-
-  // async checkNewSales() {
-  //   const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
-  //     '2024-09-01',
-  //     '2024-11-10',
-  //   );
-  //   for (const sale of data) {
-  //     const saleExists = await this.model.exists({ OBJECT_ID: sale.OBJECT_ID });
-  //     if (!saleExists) await this.model.create(sale);
-  //   }
-  //   return {
-  //     message: 'Sales checked',
-  //   };
-  // }
   async findAllSales(query: PaginationQueryDto) {
     const data = await this.model.find().exec();
     return {
@@ -106,9 +92,9 @@ export class SalesService {
         data.condicionpago.IdVenta,
         client,
       );
-      //const defontanaResponse = await this.defontana.createSale(saleBody);
-      // if (!defontanaResponse.success)
-      //   throw new BadRequestException(defontanaResponse.message);
+      const defontanaResponse = await this.defontana.createSale(saleBody);
+      if (!defontanaResponse.success)
+        throw new BadRequestException(defontanaResponse.message);
       //Registrar venta en BD
       await this.model.create({
         document_type: data.Encabezado.IdDoc.TipoDTE,
@@ -147,29 +133,6 @@ export class SalesService {
       throw new NotAcceptableException(response);
     }
   }
-  // private mapSale(sale: SaleDocument) {
-  //   return {
-  //     uuid: sale._id,
-  //     order_id: sale.OBJECT_ID,
-  //     client_name: sale?.Cliente?.[0]?.nombre ?? 'N/A',
-  //     sucursal_name: sale?.Sucursal?.[0]?.nombre ?? 'N/A',
-  //     user_name: sale?.Usuario?.[0]?.nombre ?? 'N/A',
-  //     checkin_date: sale.fecha_ingreso,
-  //     iva: sale.iva,
-  //     neto: sale.neto,
-  //     nr_document: sale.numero_documento,
-  //     total: sale.total,
-  //     state: sale.state,
-  //     defontana_id: sale.defontana_id ?? 0,
-  //     error: sale.error ?? '',
-  //   };
-  // }
-
-  // async findOne(id: string) {
-  //   const sale = await this.model.findById(id).exec();
-  //   if (!sale) throw new NotFoundException('Sale not found');
-  //   return sale;
-  // }
   async findOneByOrderId(id: number): Promise<Sale | null> {
     return this.model.findOne({ OBJECT_ID: id }).exec();
   }
@@ -192,95 +155,6 @@ export class SalesService {
   }
   private async updateSaleState(id: number, state: SaleState) {
     await this.model.updateOne({ OBJECT_ID: id }, { $set: { state } });
-  }
-  // private async validateData(id: number): Promise<Sale> {
-  //   const sale: Sale = await this.findOneByOrderId(id);
-  //   if (!sale) throw new NotFoundException('Sale not found');
-  //   if (!sale.cliente_id) throw new BadRequestException('Cliente no asociado');
-  //   if (!sale.DetalleVenta || sale.DetalleVenta.length === 0)
-  //     throw new BadRequestException('No hay productos asociados a la venta');
-  //   if (sale.defontana_id || sale.state !== SaleState.PENDIENTE)
-  //     throw new BadRequestException('Venta ya procesada');
-  //   return sale;
-  // }
-
-  // async generateSale(id: number) {
-  //   const sale: Sale = await this.validateData(id);
-  //   try {
-  //     //await this.jobs.addJob(id);
-  //     await this.updateSaleState(id, SaleState.PROCESANDO);
-  //     await this.processData(sale);
-  //     await this.updateSaleState(id, SaleState.CREADO);
-  //     return {
-  //       message: 'Venta generada',
-  //     };
-  //   } catch (error) {
-  //     await this.model.updateOne(
-  //       { OBJECT_ID: sale.OBJECT_ID },
-  //       {
-  //         $set: {
-  //           error: error.message,
-  //         },
-  //       },
-  //     );
-  //     await this.updateSaleState(id, SaleState.FALLIDO);
-  //     throw new BadRequestException('Error al procesar la venta');
-  //   }
-  // }
-
-  async processSale(data: TicketDto) {
-    try {
-      //Pasos:
-      //1. Validar que la venta no haya sido procesada con algun identificador unico
-      const sale = await this.findOneByOrderId(data.Encabezado.IdDoc.TipoDTE);
-      if (!sale) throw new BadRequestException('Venta ya procesada');
-      //2. Validar que no exista un job en cola de esta venta
-      //3. Crear un job en cola con el id de la venta
-      //4. Evaluar si el cliente existe en la BD de clientes
-      const client = await this.client.findClientByRut(
-        data.Encabezado.Emisor.RUTEmisor,
-      );
-      //5. Si no existe, crearlo
-      if (!client) {
-        const clientData: ClientInterface = {
-          legalCode: data.Encabezado.Emisor.RUTEmisor,
-          fileid: '',
-          name: '',
-          address: '',
-          district: '',
-          email: '',
-          business: '',
-          rubroId: '',
-          giro: '',
-          city: '',
-        };
-        //TODO: Crear un cliente en DeFontana
-        await this.defontana.createClient(clientData);
-        //6. Si no puede crearse, retornar un error
-        //TODO: Crear un registro en la BD de clientes
-        await this.client.createClient(clientData);
-      }
-      //7. Crear un Pedido en DeFontana
-      //8. Rescatar NR de pedido de DeFontana
-      //9. Crear un documento PDF con la información de la venta y NR de pedido
-      //10. Retornar la URL del PDF y el NR de pedido(Folio)
-      //11. Crear un registro en la BD de la venta con el NR de pedido
-      //12. Gestionar Métodos de Pago en DeFontana
-      //13 Registro completo
-      return {
-        ok: '1',
-        folio: 10000026,
-        pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
-      };
-    } catch (error) {
-      const response = {
-        ok: '0',
-        folio: null,
-        pdf: null,
-        error: error.message,
-      };
-      throw new NotAcceptableException(response);
-    }
   }
 
   // async processSales() {
@@ -560,9 +434,13 @@ export class SalesService {
       count: detail.QtyItem,
       productName: detail.NmbItem,
       productNameBarCode: detail.barCode,
-      price: `${detail.PrcItem}`,
-      discount: { type: 0, value: '-0' },
+      price: detail.PrcItem,
+      discount: { type: 0, value: -0 },
+      especificTax: {
+        value: 0,
+      },
       unit: 'UN',
+      comment: '',
       analysis: {
         accountNumber: this.accountNumber,
         businessCenter: this.businessCenter,
@@ -576,9 +454,9 @@ export class SalesService {
     }));
     const today = new Date();
     const date = {
-      day: `${today.getDate()}`,
-      month: `${today.getMonth() + 1}`,
-      year: `${today.getFullYear()}`,
+      day: today.getDate(),
+      month: today.getMonth() + 1,
+      year: today.getFullYear(),
     };
     return {
       documentType: 'BOLETAELECRS',
@@ -589,6 +467,7 @@ export class SalesService {
       firstFeePaid: date,
       clientFile: `${client.fileid}`,
       contactIndex: client.address,
+      rutMandante: '',
       paymentCondition: 'CONTADO',
       sellerFileId: 'VENDEDOR',
       clientAnalysis: {

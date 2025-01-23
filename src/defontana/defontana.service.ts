@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import {DefontanaToken, DefontanaTokenDocument} from './entities/defontana.entity';
 import { Model } from 'mongoose';
 import { AuthResponse } from './interfaces/auth-response.interface';
-import {OrderRequestInterface, PurchaseInterface} from './interfaces/defontana-request.interface';
+import {OrderRequestInterface, PurchaseInterface, SaleRequestInterface} from './interfaces/defontana-request.interface';
 import {
   BaseDefontanaResponse,
   DefontanaResponse,
@@ -86,7 +86,7 @@ export class DefontanaService {
     }
   }
 
-  async createPurchaseOrder(purchaseOrder: IPurchaseOrderRequest): Promise<string> {
+  async createPurchaseOrder(purchaseOrder: IPurchaseOrderRequest): Promise<PurchaseOrderResponse> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_PURCHASE_ORDER}`;
@@ -94,6 +94,7 @@ export class DefontanaService {
       const { data } = await axios.post<PurchaseOrderResponse>(url, purchaseOrder, {
         headers: { Authorization: token },
       });
+      console.log(data);
       if (
         !data.success &&
         data.message !==
@@ -101,7 +102,7 @@ export class DefontanaService {
       )
         //TODO: Atajar otras excepciones
         this.loggerService.error(data.message);
-      return data.number
+      return data
     } catch (error) {
       console.error(error.response?.data);
       this.loggerService.error(error);
@@ -160,14 +161,14 @@ export class DefontanaService {
     }
   }
 
-  async createSale(sale: OrderRequestInterface ): Promise<number> {
+  async createSale(sale: SaleRequestInterface ): Promise<DefontanaResponse> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_SALE}`;
     const { data } = await axios.post<DefontanaResponse>(url, sale, {
       headers: { Authorization: token },
     });
-    return data.folio;
+    return data;
   }
   // Paso 4: Obtener PDF TODO: Revisar
   async getPdf(folio: number) {

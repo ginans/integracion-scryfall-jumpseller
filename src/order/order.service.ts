@@ -212,9 +212,9 @@ export class OrderService {
         paymentCondition: 'CONTADO',
         documentTypeId: 'FCA',
         exchangeRate: 1,
-        receiptDate: '2025-01-16',
-        expirationDate: '2025-01-16',
-        emissionDate: '2025-01-16',
+        receiptDate: '2025-01-22',
+        expirationDate: '2025-01-22',
+        emissionDate: '2025-01-22',
         amountBeforeTaxes: 0,
         modifiers: 0,
         amountExempt: 0,
@@ -258,9 +258,16 @@ export class OrderService {
       purchaseOrder.amountBeforeTaxes = amountWithoutTax;
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
-      const purchaseOrderNumber =
+      console.log(purchaseOrder);
+      const { number, message, success, exceptionMessage } =
         await this.defontana.createPurchaseOrder(purchaseOrder);
-      return { message: 'Order created', purchaseOrderNumber };
+      if (!success) {
+        order.status = OrderState.FALLIDO;
+        order.error = exceptionMessage;
+        await order.save();
+        return { message: `Error: ${message}, ${exceptionMessage}` };
+      }
+      return { message: 'Order created', number };
     } catch (error) {
       order.status = OrderState.FALLIDO;
       order.error = error.message;

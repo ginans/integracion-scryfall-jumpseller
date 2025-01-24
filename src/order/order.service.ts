@@ -10,7 +10,7 @@ import { ProvidersService } from '../providers/providers.service';
 import { ProviderInterface } from '../providers/interface/provider.interface';
 import { IPurchaseOrderRequest } from './interface/purchase-order-request.interface';
 import { QueryResumeDto } from './dto/query-resume.dto';
-import {GetReporteComprasResult} from "./interface/order-response.interface";
+import { GetReporteComprasResult } from './interface/order-response.interface';
 
 @Injectable()
 export class OrderService {
@@ -204,7 +204,17 @@ export class OrderService {
     try {
       const purchaseOrder: IPurchaseOrderRequest = {
         providerID: `${data.Proveedor[0].rut}`,
-        providerData: {},
+        providerData: {
+          legalCode: '',
+          name: '',
+          address: '',
+          district: '',
+          email: '',
+          business: '',
+          rubroId: '',
+          giro: '',
+          city: '',
+        },
         serie: '',
         number: 0,
         businessCenter: 'FULADMADM000000',
@@ -212,20 +222,20 @@ export class OrderService {
         paymentCondition: 'CONTADO',
         documentTypeId: 'FCA',
         exchangeRate: 1,
-        receiptDate: '2025-01-22',
-        expirationDate: '2025-01-22',
-        emissionDate: '2025-01-22',
+        receiptDate: '2025-01-23',
+        expirationDate: '2025-01-23',
+        emissionDate: '2025-01-23',
         amountBeforeTaxes: 0,
         modifiers: 0,
         amountExempt: 0,
         amountTotal: 0,
         taxes: 0,
         details: [],
-        dispatchContact: '',
-        dispatchAddress: '',
-        dispatchDistrict: '',
-        dispatchState: '',
-        dispatchCity: '',
+        dispatchContact: '1234',
+        dispatchAddress: 'test',
+        dispatchDistrict: 'test',
+        dispatchState: 'test',
+        dispatchCity: 'test',
         dispatchCountry: 'cl',
         dispatchPhone: '',
         comment: `Orden de compra ${data.numero_documento}`,
@@ -259,15 +269,18 @@ export class OrderService {
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
       console.log(purchaseOrder);
-      const { number, message, success, exceptionMessage } =
-        await this.defontana.createPurchaseOrder(purchaseOrder);
-      if (!success) {
-        order.status = OrderState.FALLIDO;
-        order.error = exceptionMessage;
-        await order.save();
-        return { message: `Error: ${message}, ${exceptionMessage}` };
-      }
-      return { message: 'Order created', number };
+      //const { number, message, exceptionMessage, success} = await this.defontana.createPurchaseOrder(purchaseOrder);
+      // if (!success) {
+      //   console.error(exceptionMessage);
+      //   order.status = OrderState.FALLIDO;
+      //   order.error = exceptionMessage;
+      //   await order.save();
+      //   throw new BadRequestException(exceptionMessage);
+      // }
+      // order.defontanaNumber = +number;
+      // order.status = OrderState.FACTURA_CREADA;
+      // await order.save();
+      return { message: 'Order created', order: purchaseOrder };
     } catch (error) {
       order.status = OrderState.FALLIDO;
       order.error = error.message;

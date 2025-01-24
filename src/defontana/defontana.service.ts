@@ -1,14 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import axios, {AxiosError} from 'axios';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import axios from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
-import {DefontanaToken, DefontanaTokenDocument} from './entities/defontana.entity';
+import { DefontanaToken, DefontanaTokenDocument } from './entities/defontana.entity';
 import { Model } from 'mongoose';
 import { AuthResponse } from './interfaces/auth-response.interface';
-import {OrderRequestInterface, PurchaseInterface, SaleRequestInterface} from './interfaces/defontana-request.interface';
+import { OrderRequestInterface, PurchaseInterface } from './interfaces/defontana-request.interface';
 import {
   BaseDefontanaResponse,
   DefontanaResponse,
@@ -16,11 +12,11 @@ import {
 } from './interfaces/defontana-response.interface';
 import { IProvider } from '../order/interface/provider.interface';
 import { IPurchaseOrderRequest } from '../order/interface/purchase-order-request.interface';
-import {LoggerService} from "../common/logger/logger.service";
-import {DefontanaCredential, DefontanaCredentialDocument} from "./entities/defontana.credential.entity";
-import {CredentialsDto} from "./dto/credentials.dto";
-import {ClientInterface} from "../clients/interface/client.interface";
-import {DefontanaEndpointsEnum} from "./interfaces/defontana-endpoints.enum";
+import { LoggerService } from '../common/logger/logger.service';
+import { DefontanaCredential, DefontanaCredentialDocument } from './entities/defontana.credential.entity';
+import { CredentialsDto } from './dto/credentials.dto';
+import { ClientInterface } from '../clients/interface/client.interface';
+import { DefontanaEndpointsEnum } from './interfaces/defontana-endpoints.enum';
 
 @Injectable()
 export class DefontanaService {
@@ -94,13 +90,11 @@ export class DefontanaService {
       const { data } = await axios.post<PurchaseOrderResponse>(url, purchaseOrder, {
         headers: { Authorization: token },
       });
-      console.log(data);
       if (
         !data.success &&
         data.message !==
         `Proveedor ${purchaseOrder.comment} ya existe en el sistema`
       )
-        //TODO: Atajar otras excepciones
         this.loggerService.error(data.message);
       return data
     } catch (error) {
@@ -161,14 +155,14 @@ export class DefontanaService {
     }
   }
 
-  async createSale(sale: SaleRequestInterface ): Promise<DefontanaResponse> {
+  async createSale(sale: OrderRequestInterface): Promise<number> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_SALE}`;
     const { data } = await axios.post<DefontanaResponse>(url, sale, {
       headers: { Authorization: token },
     });
-    return data;
+    return data.folio;
   }
   // Paso 4: Obtener PDF TODO: Revisar
   async getPdf(folio: number) {

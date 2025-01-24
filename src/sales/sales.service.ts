@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotAcceptableException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotAcceptableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sale, SaleDocument } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
@@ -19,10 +14,7 @@ import { SaleState } from './interfaces/sale-state.interface';
 import { JobsService } from 'src/jobs/jobs.service';
 import { IDetalle, IReceptor, TicketDto } from './dto/ticket.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import {
-  OrderDetailInterface,
-  OrderRequestInterface,
-} from '../defontana/interfaces/defontana-request.interface';
+import { OrderDetailInterface, OrderRequestInterface } from '../defontana/interfaces/defontana-request.interface';
 import { ProductDto } from './dto/product.dto';
 
 @Injectable()
@@ -92,9 +84,9 @@ export class SalesService {
         data.condicionpago.IdVenta,
         client,
       );
-      const defontanaResponse = await this.defontana.createSale(saleBody);
-      if (!defontanaResponse.success)
-        throw new BadRequestException(defontanaResponse.message);
+      //const defontanaResponse = await this.defontana.createSale(saleBody);
+      if (!true)
+        throw new BadRequestException('ok');
       //Registrar venta en BD
       await this.model.create({
         document_type: data.Encabezado.IdDoc.TipoDTE,

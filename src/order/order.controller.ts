@@ -30,6 +30,7 @@ export class OrderController {
   //   return this.orderService.checkNewOrders();
   // }
   @Post()
+  //TODO: Generar DTO de Ingreso en la Orden
   generateOrder(@Body() body: GetReporteComprasResult) {
     return this.orderService.processNewOrder(body);
   }

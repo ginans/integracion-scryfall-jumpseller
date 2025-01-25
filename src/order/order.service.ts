@@ -1,16 +1,17 @@
-import { Injectable } from '@nestjs/common';
-import { Order, OrderDocument, OrderState } from './entities/order.entity';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { AgilizarService } from '../agilizar/agilizar.service';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { DefontanaService } from '../defontana/defontana.service';
-import { SaleState } from '../sales/interfaces/sale-state.interface';
-import { ProvidersService } from '../providers/providers.service';
-import { ProviderInterface } from '../providers/interface/provider.interface';
-import { IPurchaseOrderRequest } from './interface/purchase-order-request.interface';
-import { QueryResumeDto } from './dto/query-resume.dto';
-import { GetReporteComprasResult } from './interface/order-response.interface';
+import {Injectable} from '@nestjs/common';
+import {Order, OrderDocument, OrderState} from './entities/order.entity';
+import {InjectModel} from '@nestjs/mongoose';
+import {Model} from 'mongoose';
+import {AgilizarService} from '../agilizar/agilizar.service';
+import {PaginationQueryDto} from '../common/dto/pagination-query.dto';
+import {DefontanaService} from '../defontana/defontana.service';
+import {SaleState} from '../sales/interfaces/sale-state.interface';
+import {ProvidersService} from '../providers/providers.service';
+import {ProviderInterface} from '../providers/interface/provider.interface';
+import {IPurchaseOrderRequest} from './interface/purchase-order-request.interface';
+import {QueryResumeDto} from './dto/query-resume.dto';
+import {GetReporteComprasResult} from './interface/order-response.interface';
+import {formatRut} from "../common/formatRut";
 
 @Injectable()
 export class OrderService {
@@ -134,7 +135,7 @@ export class OrderService {
     return {
       total: await this.model.countDocuments({ isNational: query.isNational }),
       completed: await this.model.countDocuments({
-        status: OrderState.FACTURA_CREADA,
+        status: OrderState.ORDEN_CREADA || OrderState.FACTURA_CREADA,
         isNational: query.isNational,
       }),
       pending: await this.model.countDocuments({
@@ -144,15 +145,13 @@ export class OrderService {
     };
   }
   async getAttachmentToForm() {
-    //Retornar listado de ordenes, solo el id, y el numero de documento
-    const attachment = {
+    return {
       orders: await this.model
-        .find({ status: OrderState.PENDIENTE })
+        .find({status: OrderState.PENDIENTE})
         .select('numero_documento')
         .exec(),
       providers: await this.providers.getProviderForAttachment(),
     };
-    return attachment;
   }
   async findAllNationalOrders() {
     return await this.model.find({ isNational: true }).exec();
@@ -160,32 +159,29 @@ export class OrderService {
   async findAllInternationalOrders() {
     return await this.model.find({ isNational: false }).exec();
   }
+  /*
+  Pasos:
+    1. Validar que la orden no exista - Listo
+    2. Crear la orden
+    3. Validar que el proveedor exista
+    4. Crear el proveedor si no existe
+    5. ingresar una orden de compra a defontana
+    6. Actualizar el estado de la orden
+    7. Obtener el pdf de la orden y almacenarlo
+    Casos Internacionales:
+    8. Ingresar Documento de compra a defontana asociado a la orden
+ */
   async processNewOrder(data: GetReporteComprasResult) {
-    /*
-      Pasos:
-        1. Validar que la orden no exista - Listo
-        2. Crear la orden
-        3. Validar que el proveedor exista
-        4. Crear el proveedor si no existe
-        5. ingresar una orden de compra a defontana
-        6. Actualizar el estado de la orden
-        7. Obtener el pdf de la orden y almacenarlo
-        Casos Internacionales:
-        8. Ingresar Documento de compra a defontana asociado a la orden
-     */
-
-    // 1. Validar que la orden no exista
     const { numero_documento } = data;
-    if (await this.model.exists({ numero_documento }))
-      return { message: 'Order already exists' };
-    // 2. Crear la orden
+    if (await this.model.exists({ numero_documento })) return { message: 'Order already exists' };
     const order = await this.createOrder(data);
-    // 3. Validar que el proveedor exista
+    order.status = OrderState.PROCESANDO;
+    await order.save();
     const provider = data.Proveedor[0];
-    if (!(await this.providers.findProviderByRut(provider.rut))) {
-      //4. Crear el proveedor si no existe
+    const rut = formatRut(provider.rut);
+    if (!(await this.providers.findProviderByRut(rut))) {
       const newProvider: ProviderInterface = {
-        legalCode: provider.rut,
+        legalCode: rut,
         name: provider.razon_social,
         email: provider.email,
         address: provider.direccion,
@@ -195,15 +191,16 @@ export class OrderService {
         giro: '',
         city: '',
         phone: provider.telefono,
-        fileid: `${provider.rut}`,
+        fileid: rut,
       };
-      //await this.defontana.createProvider(newProvider);
+      await this.defontana.createProvider(newProvider);
       await this.providers.createProvider(newProvider);
+      order.status = OrderState.PROVEEDOR_CREADO;
+      await order.save();
     }
-    //5. ingresar una orden de compra a defontana
     try {
       const purchaseOrder: IPurchaseOrderRequest = {
-        providerID: `${data.Proveedor[0].rut}`,
+        providerID: rut,
         providerData: {
           legalCode: '',
           name: '',
@@ -268,19 +265,12 @@ export class OrderService {
       purchaseOrder.amountBeforeTaxes = amountWithoutTax;
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
-      console.log(purchaseOrder);
-      //const { number, message, exceptionMessage, success} = await this.defontana.createPurchaseOrder(purchaseOrder);
-      // if (!success) {
-      //   console.error(exceptionMessage);
-      //   order.status = OrderState.FALLIDO;
-      //   order.error = exceptionMessage;
-      //   await order.save();
-      //   throw new BadRequestException(exceptionMessage);
-      // }
-      // order.defontanaNumber = +number;
-      // order.status = OrderState.FACTURA_CREADA;
-      // await order.save();
-      return { message: 'Order created', order: purchaseOrder };
+      const { number, message, exceptionMessage, success} = await this.defontana.createPurchaseOrder(purchaseOrder);
+      if (!success) throw new Error(`${message} - ${exceptionMessage}`);
+      order.defontanaNumber = +number;
+      order.status = OrderState.ORDEN_CREADA;
+      await order.save();
+      return { message: 'Order created', defontanaNumber: number };
     } catch (error) {
       order.status = OrderState.FALLIDO;
       order.error = error.message;

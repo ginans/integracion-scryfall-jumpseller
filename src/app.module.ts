@@ -32,7 +32,6 @@ import { LoggerModule } from './common/logger/logger.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: 'docker/dev/.env',
       load: [EnvConfiguration],
       validationSchema: JoiValidationSchema,
     }),

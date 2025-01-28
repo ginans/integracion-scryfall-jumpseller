@@ -13,6 +13,10 @@ export class OrderController {
   findAllNational(@Query() query: PaginationQueryDto) {
     return this.orderService.findAllOrdersNational(query);
   }
+  @Get('check')
+  checkNewOrders() {
+    return this.orderService.checkNewOrders();
+  }
   @Get('imports')
   findAllImports(@Query() query: PaginationQueryDto) {
     return this.orderService.findAllOrdersImports(query);
@@ -25,10 +29,6 @@ export class OrderController {
   getAttachmentToForm() {
     return this.orderService.getAttachmentToForm();
   }
-  // @Get('check')
-  // checkOrders() {
-  //   return this.orderService.checkNewOrders();
-  // }
   @Post()
   //TODO: Generar DTO de Ingreso en la Orden
   generateOrder(@Body() body: GetReporteComprasResult) {

@@ -7,7 +7,7 @@ services:
     ports:
       - "${CACHE_PORT}:6379"
     env_file:
-      - .env
+      - ../../.env
     environment:
       - NODE_ENV=${NODE_ENV}
       - CACHE_PORT=${CACHE_PORT}

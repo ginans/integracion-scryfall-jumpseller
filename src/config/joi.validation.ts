@@ -13,5 +13,4 @@ export const JoiValidationSchema = Joi.object({
   URL_FULLERTON: Joi.string().required(),
   CLIENT_ID_FULLERTON: Joi.string().required(),
   SECRET_KEY_FULLERTON: Joi.string().required(),
-  URL_DEFONTANA: Joi.string().required(),
 });

@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { DefontanaToken, DefontanaTokenDocument } from './entities/defontana.entity';
 import { Model } from 'mongoose';
 import { AuthResponse } from './interfaces/auth-response.interface';
-import { OrderRequestInterface, PurchaseInterface } from './interfaces/defontana-request.interface';
+import {OrderRequestInterface, PurchaseInterface, SaleRequestInterface} from './interfaces/defontana-request.interface';
 import {
   BaseDefontanaResponse,
   DefontanaResponse,
@@ -139,7 +139,7 @@ export class DefontanaService {
     }
   }
 
-  async createOrder(order: OrderRequestInterface): Promise<number> {
+  async createOrder(order: OrderRequestInterface): Promise<DefontanaResponse> {
     const token = await this.getAuthToken()
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_ORDER}`;
@@ -148,24 +148,34 @@ export class DefontanaService {
         headers: { Authorization: token },
       });
       if (!data.success) this.loggerService.error(data.message);
-      return data.folio;
+      return data;
     } catch (error) {
       this.loggerService.error(error);
       throw new ServiceUnavailableException('Error al crear Orden');
     }
   }
 
-  async createSale(sale: OrderRequestInterface): Promise<number> {
+  async createSale(sale: SaleRequestInterface): Promise<DefontanaResponse> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_SALE}`;
     const { data } = await axios.post<DefontanaResponse>(url, sale, {
       headers: { Authorization: token },
     });
-    return data.folio;
+    return data;
   }
   // Paso 4: Obtener PDF TODO: Revisar
   async getPdf(folio: number) {
+    const token = await this.getAuthToken();
+    const { urlApi } = await this.getCredential();
+    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF}${folio}`;
+    const { data } = await axios.get(url, {
+      headers: { Authorization: token },
+      responseType: 'arraybuffer',
+    });
+    return data;
+  }
+  async getPdfStandardBase64(folio: number) {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF}${folio}`;

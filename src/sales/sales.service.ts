@@ -75,8 +75,16 @@ export class SalesService {
       //   client.district,
       //   data.Detalles,
       // );
-      // //Crear Venta en DeFontana
-      // const folio = await this.defontana.createOrder(orderBody);
+      // // //Crear Venta en DeFontana
+      // const orderResponse = await this.defontana.createOrder(orderBody);
+      // if (!orderResponse.success) {
+      //   const { message, exceptionMessage } = orderResponse;
+      //   const errorMessage = `${message} - ${exceptionMessage}`;
+      //   return { ok: '0', folio: null, pdf: null, error: errorMessage, };
+      // }
+      // return {
+      //   order: orderResponse,
+      // }
 
       //Crear Venta en DeFontana
       const saleBody = this.createSaleBody(
@@ -84,9 +92,12 @@ export class SalesService {
         data.condicionpago.IdVenta,
         client,
       );
-      //const defontanaResponse = await this.defontana.createSale(saleBody);
-      if (!true)
-        throw new BadRequestException('ok');
+      const defontanaResponse = await this.defontana.createSale(saleBody);
+      if (!defontanaResponse.success) {
+        const { message, exceptionMessage } = defontanaResponse;
+        const errorMessage = `${message} - ${exceptionMessage}`;
+        return { ok: '0', folio: null, pdf: null, error: errorMessage, };
+      }
       //Registrar venta en BD
       await this.model.create({
         document_type: data.Encabezado.IdDoc.TipoDTE,
@@ -104,14 +115,14 @@ export class SalesService {
         seller: data.condicionpago.Vendedor,
         order_id: data.condicionpago.IdVenta,
         state: SaleState.CREADO,
-        defontana_id: 0,
+        defontana_id: defontanaResponse.folio,
         error: null,
       });
       //Obtener PDF
-      //const pdf = await this.defontana.getPDF(folio);
+      //const pdf = await this.defontana.getPdf(defontanaResponse.folio);
       return {
         ok: '1',
-        folio: 0,
+        folio: defontanaResponse.folio,
         pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
       };
     } catch (error) {
@@ -452,8 +463,8 @@ export class SalesService {
     };
     return {
       documentType: 'BOLETAELECRS',
-      firstFolio: 0,
-      lastFolio: 0,
+      firstFolio: 2,
+      lastFolio: 2,
       externalDocumentID: `${IdVenta}`,
       emissionDate: date,
       firstFeePaid: date,
@@ -503,7 +514,7 @@ export class SalesService {
       ventaRecDesGlobal: [],
       gloss: '',
       customFields: [],
-      isTransferDocument: false,
+      isTransferDocument: true,
     };
   }
 }

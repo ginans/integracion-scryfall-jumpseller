@@ -44,6 +44,7 @@ export class OrderService {
     if (search) {
       filter['$or'] = [{ $expr: { $regexMatch: { input: { $toString: '$numero_documento' }, regex: search.toString(), options: 'i' } } }];
     }
+    console.log(filter);
     const sort = sortOrder && sortBy ? { [sortBy]: sortOrder } : {};
     const total = await this.model.countDocuments(filter);
     const data = await this.model.find(filter).sort(sort).skip(limit * (page - 1)).limit(limit).exec();
@@ -114,9 +115,16 @@ export class OrderService {
         paymentCondition: 'CONTADO',
         documentTypeId: 'FCA',
         exchangeRate: 1,
-        receiptDate: '2025-01-23',
-        expirationDate: '2025-01-23',
-        emissionDate: '2025-01-23',
+        // Asi vienen en data, hay que cambiar el formato
+        // "fecha_creacion": "02/09/2024 15:44:30",
+        // "fecha_documento": "02/09/2024 0:00:00",
+        // "fecha_vencimiento": "02/09/2024 0:00:00",
+        receiptDate: '2025-01-28',
+        expirationDate: '2025-01-28',
+        emissionDate: '2025-01-28',
+        // receiptDate: new Date(data.fecha_documento).toISOString(),
+        // expirationDate: new Date(data.fecha_vencimiento).toISOString(),
+        // emissionDate: new Date(data.fecha_creacion).toISOString(),
         amountBeforeTaxes: 0,
         modifiers: 0,
         amountExempt: 0,
@@ -164,6 +172,7 @@ export class OrderService {
       if (!success) throw new Error(`${message} - ${exceptionMessage}`);
       order.defontanaNumber = +number;
       order.status = OrderState.ORDEN_CREADA;
+      order.isNational = provider.internacional ?? true;
       await order.save();
       return { message: 'Order created', defontanaNumber: number };
     } catch (error) {

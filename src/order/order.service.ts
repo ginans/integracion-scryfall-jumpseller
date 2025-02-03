@@ -23,7 +23,7 @@ export class OrderService {
   ) {}
 
   async checkNewOrders() {
-    const { get_reporteComprasResult: data } = await this.agilizar.getCompras('2024-01-01', '2025-01-26');
+    const { get_reporteComprasResult: data } = await this.agilizar.getCompras('2024-01-01', '2024-01-31');
     for (const order of data) {
       await this.processNewOrder(order);
     }
@@ -31,11 +31,11 @@ export class OrderService {
   }
 
   async findAllOrdersImports(query: PaginationQueryDto) {
-    return this.findAllOrders(query, false);
+    return this.findAllOrders(query, true);
   }
 
   async findAllOrdersNational(query: PaginationQueryDto) {
-    return this.findAllOrders(query, true);
+    return this.findAllOrders(query, false);
   }
 
   private async findAllOrders(query: PaginationQueryDto, isNational: boolean) {
@@ -44,7 +44,6 @@ export class OrderService {
     if (search) {
       filter['$or'] = [{ $expr: { $regexMatch: { input: { $toString: '$numero_documento' }, regex: search.toString(), options: 'i' } } }];
     }
-    console.log(filter);
     const sort = sortOrder && sortBy ? { [sortBy]: sortOrder } : {};
     const total = await this.model.countDocuments(filter);
     const data = await this.model.find(filter).sort(sort).skip(limit * (page - 1)).limit(limit).exec();
@@ -131,14 +130,14 @@ export class OrderService {
         amountTotal: 0,
         taxes: 0,
         details: [],
-        dispatchContact: '1234',
-        dispatchAddress: 'test',
-        dispatchDistrict: 'test',
-        dispatchState: 'test',
-        dispatchCity: 'test',
-        dispatchCountry: 'cl',
+        dispatchContact: '',
+        dispatchAddress: '',
+        dispatchDistrict: '',
+        dispatchState: '',
+        dispatchCity: '',
+        dispatchCountry: '',
         dispatchPhone: '',
-        comment: `Orden de compra ${data.numero_documento}`,
+        comment: `Factura de compra ${data.numero_documento}`,
       };
       let taxes = 0;
       let amountWithoutTax = 0;
@@ -169,7 +168,11 @@ export class OrderService {
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
       const { number, message, exceptionMessage, success } = await this.defontana.createPurchaseOrder(purchaseOrder);
-      if (!success) throw new Error(`${message} - ${exceptionMessage}`);
+      if (!success) {
+        order.status = OrderState.FALLIDO;
+        order.error = `${message} - ${exceptionMessage}`;
+        throw new Error(`${message} - ${exceptionMessage}`);
+      }
       order.defontanaNumber = +number;
       order.status = OrderState.ORDEN_CREADA;
       order.isNational = provider.internacional ?? true;

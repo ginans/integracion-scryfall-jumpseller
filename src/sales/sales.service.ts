@@ -462,9 +462,9 @@ export class SalesService {
       year: today.getFullYear(),
     };
     return {
-      documentType: 'BOLETAELECRS',
-      firstFolio: 2,
-      lastFolio: 2,
+      documentType: 'FACTURAELECRS',
+      firstFolio: 6,
+      lastFolio: 6,
       externalDocumentID: `${IdVenta}`,
       emissionDate: date,
       firstFeePaid: date,

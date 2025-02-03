@@ -98,9 +98,8 @@ export class DefontanaService {
         this.loggerService.error(data.message);
       return data
     } catch (error) {
-      console.error(error.response?.data);
       this.loggerService.error(error);
-      throw new ServiceUnavailableException('Error al crear Orden de Compra');
+      throw new ServiceUnavailableException(error.response?.data?.exceptionMessage || 'Error al crear Orden de Compra');
     }
   }
 

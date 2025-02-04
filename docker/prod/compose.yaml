@@ -10,7 +10,7 @@ services:
     ports:
       - "${PORT}:8000"
     env_file:
-      - .env.production
+      - .env
     environment:
       - PORT=${PORT}
       - DB_NAME=${DB_NAME}

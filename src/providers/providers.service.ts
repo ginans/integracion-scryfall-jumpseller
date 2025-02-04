@@ -14,7 +14,7 @@ export class ProvidersService {
   }
   async getProviderForAttachment() {
   //Retorna listado de proveedores, solo el id y el nombre
-    return await this.model.find().select('_id name').exec();
+    return await this.model.find().select('_id name legalCode').exec();
   }
   async findProviderByRut(legalCode: string): Promise<Provider | null> {
     const client = await this.model.findOne({ legalCode }).exec();

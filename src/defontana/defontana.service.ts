@@ -1,14 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
-import axios, {AxiosError} from 'axios';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import axios from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
-import {DefontanaToken, DefontanaTokenDocument} from './entities/defontana.entity';
+import { DefontanaToken, DefontanaTokenDocument } from './entities/defontana.entity';
 import { Model } from 'mongoose';
 import { AuthResponse } from './interfaces/auth-response.interface';
-import {OrderRequestInterface, PurchaseInterface} from './interfaces/defontana-request.interface';
+import {OrderRequestInterface, PurchaseInterface, SaleRequestInterface} from './interfaces/defontana-request.interface';
 import {
   BaseDefontanaResponse,
   DefontanaResponse,
@@ -16,11 +12,11 @@ import {
 } from './interfaces/defontana-response.interface';
 import { IProvider } from '../order/interface/provider.interface';
 import { IPurchaseOrderRequest } from '../order/interface/purchase-order-request.interface';
-import {LoggerService} from "../common/logger/logger.service";
-import {DefontanaCredential, DefontanaCredentialDocument} from "./entities/defontana.credential.entity";
-import {CredentialsDto} from "./dto/credentials.dto";
-import {ClientInterface} from "../clients/interface/client.interface";
-import {DefontanaEndpointsEnum} from "./interfaces/defontana-endpoints.enum";
+import { LoggerService } from '../common/logger/logger.service';
+import { DefontanaCredential, DefontanaCredentialDocument } from './entities/defontana.credential.entity';
+import { CredentialsDto } from './dto/credentials.dto';
+import { ClientInterface } from '../clients/interface/client.interface';
+import { DefontanaEndpointsEnum } from './interfaces/defontana-endpoints.enum';
 
 @Injectable()
 export class DefontanaService {
@@ -86,7 +82,7 @@ export class DefontanaService {
     }
   }
 
-  async createPurchaseOrder(purchaseOrder: IPurchaseOrderRequest): Promise<string> {
+  async createPurchaseOrder(purchaseOrder: IPurchaseOrderRequest): Promise<PurchaseOrderResponse> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_PURCHASE_ORDER}`;
@@ -99,13 +95,11 @@ export class DefontanaService {
         data.message !==
         `Proveedor ${purchaseOrder.comment} ya existe en el sistema`
       )
-        //TODO: Atajar otras excepciones
         this.loggerService.error(data.message);
-      return data.number
+      return data
     } catch (error) {
-      console.error(error.response?.data);
       this.loggerService.error(error);
-      throw new ServiceUnavailableException('Error al crear Orden de Compra');
+      throw new ServiceUnavailableException(error.response?.data?.exceptionMessage || 'Error al crear Orden de Compra');
     }
   }
 
@@ -144,7 +138,7 @@ export class DefontanaService {
     }
   }
 
-  async createOrder(order: OrderRequestInterface): Promise<number> {
+  async createOrder(order: OrderRequestInterface): Promise<DefontanaResponse> {
     const token = await this.getAuthToken()
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_ORDER}`;
@@ -153,24 +147,34 @@ export class DefontanaService {
         headers: { Authorization: token },
       });
       if (!data.success) this.loggerService.error(data.message);
-      return data.folio;
+      return data;
     } catch (error) {
       this.loggerService.error(error);
       throw new ServiceUnavailableException('Error al crear Orden');
     }
   }
 
-  async createSale(sale: OrderRequestInterface ): Promise<number> {
+  async createSale(sale: SaleRequestInterface): Promise<DefontanaResponse> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_SALE}`;
     const { data } = await axios.post<DefontanaResponse>(url, sale, {
       headers: { Authorization: token },
     });
-    return data.folio;
+    return data;
   }
   // Paso 4: Obtener PDF TODO: Revisar
   async getPdf(folio: number) {
+    const token = await this.getAuthToken();
+    const { urlApi } = await this.getCredential();
+    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF}${folio}`;
+    const { data } = await axios.get(url, {
+      headers: { Authorization: token },
+      responseType: 'arraybuffer',
+    });
+    return data;
+  }
+  async getPdfStandardBase64(folio: number) {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF}${folio}`;

@@ -10,114 +10,43 @@ import { ProvidersService } from '../providers/providers.service';
 import { ProviderInterface } from '../providers/interface/provider.interface';
 import { IPurchaseOrderRequest } from './interface/purchase-order-request.interface';
 import { QueryResumeDto } from './dto/query-resume.dto';
-import {GetReporteComprasResult} from "./interface/order-response.interface";
+import { GetReporteComprasResult } from './interface/order-response.interface';
+import { formatRut } from "../common/formatRut";
 
 @Injectable()
 export class OrderService {
   constructor(
-    @InjectModel(Order.name)
-    private readonly model: Model<OrderDocument>,
+    @InjectModel(Order.name) private readonly model: Model<OrderDocument>,
     private readonly agilizar: AgilizarService,
     private readonly defontana: DefontanaService,
     private readonly providers: ProvidersService,
   ) {}
+
   async checkNewOrders() {
-    const { get_reporteComprasResult: data } = await this.agilizar.getCompras(
-      '2024-01-01',
-      '2025-01-10',
-    );
+    const { get_reporteComprasResult: data } = await this.agilizar.getCompras('2024-01-01', '2024-01-31');
     for (const order of data) {
-      const orderExists = await this.model.exists({
-        numero_documento: order.numero_documento,
-      });
-      if (!orderExists) await this.model.create(order);
+      await this.processNewOrder(order);
     }
-    return {
-      message: 'Order checked',
-    };
+    return { message: 'Order checked' };
   }
+
   async findAllOrdersImports(query: PaginationQueryDto) {
-    const { limit = 10, page, filters, sortOrder, sortBy, search } = query;
-    const filter = {};
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        filter[key] = filters[key];
-      });
-    }
-    filter['isNational'] = false;
-    if (search) {
-      const searchString = search.toString();
-      filter['$or'] = [
-        {
-          $expr: {
-            $regexMatch: {
-              input: { $toString: '$numero_documento' },
-              regex: searchString,
-              options: 'i',
-            },
-          },
-        },
-      ];
-    }
-
-    const sort = {};
-    if (sortOrder && sortBy) {
-      sort[sortBy] = sortOrder;
-    }
-    const total = await this.model.countDocuments(filter);
-    const data: Order[] = await this.model
-      .find(filter)
-      .sort(sort)
-      .skip(limit * (page - 1))
-      .limit(limit)
-      .exec();
-    return {
-      items: data,
-      meta: {
-        totalItems: total,
-        itemsPerPage: limit,
-        totalPages: Math.ceil(total / limit),
-        currentPage: page,
-        hasNextPage: total > limit * page,
-        hasPreviousPage: page > 1,
-      },
-    };
+    return this.findAllOrders(query, true);
   }
+
   async findAllOrdersNational(query: PaginationQueryDto) {
-    const { limit = 10, page, filters, sortOrder, sortBy, search } = query;
-    const filter = {};
-    if (filters) {
-      Object.keys(filters).forEach((key) => {
-        filter[key] = filters[key];
-      });
-    }
-    filter['isNational'] = true;
-    if (search) {
-      const searchString = search.toString();
-      filter['$or'] = [
-        {
-          $expr: {
-            $regexMatch: {
-              input: { $toString: '$numero_documento' },
-              regex: searchString,
-              options: 'i',
-            },
-          },
-        },
-      ];
-    }
+    return this.findAllOrders(query, false);
+  }
 
-    const sort = {};
-    if (sortOrder && sortBy) {
-      sort[sortBy] = sortOrder;
+  private async findAllOrders(query: PaginationQueryDto, isNational: boolean) {
+    const { limit = 10, page, filters, sortOrder, sortBy, search } = query;
+    const filter = { isNational, ...filters };
+    if (search) {
+      filter['$or'] = [{ $expr: { $regexMatch: { input: { $toString: '$numero_documento' }, regex: search.toString(), options: 'i' } } }];
     }
+    const sort = sortOrder && sortBy ? { [sortBy]: sortOrder } : {};
     const total = await this.model.countDocuments(filter);
-    const data: Order[] = await this.model
-        .find(filter)
-        .sort(sort)
-        .skip(limit * (page - 1))
-        .limit(limit)
-        .exec();
+    const data = await this.model.find(filter).sort(sort).skip(limit * (page - 1)).limit(limit).exec();
     return {
       items: data,
       meta: {
@@ -130,80 +59,53 @@ export class OrderService {
       },
     };
   }
+
   async getResumeToDocuments(query: QueryResumeDto) {
+    const { isNational } = query;
     return {
-      total: await this.model.countDocuments({ isNational: query.isNational }),
-      completed: await this.model.countDocuments({
-        status: OrderState.FACTURA_CREADA,
-        isNational: query.isNational,
-      }),
-      pending: await this.model.countDocuments({
-        status: OrderState.PENDIENTE,
-        isNational: query.isNational,
-      }),
+      total: await this.model.countDocuments({ isNational }),
+      completed: await this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
+      pending: await this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
     };
   }
+
   async getAttachmentToForm() {
-    //Retornar listado de ordenes, solo el id, y el numero de documento
-    const attachment = {
-      orders: await this.model
-        .find({ status: OrderState.PENDIENTE })
-        .select('numero_documento')
-        .exec(),
+    return {
+      orders: await this.model.find({ status: OrderState.PENDIENTE }).select('numero_documento').exec(),
       providers: await this.providers.getProviderForAttachment(),
     };
-    return attachment;
   }
-  async findAllNationalOrders() {
-    return await this.model.find({ isNational: true }).exec();
-  }
-  async findAllInternationalOrders() {
-    return await this.model.find({ isNational: false }).exec();
-  }
-  async processNewOrder(data: GetReporteComprasResult) {
-    /*
-      Pasos:
-        1. Validar que la orden no exista - Listo
-        2. Crear la orden
-        3. Validar que el proveedor exista
-        4. Crear el proveedor si no existe
-        5. ingresar una orden de compra a defontana
-        6. Actualizar el estado de la orden
-        7. Obtener el pdf de la orden y almacenarlo
-        Casos Internacionales:
-        8. Ingresar Documento de compra a defontana asociado a la orden
-     */
 
-    // 1. Validar que la orden no exista
+  async processNewOrder(data: GetReporteComprasResult) {
     const { numero_documento } = data;
-    if (await this.model.exists({ numero_documento }))
-      return { message: 'Order already exists' };
-    // 2. Crear la orden
+    if (await this.model.exists({ numero_documento })) return { message: 'Order already exists' };
     const order = await this.createOrder(data);
-    // 3. Validar que el proveedor exista
+    order.status = OrderState.PROCESANDO;
+    await order.save();
     const provider = data.Proveedor[0];
-    if (!(await this.providers.findProviderByRut(provider.rut))) {
-      //4. Crear el proveedor si no existe
+    const rut = formatRut(provider.rut);
+    if (!(await this.providers.findProviderByRut(rut))) {
       const newProvider: ProviderInterface = {
-        legalCode: provider.rut,
+        legalCode: rut,
         name: provider.razon_social,
         email: provider.email,
         address: provider.direccion,
+        phone: provider.telefono,
+        fileid: rut,
         district: '',
+        city: '',
         business: '',
         rubroId: '',
         giro: '',
-        city: '',
-        phone: provider.telefono,
-        fileid: `${provider.rut}`,
       };
-      //await this.defontana.createProvider(newProvider);
+      await this.defontana.createProvider(newProvider);
       await this.providers.createProvider(newProvider);
+      order.status = OrderState.PROVEEDOR_CREADO;
+      await order.save();
     }
-    //5. ingresar una orden de compra a defontana
     try {
       const purchaseOrder: IPurchaseOrderRequest = {
-        providerID: `${data.Proveedor[0].rut}`,
+        providerID: rut,
         providerData: {},
         serie: '',
         number: 0,
@@ -212,9 +114,16 @@ export class OrderService {
         paymentCondition: 'CONTADO',
         documentTypeId: 'FCA',
         exchangeRate: 1,
-        receiptDate: '2025-01-16',
-        expirationDate: '2025-01-16',
-        emissionDate: '2025-01-16',
+        // Asi vienen en data, hay que cambiar el formato
+        // "fecha_creacion": "02/09/2024 15:44:30",
+        // "fecha_documento": "02/09/2024 0:00:00",
+        // "fecha_vencimiento": "02/09/2024 0:00:00",
+        receiptDate: '2025-01-28',
+        expirationDate: '2025-01-28',
+        emissionDate: '2025-01-28',
+        // receiptDate: new Date(data.fecha_documento).toISOString(),
+        // expirationDate: new Date(data.fecha_vencimiento).toISOString(),
+        // emissionDate: new Date(data.fecha_creacion).toISOString(),
         amountBeforeTaxes: 0,
         modifiers: 0,
         amountExempt: 0,
@@ -226,9 +135,9 @@ export class OrderService {
         dispatchDistrict: '',
         dispatchState: '',
         dispatchCity: '',
-        dispatchCountry: 'cl',
+        dispatchCountry: '',
         dispatchPhone: '',
-        comment: `Orden de compra ${data.numero_documento}`,
+        comment: `Factura de compra ${data.numero_documento}`,
       };
       let taxes = 0;
       let amountWithoutTax = 0;
@@ -244,7 +153,6 @@ export class OrderService {
           discount: 0,
           discountType: 0,
           price: detail.precio_compra,
-          comment: '',
           productData: {
             code: detail.Producto[0].sku,
             name: detail.Producto[0].nombre,
@@ -253,14 +161,23 @@ export class OrderService {
             description: detail.Producto[0].nombre,
             isService: false,
           },
+          comment: '',
         });
       }
       purchaseOrder.amountBeforeTaxes = amountWithoutTax;
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
-      const purchaseOrderNumber =
-        await this.defontana.createPurchaseOrder(purchaseOrder);
-      return { message: 'Order created', purchaseOrderNumber };
+      const { number, message, exceptionMessage, success } = await this.defontana.createPurchaseOrder(purchaseOrder);
+      if (!success) {
+        order.status = OrderState.FALLIDO;
+        order.error = `${message} - ${exceptionMessage}`;
+        throw new Error(`${message} - ${exceptionMessage}`);
+      }
+      order.defontanaNumber = +number;
+      order.status = OrderState.ORDEN_CREADA;
+      order.isNational = provider.internacional ?? true;
+      await order.save();
+      return { message: 'Order created', defontanaNumber: number };
     } catch (error) {
       order.status = OrderState.FALLIDO;
       order.error = error.message;
@@ -271,22 +188,12 @@ export class OrderService {
 
   async createOrder(data: GetReporteComprasResult) {
     const newOrder = {
-      IngresoDetalle: data.IngresoDetalle,
-      Proveedor: data.Proveedor,
-      TipoDocumento: data.TipoDocumento,
-      esta_activo: data.esta_activo ?? true,
-      fecha_creacion: data.fecha_creacion,
-      fecha_documento: data.fecha_documento,
-      fecha_vencimiento: data.fecha_vencimiento,
-      ingreso_bodega_cabecera_id: data.ingreso_bodega_cabecera_id,
-      numero_documento: data.numero_documento,
-      proveedor_id: data.proveedor_id,
-      tipo_documento_id: data.tipo_documento_id,
+      ...data,
       isNational: data.Proveedor[0].internacional ?? true,
       status: SaleState.PENDIENTE,
       defontanaNumber: null,
       import_costs: [],
     };
-    return await this.model.create(newOrder);
+    return this.model.create(newOrder);
   }
 }

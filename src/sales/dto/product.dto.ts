@@ -5,11 +5,15 @@ export interface ProductDto {
   count: number;
   productName: string;
   productNameBarCode: string;
-  price: string;
+  price: number;
   discount: {
     type: number;
-    value: string;
+    value: number;
   };
+  especificTax: {
+    value: number;
+  };
+  comment: string;
   unit: string;
   analysis: {
     accountNumber: string;

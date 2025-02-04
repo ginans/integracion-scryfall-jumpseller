@@ -116,3 +116,141 @@ export interface AnalysisInterface {
   classifier02: string;
   businessCenterId: string;
 }
+
+export interface SaleRequestInterface {
+  documentType: string;
+  firstFolio: number;
+  lastFolio: number;
+  externalDocumentID: string;
+  emissionDate: DateInterface;
+  firstFeePaid: DateInterface;
+  clientFile: string;
+  contactIndex: string;
+  rutMandante: string;
+  paymentCondition: string;
+  sellerFileId: string;
+  clientAnalysis: ClientAnalysisInterface;
+  billingCoin: string;
+  billingRate: number;
+  shopId: string;
+  priceList: string;
+  giro: string;
+  district: string;
+  city: string;
+  contact: number;
+  attachedDocuments: AttachedDocumentInterface[];
+  storage: StorageInterface;
+  details: DetailInterface[];
+  saleTaxes: SaleTaxInterface[];
+  ventaRecDesGlobal: VentaRecDesGlobalInterface[];
+  gloss: string;
+  customFields: CustomFieldInterface[];
+  isTransferDocument: boolean;
+}
+
+export interface DateInterface {
+  day: number;
+  month: number;
+  year: number;
+}
+
+export interface ClientAnalysisInterface {
+  accountNumber: string;
+  businessCenter: string;
+  classifier01: string;
+  classifier02: string;
+}
+
+export interface AttachedDocumentInterface {
+  date: DateInterface;
+  documentTypeId: string;
+  folio: string;
+  reason: string;
+}
+
+export interface StorageInterface {
+  code: string;
+  motive: string;
+  storageAnalysis: StorageAnalysisInterface;
+}
+
+export interface StorageAnalysisInterface {
+  accountNumber: string;
+  businessCenter: string;
+  classifier01: string;
+  classifier02: string;
+}
+
+export interface DetailInterface {
+  type: string;
+  isExempt: boolean;
+  code: string;
+  count: number;
+  productName: string;
+  productNameBarCode: string;
+  comment: string;
+  price: number;
+  discount: DiscountInterface;
+  especificTax: EspecificTaxInterface;
+  unit: string;
+  analysis: IAnalysisInterface;
+  useBatch: boolean;
+  batchInfo: BatchInfoInterface[];
+}
+
+export interface DiscountInterface {
+  type: number;
+  value: number;
+}
+
+export interface EspecificTaxInterface {
+  value: number;
+}
+
+export interface IAnalysisInterface {
+  accountNumber: string;
+  businessCenter: string;
+  classifier01: string;
+  classifier02: string;
+}
+
+export interface BatchInfoInterface {
+  amount: number;
+  batchNumber: string;
+}
+
+export interface SaleTaxInterface {
+  code: string;
+  value: number;
+  taxeAnalysis: TaxeAnalysisInterface;
+}
+
+export interface TaxeAnalysisInterface {
+  accountNumber: string;
+  businessCenter: string;
+  classifier01: string;
+  classifier02: string;
+}
+
+export interface VentaRecDesGlobalInterface {
+  amount: number;
+  modifierClass: string;
+  name: string;
+  percentage: number;
+  value: number;
+}
+
+export interface CustomFieldInterface {
+  name: string;
+  value: string;
+}
+
+export interface WoodManagementInfoInterface {
+  maderaComunaRolOrigen: number;
+  maderaManzanaRolOrigen: number;
+  maderaPredioRolOrigen: number;
+  maderaCodigoPlanCONAF: string;
+  maderaLatitudOrigen: string;
+  maderaLongitudOrigen: string;
+  maderaSistemaReferencia: number;
+}

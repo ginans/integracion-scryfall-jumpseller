@@ -32,7 +32,7 @@ export class UsersService {
     return user;
   }
 
-  async createUser(userDto: CreateUserDto): Promise<User> {
+  async createUser(userDto: CreateUserDto): Promise<UserDocument> {
     const userExist = await this.findByEmail(userDto.email);
     if (userExist) throw new BadRequestException('Usuario Ya Existe');
     userDto.password = await this.hashPassword(userDto.password);

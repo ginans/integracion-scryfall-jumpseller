@@ -50,8 +50,7 @@ import { LoggerModule } from './common/logger/logger.module';
     }),
     BullModule.forRoot({
       connection: {
-        host: EnvConfiguration().cache_host,
-        port: EnvConfiguration().cache_port,
+        url: EnvConfiguration().cache_url,
       },
     }),
     BullBoardModule.forRoot({

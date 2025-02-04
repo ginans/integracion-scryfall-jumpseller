@@ -9,6 +9,7 @@ export const EnvConfiguration = () => ({
   db_uri: process.env.DB_URI,
   cache_host: process.env.CACHE_HOST || 'localhost',
   cache_port: +process.env.CACHE_PORT || 6379,
+  cache_url: process.env.CACHE_URL,
   url_fullerton: process.env.URL_FULLERTON,
   client_id_fullerton: process.env.CLIENT_ID_FULLERTON,
   secret_key_fullerton: process.env.SECRET_KEY_FULLERTON,

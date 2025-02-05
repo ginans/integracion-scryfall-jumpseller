@@ -46,5 +46,5 @@ export class PaginationQueryDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  filters?: Record<string, any>;
+  filters?: Record<string, string>;
 }

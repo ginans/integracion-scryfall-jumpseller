@@ -5,6 +5,7 @@ import { UserRole } from './users/enums/user-role.enum';
 import { SalesService } from './sales/sales.service';
 import { TicketDto } from './sales/dto/ticket.dto';
 import { ClientsService } from './clients/clients.service';
+import {DefontanaService} from "./defontana/defontana.service";
 
 @Injectable()
 export class AppService {
@@ -13,6 +14,7 @@ export class AppService {
     private readonly auth: AuthService,
     private readonly salesService: SalesService,
     private readonly clientService: ClientsService,
+    private readonly defontanaService: DefontanaService,
   ) {}
 
   async seed() {
@@ -56,6 +58,13 @@ export class AppService {
     };
   }
   async test() {
-    return this.clientService.createDefaultClient();
+    const credential = {
+      client: '20250107171152111005',
+      company: '20250107171152111005',
+      user: 'INTEGRACION',
+      password: 'Fixlabs.2024!',
+      urlApi: 'https://api.defontana.com/api/',
+    }
+    return this.defontanaService.generateToken();
   }
 }

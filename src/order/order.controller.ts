@@ -1,29 +1,41 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import {Body, Controller, Get, Param, Post, Query, UseGuards} from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { QueryResumeDto } from './dto/query-resume.dto';
+import {GetReporteComprasResult} from "./interface/order-response.interface";
+import {CreateDocumentDto} from "./dto/create-document.dto";
 
-@Controller('order')
+@Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
-  @Get()
-  findAll(@Query() query: PaginationQueryDto) {
-    return this.orderService.findAllOrders(query);
+  @Get('national')
+  findAllNational(@Query() query: PaginationQueryDto) {
+    return this.orderService.findAllOrdersNational(query);
   }
   @Get('check')
-  checkOrders() {
+  checkNewOrders() {
     return this.orderService.checkNewOrders();
   }
+  @Get('imports')
+  findAllImports(@Query() query: PaginationQueryDto) {
+    return this.orderService.findAllOrdersImports(query);
+  }
+  @Get('resume')
+  getResumeForOrders(@Query() query: QueryResumeDto) {
+    return this.orderService.getResumeToDocuments(query);
+  }
+  @Get('form')
+  getAttachmentToForm() {
+    return this.orderService.getAttachmentToForm();
+  }
   @Post()
-  generateBoleta(@Body() body: any) {
+  generateOrder(@Body() body: GetReporteComprasResult) {
     return this.orderService.processNewOrder(body);
+  }
+  @Post('document')
+  generateDocument(@Body() body: CreateDocumentDto) {
+    return this.orderService.createDocument(body);
   }
 }

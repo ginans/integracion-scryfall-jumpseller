@@ -1,4 +1,4 @@
-interface BaseDefontanaResponse {
+export interface BaseDefontanaResponse {
   success: boolean;
   message: string;
   exceptionMessage: string;

@@ -1,12 +1,12 @@
 export class TicketDto {
   Encabezado: Encabezado;
-  Detalles: Detalle[];
+  Detalles: IDetalle[];
   condicionpago: CondicionPago;
 }
 interface Encabezado {
   IdDoc: IdDoc;
   Emisor: Emisor;
-  Receptor: Receptor;
+  Receptor: IReceptor;
   Totales: Totales;
 }
 interface IdDoc {
@@ -17,7 +17,7 @@ interface IdDoc {
 interface Emisor {
   RUTEmisor: string;
 }
-interface Receptor {
+export interface IReceptor {
   RUTRecep: string | null;
   RznSocRecep: string | null;
   GiroRecep: string | null;
@@ -31,7 +31,7 @@ interface Totales {
   ImptoReten: any[];
   MntTotal: number;
 }
-interface Detalle {
+export interface IDetalle {
   NmbItem: string;
   DscItem: string;
   QtyItem: number;

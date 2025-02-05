@@ -2,16 +2,35 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import {
   IngresoDetalle,
-  Proveedor,
-  TipoDocumento,
+  IProveedor,
+  ITipoDocumento,
 } from '../interface/order-response.interface';
 export interface ImportCosts {
-  id: string;
-  provider_id: number;
+  provider: string;
+  costs: Cost[];
+  costCenter: string;
   amount: number;
-  document_url: string;
-  folio: number;
-  pdf_url: string;
+  invoiceNumber: string;
+  status: OrderState;
+  folio: number | null;
+  pdf_url: string | null;
+}
+export interface Cost {
+  id: number;
+  amount: number;
+  account: string;
+  costType: string;
+  currency: string;
+  exchangeRate: number;
+  amountCLP: number;
+}
+export enum OrderState {
+  PENDIENTE = 'Pendiente',
+  PROCESANDO = 'Procesando',
+  PROVEEDOR_CREADO = 'Proveedor Creado',
+  ORDEN_CREADA = 'Orden Creada',
+  FACTURA_CREADA = 'Factura Creada',
+  FALLIDO = 'Fallido',
 }
 @Schema({ timestamps: true })
 export class Order {
@@ -20,9 +39,9 @@ export class Order {
   @Prop()
   IngresoDetalle: IngresoDetalle[];
   @Prop()
-  Proveedor: Proveedor[];
+  Proveedor: IProveedor[];
   @Prop()
-  TipoDocumento: TipoDocumento[];
+  TipoDocumento: ITipoDocumento[];
   @Prop({
     type: Boolean,
   })
@@ -46,15 +65,15 @@ export class Order {
   })
   isNational: boolean;
   @Prop({
-    default: 'pending',
+    default: OrderState.PENDIENTE,
   })
-  status: string;
+  status: OrderState;
   @Prop({
     required: false,
     nullable: true,
     default: null,
   })
-  defontanaNumber: number;
+  defontanaNumber: number | null;
   @Prop({
     required: false,
     nullable: true,

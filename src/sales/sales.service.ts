@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotAcceptableException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotAcceptableException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Sale, SaleDocument } from './entities/sale.entity';
 import { AgilizarService } from '../agilizar/agilizar.service';
@@ -17,14 +12,10 @@ import { formatDate } from '../common/formatDate';
 import { DefontanaService } from '../defontana/defontana.service';
 import { SaleState } from './interfaces/sale-state.interface';
 import { JobsService } from 'src/jobs/jobs.service';
-import { TicketDto } from './dto/ticket.dto';
+import { IDetalle, IReceptor, TicketDto } from './dto/ticket.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { PaginationService } from '../common/services/pagination.service';
-import { SortOrder } from '../common/dto/pagination-query.dto';
-import {
-  OrderDetailInterface,
-  OrderRequestInterface,
-} from '../defontana/interfaces/defontana-request.interface';
+import { OrderDetailInterface, OrderRequestInterface } from '../defontana/interfaces/defontana-request.interface';
+import { ProductDto } from './dto/product.dto';
 
 @Injectable()
 export class SalesService {
@@ -39,39 +30,20 @@ export class SalesService {
     private readonly defontana: DefontanaService,
     private readonly client: ClientsService,
     private readonly product: ProductsService,
-    private readonly paginationService: PaginationService,
   ) {}
-
-  // async checkNewSales() {
-  //   const { get_reporteVentasResult: data } = await this.agilizar.getVentas(
-  //     '2024-09-01',
-  //     '2024-11-10',
-  //   );
-  //   for (const sale of data) {
-  //     const saleExists = await this.model.exists({ OBJECT_ID: sale.OBJECT_ID });
-  //     if (!saleExists) await this.model.create(sale);
-  //   }
-  //   return {
-  //     message: 'Sales checked',
-  //   };
-  // }
   async findAllSales(query: PaginationQueryDto) {
-    const allowedSortFields = [
-      'order_id',
-      'client_rut',
-      'seller',
-      'defontana_id',
-    ];
-    if (query.sortBy && !allowedSortFields.includes(query.sortBy))
-      throw new BadRequestException(
-        `Campos de ordenamiento permitidos: ${allowedSortFields.join(', ')}`,
-      );
-    const sortOrder = query.sortOrder || SortOrder.ASC;
-    return await this.paginationService.paginate<Sale>(
-      this.model,
-      { ...query, sortOrder },
-      allowedSortFields,
-    );
+    const data = await this.model.find().exec();
+    return {
+      items: data,
+      meta: {
+        totalItems: data.length,
+        itemsPerPage: 5,
+        totalPages: data.length / 5,
+        currentPage: 1,
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+    };
   }
   async createSale(data: TicketDto) {
     try {
@@ -91,88 +63,66 @@ export class SalesService {
       let client = await this.client.findClientByRut(
         data.Encabezado.Receptor.RUTRecep,
       );
-      if (!client && data.Encabezado.Receptor.RUTRecep) {
-        const clientData: ClientInterface = {
-          legalCode: data.Encabezado.Receptor.RUTRecep,
-          fileid: data.Encabezado.Receptor.RUTRecep,
-          name: data.Encabezado.Receptor.RznSocRecep,
-          address: data.Encabezado.Receptor.DirRecep,
-          district: data.Encabezado.Receptor.CmnaRecep,
-          email: '',
-          business: '',
-          rubroId: '',
-          giro: data.Encabezado.Receptor.GiroRecep,
-          city: data.Encabezado.Receptor.CiudadRecep,
-        };
-        await this.defontana.createClient(clientData);
-        await this.client.createClient(clientData);
-      }
+      if (!client && data.Encabezado.Receptor.RUTRecep)
+        await this.createClient(data.Encabezado.Receptor);
       client = client ?? (await this.client.findClientByRut('11.111.111-1'));
-      //Obtener dia, mes y año actual
-      const today = new Date();
-      const date = {
-        day: today.getDate(),
-        month: today.getMonth() + 1,
-        year: today.getFullYear(),
-      };
+
+      //TODO: Preguntar por este flujo
       //Create orderBody for DeFontana
-      const orderBody: OrderRequestInterface = {
-        documentTypeId: 'BOLETAELECRS',
-        //number: 0,
-        pricingId: '0',
-        clientFileId: client.fileid,
-        sellerFileId: 'VENDEDOR',
-        referenceNumber: '0',
-        paymentConditionId: 'CONTADO',
-        billingCoinId: 'PESO',
-        billingRate: 1,
-        shopId: 'Local',
-        priceListId: '1',
-        billingType: '1',
-        giro: client.giro,
-        district: client.district,
-        orderDetails: [],
-        taxes: [],
-        creationDate: date,
-        expirationDate: date,
-        glossGeneral: '',
-        glossDispatch: '',
-        glossBill: '',
-        glossPresentation: '',
-        orderRecDesGlobal: [],
-      };
-      //create detail for orderBody
-      for (const detail of data.Detalles) {
-        const detailFormat: OrderDetailInterface = {
-          type: 'A',
-          isExempt: false,
-          isService: false,
-          code: detail.SKU,
-          unit: 'UN',
-          count: detail.QtyItem,
-          price: detail.PrcItem,
-          deliveryTime: {
-            hour: 22,
-            minute: 30,
-          },
-          discount: {
-            value: 0,
-            type: 0,
-          },
-          tax: {
-            code: 'IVA',
-            value: 19,
-          },
-          comment: '',
-          productName: detail.NmbItem,
-          deliveryDate: date,
-        };
-        orderBody.orderDetails.push(detailFormat);
+      // const orderBody = this.createOrder(
+      //   client.fileid,
+      //   client.giro,
+      //   client.district,
+      //   data.Detalles,
+      // );
+      // // //Crear Venta en DeFontana
+      // const orderResponse = await this.defontana.createOrder(orderBody);
+      // if (!orderResponse.success) {
+      //   const { message, exceptionMessage } = orderResponse;
+      //   const errorMessage = `${message} - ${exceptionMessage}`;
+      //   return { ok: '0', folio: null, pdf: null, error: errorMessage, };
+      // }
+      // return {
+      //   order: orderResponse,
+      // }
+
+      //Crear Venta en DeFontana
+      const saleBody = this.createSaleBody(
+        data.Detalles,
+        data.condicionpago.IdVenta,
+        client,
+      );
+      const defontanaResponse = await this.defontana.createSale(saleBody);
+      if (!defontanaResponse.success) {
+        const { message, exceptionMessage } = defontanaResponse;
+        const errorMessage = `${message} - ${exceptionMessage}`;
+        return { ok: '0', folio: null, pdf: null, error: errorMessage, };
       }
-      const folio = await this.defontana.createOrder(orderBody);
+      //Registrar venta en BD
+      await this.model.create({
+        document_type: data.Encabezado.IdDoc.TipoDTE,
+        emisor_rut: data.Encabezado.Emisor.RUTEmisor,
+        client_rut: client.legalCode,
+        client_rznSoc: client.name,
+        client_giro: client.giro,
+        client_direction: client.address,
+        client_comune: client.district,
+        client_city: client.city,
+        total: data.Encabezado.Totales.MntTotal,
+        iva: data.Encabezado.Totales.IVA,
+        details: data.Detalles,
+        payment_method: data.condicionpago.CondicionPago,
+        seller: data.condicionpago.Vendedor,
+        order_id: data.condicionpago.IdVenta,
+        state: SaleState.CREADO,
+        defontana_id: defontanaResponse.folio,
+        error: null,
+      });
+      //Obtener PDF
+      //const pdf = await this.defontana.getPdf(defontanaResponse.folio);
       return {
         ok: '1',
-        folio: folio ?? 10000001,
+        folio: defontanaResponse.folio,
         pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
       };
     } catch (error) {
@@ -186,29 +136,6 @@ export class SalesService {
       throw new NotAcceptableException(response);
     }
   }
-  // private mapSale(sale: SaleDocument) {
-  //   return {
-  //     uuid: sale._id,
-  //     order_id: sale.OBJECT_ID,
-  //     client_name: sale?.Cliente?.[0]?.nombre ?? 'N/A',
-  //     sucursal_name: sale?.Sucursal?.[0]?.nombre ?? 'N/A',
-  //     user_name: sale?.Usuario?.[0]?.nombre ?? 'N/A',
-  //     checkin_date: sale.fecha_ingreso,
-  //     iva: sale.iva,
-  //     neto: sale.neto,
-  //     nr_document: sale.numero_documento,
-  //     total: sale.total,
-  //     state: sale.state,
-  //     defontana_id: sale.defontana_id ?? 0,
-  //     error: sale.error ?? '',
-  //   };
-  // }
-
-  // async findOne(id: string) {
-  //   const sale = await this.model.findById(id).exec();
-  //   if (!sale) throw new NotFoundException('Sale not found');
-  //   return sale;
-  // }
   async findOneByOrderId(id: number): Promise<Sale | null> {
     return this.model.findOne({ OBJECT_ID: id }).exec();
   }
@@ -231,95 +158,6 @@ export class SalesService {
   }
   private async updateSaleState(id: number, state: SaleState) {
     await this.model.updateOne({ OBJECT_ID: id }, { $set: { state } });
-  }
-  // private async validateData(id: number): Promise<Sale> {
-  //   const sale: Sale = await this.findOneByOrderId(id);
-  //   if (!sale) throw new NotFoundException('Sale not found');
-  //   if (!sale.cliente_id) throw new BadRequestException('Cliente no asociado');
-  //   if (!sale.DetalleVenta || sale.DetalleVenta.length === 0)
-  //     throw new BadRequestException('No hay productos asociados a la venta');
-  //   if (sale.defontana_id || sale.state !== SaleState.PENDIENTE)
-  //     throw new BadRequestException('Venta ya procesada');
-  //   return sale;
-  // }
-
-  // async generateSale(id: number) {
-  //   const sale: Sale = await this.validateData(id);
-  //   try {
-  //     //await this.jobs.addJob(id);
-  //     await this.updateSaleState(id, SaleState.PROCESANDO);
-  //     await this.processData(sale);
-  //     await this.updateSaleState(id, SaleState.CREADO);
-  //     return {
-  //       message: 'Venta generada',
-  //     };
-  //   } catch (error) {
-  //     await this.model.updateOne(
-  //       { OBJECT_ID: sale.OBJECT_ID },
-  //       {
-  //         $set: {
-  //           error: error.message,
-  //         },
-  //       },
-  //     );
-  //     await this.updateSaleState(id, SaleState.FALLIDO);
-  //     throw new BadRequestException('Error al procesar la venta');
-  //   }
-  // }
-
-  async processSale(data: TicketDto) {
-    try {
-      //Pasos:
-      //1. Validar que la venta no haya sido procesada con algun identificador unico
-      const sale = await this.findOneByOrderId(data.Encabezado.IdDoc.TipoDTE);
-      if (!sale) throw new BadRequestException('Venta ya procesada');
-      //2. Validar que no exista un job en cola de esta venta
-      //3. Crear un job en cola con el id de la venta
-      //4. Evaluar si el cliente existe en la BD de clientes
-      const client = await this.client.findClientByRut(
-        data.Encabezado.Emisor.RUTEmisor,
-      );
-      //5. Si no existe, crearlo
-      if (!client) {
-        const clientData: ClientInterface = {
-          legalCode: data.Encabezado.Emisor.RUTEmisor,
-          fileid: '',
-          name: '',
-          address: '',
-          district: '',
-          email: '',
-          business: '',
-          rubroId: '',
-          giro: '',
-          city: '',
-        };
-        //TODO: Crear un cliente en DeFontana
-        await this.defontana.createClient(clientData);
-        //6. Si no puede crearse, retornar un error
-        //TODO: Crear un registro en la BD de clientes
-        await this.client.createClient(clientData);
-      }
-      //7. Crear un Pedido en DeFontana
-      //8. Rescatar NR de pedido de DeFontana
-      //9. Crear un documento PDF con la información de la venta y NR de pedido
-      //10. Retornar la URL del PDF y el NR de pedido(Folio)
-      //11. Crear un registro en la BD de la venta con el NR de pedido
-      //12. Gestionar Métodos de Pago en DeFontana
-      //13 Registro completo
-      return {
-        ok: '1',
-        folio: 10000026,
-        pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
-      };
-    } catch (error) {
-      const response = {
-        ok: '0',
-        folio: null,
-        pdf: null,
-        error: error.message,
-      };
-      throw new NotAcceptableException(response);
-    }
   }
 
   // async processSales() {
@@ -504,5 +342,179 @@ export class SalesService {
       }
     }
     await this.model.create({ ...sale, state: 'Registro' });
+  }
+  private async createClient(client: IReceptor) {
+    const newClient: ClientInterface = {
+      legalCode: client.RUTRecep,
+      fileid: client.RUTRecep,
+      name: client.RznSocRecep,
+      address: client.DirRecep,
+      district: client.CmnaRecep,
+      email: '',
+      business: '',
+      rubroId: '',
+      giro: client.GiroRecep,
+      city: client.CiudadRecep,
+    };
+    await this.defontana.createClient(newClient);
+    await this.client.createClient(newClient);
+  }
+  private createOrder(
+    fileid: string,
+    giro: string,
+    district: string,
+    details: IDetalle[],
+  ): OrderRequestInterface {
+    const today = new Date();
+    const date = {
+      day: today.getDate(),
+      month: today.getMonth() + 1,
+      year: today.getFullYear(),
+    };
+    const orderBody: OrderRequestInterface = {
+      documentTypeId: 'BOLETAELECRS',
+      pricingId: '0',
+      clientFileId: fileid,
+      sellerFileId: 'VENDEDOR',
+      referenceNumber: '0',
+      paymentConditionId: 'CONTADO',
+      billingCoinId: 'PESO',
+      billingRate: 1,
+      shopId: 'Local',
+      priceListId: '1',
+      billingType: '1',
+      giro: giro,
+      district: district,
+      orderDetails: [],
+      taxes: [],
+      creationDate: date,
+      expirationDate: date,
+      glossGeneral: '',
+      glossDispatch: '',
+      glossBill: '',
+      glossPresentation: '',
+      orderRecDesGlobal: [],
+    };
+    for (const detail of details) {
+      const detailFormat: OrderDetailInterface = {
+        type: 'A',
+        isExempt: false,
+        isService: false,
+        code: detail.SKU,
+        unit: 'UN',
+        count: detail.QtyItem,
+        price: detail.PrcItem,
+        deliveryTime: {
+          hour: 22,
+          minute: 30,
+        },
+        discount: {
+          value: 0,
+          type: 0,
+        },
+        tax: {
+          code: 'IVA',
+          value: 19,
+        },
+        comment: '',
+        productName: detail.NmbItem,
+        deliveryDate: date,
+      };
+      orderBody.orderDetails.push(detailFormat);
+    }
+    return orderBody;
+  }
+
+  private createSaleBody(
+    details: IDetalle[],
+    IdVenta: number,
+    client: ClientInterface,
+  ) {
+    const detailsFormat: ProductDto[] = details.map((detail) => ({
+      type: 'A',
+      isExempt: false,
+      code: detail.SKU,
+      count: detail.QtyItem,
+      productName: detail.NmbItem,
+      productNameBarCode: detail.barCode,
+      price: detail.PrcItem,
+      discount: { type: 0, value: -0 },
+      especificTax: {
+        value: 0,
+      },
+      unit: 'UN',
+      comment: '',
+      analysis: {
+        accountNumber: this.accountNumber,
+        businessCenter: this.businessCenter,
+        classifier01: '',
+        classifier02: '',
+      },
+      useBatch: false,
+      batchInfo: [
+        //{ amount: product.cantidad, batchNumber: `${product.Producto[0].sku}` },
+      ],
+    }));
+    const today = new Date();
+    const date = {
+      day: today.getDate(),
+      month: today.getMonth() + 1,
+      year: today.getFullYear(),
+    };
+    return {
+      documentType: 'BOLETAELECRS',
+      firstFolio: 6,
+      lastFolio: 6,
+      externalDocumentID: `${IdVenta}`,
+      emissionDate: date,
+      firstFeePaid: date,
+      clientFile: `${client.fileid}`,
+      contactIndex: client.address,
+      rutMandante: '',
+      paymentCondition: 'CONTADO',
+      sellerFileId: 'VENDEDOR',
+      clientAnalysis: {
+        accountNumber: '1110401001',
+        businessCenter: this.businessCenter,
+        classifier01: '',
+        classifier02: '',
+      },
+      billingCoin: 'PESO',
+      billingRate: 1,
+      shopId: 'Local',
+      priceList: '1',
+      giro: `${client.giro}`,
+      district: `${client.district}`,
+      city: `${client.city}`,
+      contact: -1,
+      attachedDocuments: [],
+      storage: {
+        code: 'BODEGACENTRAL',
+        motive: 'Venta de productos',
+        storageAnalysis: {
+          accountNumber: '',
+          businessCenter: this.businessCenter,
+          classifier01: 'classifier01',
+          classifier02: 'classifier02',
+        },
+      },
+      details: detailsFormat,
+      saleTaxes: [
+        {
+          code: 'IVA',
+          value: 19,
+          taxeAnalysis: {
+            accountNumber: '2120301001',
+            businessCenter: this.businessCenter,
+            classifier01: '',
+            classifier02: '',
+          },
+        },
+      ],
+      ventaRecDesGlobal: [],
+      gloss: '',
+      customFields: [],
+      isTransferDocument: true,
+    };
   }
 }

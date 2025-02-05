@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { FilterQuery, Model } from 'mongoose';
 import { PaginationQueryDto } from '../dto/pagination-query.dto';
-import { PaginatedResponse } from '../interface/paginated-response.interface';
+import { PaginatedResponse } from '../interfaces/paginated-response.interface';
 
 @Injectable()
 export class PaginationService {

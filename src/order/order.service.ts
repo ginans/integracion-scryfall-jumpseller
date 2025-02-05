@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Order, OrderDocument } from './entities/order.entity';
+import {Injectable, NotFoundException} from '@nestjs/common';
+import {ImportCosts, Order, OrderDocument, OrderState} from './entities/order.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AgilizarService } from '../agilizar/agilizar.service';
@@ -9,90 +9,125 @@ import { SaleState } from '../sales/interfaces/sale-state.interface';
 import { ProvidersService } from '../providers/providers.service';
 import { ProviderInterface } from '../providers/interface/provider.interface';
 import { IPurchaseOrderRequest } from './interface/purchase-order-request.interface';
+import { QueryResumeDto } from './dto/query-resume.dto';
+import { GetReporteComprasResult } from './interface/order-response.interface';
+import { formatRut } from "../common/formatRut";
+import {CreateDocumentDto} from "./dto/create-document.dto";
 
 @Injectable()
 export class OrderService {
   constructor(
-    @InjectModel(Order.name)
-    private readonly model: Model<OrderDocument>,
+    @InjectModel(Order.name) private readonly model: Model<OrderDocument>,
     private readonly agilizar: AgilizarService,
     private readonly defontana: DefontanaService,
     private readonly providers: ProvidersService,
   ) {}
+
   async checkNewOrders() {
-    const { get_reporteComprasResult: data } = await this.agilizar.getCompras(
-      '2024-09-01',
-      '2024-11-10',
-    );
+    const { get_reporteComprasResult: data } = await this.agilizar.getCompras('2024-01-01', '2024-01-31');
     for (const order of data) {
-      const orderExists = await this.model.exists({
-        numero_documento: order.numero_documento,
-      });
-      if (!orderExists) await this.model.create(order);
+      await this.processNewOrder(order);
     }
+    return { message: 'Order checked' };
+  }
+
+  async findAllOrdersImports(query: PaginationQueryDto) {
+    return this.findAllOrders(query, false);
+  }
+
+  async findAllOrdersNational(query: PaginationQueryDto) {
+    return this.findAllOrders(query, true);
+  }
+
+  private async findAllOrders(query: PaginationQueryDto, isNational: boolean) {
+    const { limit = 10, page, filters, sortOrder, sortBy, search } = query;
+    const filter = { isNational, ...filters };
+    if (search) {
+      filter['$or'] = [{ $expr: { $regexMatch: { input: { $toString: '$numero_documento' }, regex: search.toString(), options: 'i' } } }];
+    }
+    const sort = sortOrder && sortBy ? { [sortBy]: sortOrder } : {};
+    const total = await this.model.countDocuments(filter);
+    const data = await this.model.find(filter).sort(sort).skip(limit * (page - 1)).limit(limit).exec();
     return {
-      message: 'Order checked',
+      items: data,
+      meta: {
+        totalItems: total,
+        itemsPerPage: limit,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        hasNextPage: total > limit * page,
+        hasPreviousPage: page > 1,
+      },
     };
   }
 
-  async findAllOrders(query: PaginationQueryDto) {
-    const orders: OrderDocument[] = await this.model.find().exec();
-    return orders.map((order) => {
-      return {
-        id: order._id,
-        orderId: order.numero_documento,
-        providerName: order.Proveedor?.[0]?.razon_social ?? 'N/A',
-        providerRut: order.Proveedor?.[0]?.rut ?? 'N/A',
-        isNational: order.isNational,
-        documentType: order.TipoDocumento?.[0]?.nombre ?? 'N/A',
-        total: 'Sin Calcular',
-        defontanaId: order.defontanaNumber ?? 0,
-        status: order.status,
-      };
-    });
+  async getResumeToDocuments(query: QueryResumeDto) {
+    const { isNational } = query;
+    return {
+      total: await this.model.countDocuments({ isNational }),
+      completed: await this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
+      pending: await this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
+      failed: await this.model.countDocuments({ status: OrderState.FALLIDO, isNational }),
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
+  async getAttachmentToForm() {
+    return {
+      //status: OrderState.PENDIENTE,
+      orders: await this.model.find({ isNational: false }).select('numero_documento').exec(),
+      providers: await this.providers.getProviderForAttachment(),
+      costCenters: [{
+        _id: 'FULADMADM000000',
+        name: 'ADMINISTRACIÓN Y FINANZAS',
+      }, {
+        _id: 'FULGERGER000000',
+        name: 'GERENCIA GENERAL',
+      },
+      {
+        _id: 'FULMAR000000000',
+        name: 'MARKETING',
+      },
+      {
+        _id: 'FULOPEOPE000000',
+        name: 'OPERACIONES',
+      },
+      {
+        _id: 'FULVENVEN000000',
+        name: 'VENTAS',
+      }],
+    };
   }
-  async processNewOrder(data: any) {
-    /*
-      Pasos:
-        1. Validar que la orden no exista
-        2. Crear la orden
-        3. Validar que el proveedor exista
-        4. Crear el proveedor si no existe
-        5. ingresar una orden de compra a defontana
-        6. Actualizar el estado de la orden
-        7. Obtener el pdf de la orden y almacenarlo
-        Casos Internacionales:
-        8. Ingresar Documento de compra a defontana asociado a la orden
-     */
+
+  async processNewOrder(data: GetReporteComprasResult) {
     const { numero_documento } = data;
-    if (await this.model.exists({ numero_documento }))
-      return { message: 'Order already exists' };
+    if (await this.model.exists({ numero_documento })) return { message: 'Order already exists' };
     const order = await this.createOrder(data);
+    order.status = OrderState.PROCESANDO;
+    await order.save();
+    const provider = data.Proveedor[0];
+    const rut = formatRut(provider.rut);
+    if (!(await this.providers.findProviderByRut(rut))) {
+      const newProvider: ProviderInterface = {
+        legalCode: rut,
+        name: provider.razon_social,
+        email: provider.email,
+        address: provider.direccion,
+        phone: provider.telefono,
+        fileid: rut,
+        district: '',
+        city: '',
+        business: '',
+        rubroId: '',
+        giro: '',
+      };
+      await this.defontana.createProvider(newProvider);
+      await this.providers.createProvider(newProvider);
+      order.status = OrderState.PROVEEDOR_CREADO;
+      await order.save();
+    }
     try {
-      const provider = data.Proveedor[0];
-      if (!(await this.providers.findProviderByRut(provider.rut))) {
-        const newProvider: ProviderInterface = {
-          legalCode: provider.rut,
-          name: provider.razon_social,
-          email: provider.email,
-          address: provider.direccion,
-          district: '',
-          business: '',
-          rubroId: '',
-          giro: '',
-          city: '',
-          phone: provider.telefono,
-          fileid: `${provider.proveedor_id}`,
-        };
-        await this.defontana.createProvider(newProvider);
-        await this.providers.createProvider(newProvider);
-      }
       const purchaseOrder: IPurchaseOrderRequest = {
-        providerID: `${data.Proveedor[0].proveedor_id}`,
+        providerID: rut,
         providerData: {},
         serie: '',
         number: 0,
@@ -101,9 +136,16 @@ export class OrderService {
         paymentCondition: 'CONTADO',
         documentTypeId: 'FCA',
         exchangeRate: 1,
-        receiptDate: '2025-01-02',
-        expirationDate: '2025-01-02',
-        emissionDate: '2025-01-02',
+        // Asi vienen en data, hay que cambiar el formato
+        // "fecha_creacion": "02/09/2024 15:44:30",
+        // "fecha_documento": "02/09/2024 0:00:00",
+        // "fecha_vencimiento": "02/09/2024 0:00:00",
+        receiptDate: '2025-01-28',
+        expirationDate: '2025-01-28',
+        emissionDate: '2025-01-28',
+        // receiptDate: new Date(data.fecha_documento).toISOString(),
+        // expirationDate: new Date(data.fecha_vencimiento).toISOString(),
+        // emissionDate: new Date(data.fecha_creacion).toISOString(),
         amountBeforeTaxes: 0,
         modifiers: 0,
         amountExempt: 0,
@@ -115,9 +157,9 @@ export class OrderService {
         dispatchDistrict: '',
         dispatchState: '',
         dispatchCity: '',
-        dispatchCountry: 'cl',
+        dispatchCountry: '',
         dispatchPhone: '',
-        comment: `Orden de compra ${data.numero_documento}`,
+        comment: `Factura de compra ${data.numero_documento}`,
       };
       let taxes = 0;
       let amountWithoutTax = 0;
@@ -133,7 +175,6 @@ export class OrderService {
           discount: 0,
           discountType: 0,
           price: detail.precio_compra,
-          comment: '',
           productData: {
             code: detail.Producto[0].sku,
             name: detail.Producto[0].nombre,
@@ -142,40 +183,58 @@ export class OrderService {
             description: detail.Producto[0].nombre,
             isService: false,
           },
+          comment: '',
         });
       }
       purchaseOrder.amountBeforeTaxes = amountWithoutTax;
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
-      const purchaseOrderNumber =
-        await this.defontana.createPurchaseOrder(purchaseOrder);
-      return { message: 'Order created', purchaseOrderNumber };
+      const { number, message, exceptionMessage, success } = await this.defontana.createPurchaseOrder(purchaseOrder);
+      if (!success) {
+        order.status = OrderState.FALLIDO;
+        order.error = `${message} - ${exceptionMessage}`;
+        throw new Error(`${message} - ${exceptionMessage}`);
+      }
+      order.defontanaNumber = +number;
+      order.status = OrderState.ORDEN_CREADA;
+      order.isNational = !provider.internacional;
+      await order.save();
+      return { message: 'Order created', defontanaNumber: number };
     } catch (error) {
-      order.status = SaleState.FALLIDO;
+      order.status = OrderState.FALLIDO;
       order.error = error.message;
       await order.save();
       return { message: 'Error' };
     }
   }
 
-  async createOrder(data: any) {
+  async createOrder(data: GetReporteComprasResult) {
     const newOrder = {
-      IngresoDetalle: data.IngresoDetalle,
-      Proveedor: data.Proveedor,
-      TipoDocumento: data.TipoDocumento,
-      esta_activo: data.esta_activo ?? true,
-      fecha_creacion: data.fecha_creacion,
-      fecha_documento: data.fecha_documento,
-      fecha_vencimiento: data.fecha_vencimiento,
-      ingreso_bodega_cabecera_id: data.ingreso_bodega_cabecera_id,
-      numero_documento: data.numero_documento,
-      proveedor_id: data.proveedor_id,
-      tipo_documento_id: data.tipo_documento_id,
-      isNational: data.isNational ?? true,
+      ...data,
+      isNational: data.Proveedor[0].internacional ?? true,
       status: SaleState.PENDIENTE,
-      defontanaNumber: data.defontanaNumber ?? null,
-      import_costs: data.import_costs ?? [],
+      defontanaNumber: null,
+      import_costs: [],
     };
-    return await this.model.create(newOrder);
+    return this.model.create(newOrder);
+  }
+  async createDocument(data: CreateDocumentDto) {
+    //Generamos un nuevo coste de importación en un documento ya existente
+    console.table(data);
+    const order = await this.model.findOne({ _id: new this.model.base.Types.ObjectId(data.import) }).exec();
+    if (!order) throw new NotFoundException('Orden no encontrada');
+    const newImportCost: ImportCosts = {
+      provider: data.provider,
+      costs: data.costs,
+      costCenter: data.costCenter,
+      amount: data.costs.reduce((total, cost) => total + cost.amountCLP, 0),
+      invoiceNumber: data.invoiceNumber,
+      status: OrderState.PENDIENTE,
+      folio: null,
+      pdf_url: null,
+    }
+    order.import_costs.push(newImportCost);
+    await order.save();
+    return { message: 'Coste de importación creado' };
   }
 }

@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { Order, OrderDocument, OrderState } from './entities/order.entity';
+import {Injectable, NotFoundException} from '@nestjs/common';
+import {ImportCosts, Order, OrderDocument, OrderState} from './entities/order.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AgilizarService } from '../agilizar/agilizar.service';
@@ -12,6 +12,7 @@ import { IPurchaseOrderRequest } from './interface/purchase-order-request.interf
 import { QueryResumeDto } from './dto/query-resume.dto';
 import { GetReporteComprasResult } from './interface/order-response.interface';
 import { formatRut } from "../common/formatRut";
+import {CreateDocumentDto} from "./dto/create-document.dto";
 
 @Injectable()
 export class OrderService {
@@ -31,11 +32,11 @@ export class OrderService {
   }
 
   async findAllOrdersImports(query: PaginationQueryDto) {
-    return this.findAllOrders(query, true);
+    return this.findAllOrders(query, false);
   }
 
   async findAllOrdersNational(query: PaginationQueryDto) {
-    return this.findAllOrders(query, false);
+    return this.findAllOrders(query, true);
   }
 
   private async findAllOrders(query: PaginationQueryDto, isNational: boolean) {
@@ -66,13 +67,34 @@ export class OrderService {
       total: await this.model.countDocuments({ isNational }),
       completed: await this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
       pending: await this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
+      failed: await this.model.countDocuments({ status: OrderState.FALLIDO, isNational }),
     };
   }
 
   async getAttachmentToForm() {
     return {
-      orders: await this.model.find({ status: OrderState.PENDIENTE }).select('numero_documento').exec(),
+      //status: OrderState.PENDIENTE,
+      orders: await this.model.find({ isNational: false }).select('numero_documento').exec(),
       providers: await this.providers.getProviderForAttachment(),
+      costCenters: [{
+        _id: 'FULADMADM000000',
+        name: 'ADMINISTRACIÓN Y FINANZAS',
+      }, {
+        _id: 'FULGERGER000000',
+        name: 'GERENCIA GENERAL',
+      },
+      {
+        _id: 'FULMAR000000000',
+        name: 'MARKETING',
+      },
+      {
+        _id: 'FULOPEOPE000000',
+        name: 'OPERACIONES',
+      },
+      {
+        _id: 'FULVENVEN000000',
+        name: 'VENTAS',
+      }],
     };
   }
 
@@ -175,7 +197,7 @@ export class OrderService {
       }
       order.defontanaNumber = +number;
       order.status = OrderState.ORDEN_CREADA;
-      order.isNational = provider.internacional ?? true;
+      order.isNational = !provider.internacional;
       await order.save();
       return { message: 'Order created', defontanaNumber: number };
     } catch (error) {
@@ -195,5 +217,24 @@ export class OrderService {
       import_costs: [],
     };
     return this.model.create(newOrder);
+  }
+  async createDocument(data: CreateDocumentDto) {
+    //Generamos un nuevo coste de importación en un documento ya existente
+    console.table(data);
+    const order = await this.model.findOne({ _id: new this.model.base.Types.ObjectId(data.import) }).exec();
+    if (!order) throw new NotFoundException('Orden no encontrada');
+    const newImportCost: ImportCosts = {
+      provider: data.provider,
+      costs: data.costs,
+      costCenter: data.costCenter,
+      amount: data.costs.reduce((total, cost) => total + cost.amountCLP, 0),
+      invoiceNumber: data.invoiceNumber,
+      status: OrderState.PENDIENTE,
+      folio: null,
+      pdf_url: null,
+    }
+    order.import_costs.push(newImportCost);
+    await order.save();
+    return { message: 'Coste de importación creado' };
   }
 }

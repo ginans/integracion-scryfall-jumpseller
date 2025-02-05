@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { QueryResumeDto } from './dto/query-resume.dto';
 import {GetReporteComprasResult} from "./interface/order-response.interface";
+import {CreateDocumentDto} from "./dto/create-document.dto";
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
@@ -30,8 +31,11 @@ export class OrderController {
     return this.orderService.getAttachmentToForm();
   }
   @Post()
-  //TODO: Generar DTO de Ingreso en la Orden
   generateOrder(@Body() body: GetReporteComprasResult) {
     return this.orderService.processNewOrder(body);
+  }
+  @Post('document')
+  generateDocument(@Body() body: CreateDocumentDto) {
+    return this.orderService.createDocument(body);
   }
 }

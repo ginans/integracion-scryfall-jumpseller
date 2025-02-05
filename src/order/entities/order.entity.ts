@@ -6,12 +6,23 @@ import {
   ITipoDocumento,
 } from '../interface/order-response.interface';
 export interface ImportCosts {
-  id: string;
-  provider_id: number;
+  provider: string;
+  costs: Cost[];
+  costCenter: string;
   amount: number;
-  document_url: string;
-  folio: number;
-  pdf_url: string;
+  invoiceNumber: string;
+  status: OrderState;
+  folio: number | null;
+  pdf_url: string | null;
+}
+export interface Cost {
+  id: number;
+  amount: number;
+  account: string;
+  costType: string;
+  currency: string;
+  exchangeRate: number;
+  amountCLP: number;
 }
 export enum OrderState {
   PENDIENTE = 'Pendiente',

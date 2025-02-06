@@ -463,8 +463,8 @@ export class SalesService {
     };
     return {
       documentType: 'BOLETAELECRS',
-      firstFolio: 6,
-      lastFolio: 6,
+      firstFolio: 7,
+      lastFolio: 7,
       externalDocumentID: `${IdVenta}`,
       emissionDate: date,
       firstFeePaid: date,

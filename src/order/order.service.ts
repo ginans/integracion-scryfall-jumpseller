@@ -13,6 +13,8 @@ import { QueryResumeDto } from './dto/query-resume.dto';
 import { GetReporteComprasResult } from './interface/order-response.interface';
 import { formatRut } from "../common/formatRut";
 import {CreateDocumentDto} from "./dto/create-document.dto";
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 
 @Injectable()
 export class OrderService {
@@ -23,8 +25,11 @@ export class OrderService {
     private readonly providers: ProvidersService,
   ) {}
 
+  @Cron(CronExpression.EVERY_HOUR)
   async checkNewOrders() {
-    const { get_reporteComprasResult: data } = await this.agilizar.getCompras('2024-01-01', '2024-01-31');
+    const date = new Date();
+    const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    const { get_reporteComprasResult: data } = await this.agilizar.getCompras(formattedDate, formattedDate);
     for (const order of data) {
       await this.processNewOrder(order);
     }

@@ -7,7 +7,7 @@ import { AuthResponse } from './interfaces/auth-response.interface';
 import {OrderRequestInterface, PurchaseInterface, SaleRequestInterface} from './interfaces/defontana-request.interface';
 import {
   BaseDefontanaResponse,
-  DefontanaResponse,
+  DefontanaResponse, PdfResponse,
   PurchaseOrderResponse,
 } from './interfaces/defontana-response.interface';
 import { IProvider } from '../order/interface/provider.interface';
@@ -163,21 +163,20 @@ export class DefontanaService {
     });
     return data;
   }
-  // Paso 4: Obtener PDF TODO: Revisar
-  async getPdf(folio: number) {
+  async getPdf8Cm(folio: number): Promise<string> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
-    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF}${folio}`;
-    const { data } = await axios.get(url, {
+    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF_BOLETA}?documentType=BOLETAELECRS&folio=${folio}&siiUnit=TEST_SiiUnit`;
+    const { data } = await axios.get<PdfResponse>(url, {
       headers: { Authorization: token },
       responseType: 'arraybuffer',
     });
-    return data;
+    return data.document;
   }
   async getPdfStandardBase64(folio: number) {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
-    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF}${folio}`;
+    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF_FACTURA}?documentType=BOLETAELECRS&folio=${folio}&siiUnit=TEST_SiiUnit`;
     const { data } = await axios.get(url, {
       headers: { Authorization: token },
       responseType: 'arraybuffer',

@@ -9,6 +9,7 @@ import { ProductsModule } from '../products/products.module';
 import { DefontanaModule } from '../defontana/defontana.module';
 import { JobsModule } from '../jobs/jobs.module';
 import { PaginationModule } from '../common/modules/pagination.module';
+import {FilesModule} from "../files/files.module";
 
 @Module({
   controllers: [SalesController],
@@ -21,6 +22,7 @@ import { PaginationModule } from '../common/modules/pagination.module';
     ClientsModule,
     ProductsModule,
     MongooseModule.forFeature([{ name: Sale.name, schema: SaleSchema }]),
+    FilesModule
   ],
   exports: [SalesService],
 })

@@ -63,14 +63,14 @@ export class OrderService {
 
   async getResumeToDocuments(query: QueryResumeDto) {
     const { isNational } = query;
-    return {
-      total: await this.model.countDocuments({ isNational }),
-      completed: await this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
-      pending: await this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
-      failed: await this.model.countDocuments({ status: OrderState.FALLIDO, isNational }),
-    };
+    const [total, completed, pending, failed] = await Promise.all([
+      this.model.countDocuments({ isNational }),
+      this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
+      this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
+      this.model.countDocuments({ status: OrderState.FALLIDO, isNational }),
+    ]);
+    return { total, completed, pending, failed };
   }
-
   async getAttachmentToForm() {
     return {
       //status: OrderState.PENDIENTE,
@@ -190,12 +190,12 @@ export class OrderService {
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
       const { number, message, exceptionMessage, success } = await this.defontana.createPurchaseOrder(purchaseOrder);
+      order.defontanaNumber = +number;
       if (!success) {
         order.status = OrderState.FALLIDO;
         order.error = `${message} - ${exceptionMessage}`;
         throw new Error(`${message} - ${exceptionMessage}`);
       }
-      order.defontanaNumber = +number;
       order.status = OrderState.ORDEN_CREADA;
       order.isNational = !provider.internacional;
       await order.save();

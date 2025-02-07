@@ -10,3 +10,8 @@ export interface DefontanaResponse extends BaseDefontanaResponse {
 export interface PurchaseOrderResponse extends BaseDefontanaResponse {
   number: string;
 }
+
+export interface PdfResponse extends BaseDefontanaResponse {
+  document: string;
+}
+

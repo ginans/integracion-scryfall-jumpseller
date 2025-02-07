@@ -13,6 +13,8 @@ import { QueryResumeDto } from './dto/query-resume.dto';
 import { GetReporteComprasResult } from './interface/order-response.interface';
 import { formatRut } from "../common/formatRut";
 import {CreateDocumentDto} from "./dto/create-document.dto";
+import { Cron, CronExpression } from '@nestjs/schedule';
+
 
 @Injectable()
 export class OrderService {
@@ -23,8 +25,11 @@ export class OrderService {
     private readonly providers: ProvidersService,
   ) {}
 
+  @Cron(CronExpression.EVERY_HOUR)
   async checkNewOrders() {
-    const { get_reporteComprasResult: data } = await this.agilizar.getCompras('2024-01-01', '2024-01-31');
+    const date = new Date();
+    const formattedDate = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    const { get_reporteComprasResult: data } = await this.agilizar.getCompras(formattedDate, formattedDate);
     for (const order of data) {
       await this.processNewOrder(order);
     }
@@ -63,14 +68,14 @@ export class OrderService {
 
   async getResumeToDocuments(query: QueryResumeDto) {
     const { isNational } = query;
-    return {
-      total: await this.model.countDocuments({ isNational }),
-      completed: await this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
-      pending: await this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
-      failed: await this.model.countDocuments({ status: OrderState.FALLIDO, isNational }),
-    };
+    const [total, completed, pending, failed] = await Promise.all([
+      this.model.countDocuments({ isNational }),
+      this.model.countDocuments({ status: { $in: [OrderState.ORDEN_CREADA, OrderState.FACTURA_CREADA] }, isNational }),
+      this.model.countDocuments({ status: OrderState.PENDIENTE, isNational }),
+      this.model.countDocuments({ status: OrderState.FALLIDO, isNational }),
+    ]);
+    return { total, completed, pending, failed };
   }
-
   async getAttachmentToForm() {
     return {
       //status: OrderState.PENDIENTE,
@@ -190,12 +195,12 @@ export class OrderService {
       purchaseOrder.amountTotal = amountWithoutTax + taxes;
       purchaseOrder.taxes = taxes;
       const { number, message, exceptionMessage, success } = await this.defontana.createPurchaseOrder(purchaseOrder);
+      order.defontanaNumber = +number;
       if (!success) {
         order.status = OrderState.FALLIDO;
         order.error = `${message} - ${exceptionMessage}`;
         throw new Error(`${message} - ${exceptionMessage}`);
       }
-      order.defontanaNumber = +number;
       order.status = OrderState.ORDEN_CREADA;
       order.isNational = !provider.internacional;
       await order.save();

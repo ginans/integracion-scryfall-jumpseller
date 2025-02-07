@@ -27,6 +27,9 @@ import { RequestLoggerInterceptor } from './common/interceptor/request-logger.in
 import { ImportCostsModule } from './import-costs/import-costs.module';
 import { LoggerService } from './common/logger/logger.service';
 import { LoggerModule } from './common/logger/logger.module';
+import { FilesModule } from './files/files.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import {join} from "path";
 
 @Module({
   imports: [
@@ -70,6 +73,11 @@ import { LoggerModule } from './common/logger/logger.module';
     JobsModule,
     ImportCostsModule,
     LoggerModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads/pdfs'),
+      serveRoot: '/pdfs',
+    }),
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [

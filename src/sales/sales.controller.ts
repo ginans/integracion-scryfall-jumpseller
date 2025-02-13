@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { Sale } from './entities/sale.entity';
@@ -12,5 +12,12 @@ export class SalesController {
     @Query() query: PaginationQueryDto,
   ): Promise<PaginatedResponse<Sale>> {
     return await this.salesService.findAllSales(query);
+  }
+  @Get(':id')
+  async getSale(
+    @Param('id') id: string
+  ): Promise<Sale> {
+    console.log(id);
+    return await this.salesService.findOne(+id);
   }
 }

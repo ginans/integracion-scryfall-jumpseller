@@ -1,17 +1,24 @@
 import {
-  CallHandler,
-  ExecutionContext,
   Injectable,
   NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  Logger
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import * as winston from 'winston';
-import { winstonConfig } from './winston.config';
+import { Observable, firstValueFrom } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
+import { v4 as uuidv4 } from 'uuid';
+import { HttpService } from '@nestjs/axios';
+import { AxiosError } from 'axios';
+//Traer el .env o el ConfigService
 
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
-  private logger: winston.Logger;
+  constructor(
+    //private readonly httpService: HttpService
+  ) {}
+  private readonly logger = new Logger(RequestLoggerInterceptor.name);
+
   private allowedUrls: string[] = [
     '/backend/v1/boleta',
     '/backend/v1/factura',
@@ -19,41 +26,62 @@ export class RequestLoggerInterceptor implements NestInterceptor {
     '/backend/v1/notacredito',
     '/backend/v1/traspaso',
   ];
-  constructor() {
-    this.logger = winston.createLogger(winstonConfig);
-  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
-    const { method, url, body, headers } = request;
-    if (!this.allowedUrls.includes(url)) return next.handle();
-    const logData = {
-      timestamp: new Date().toISOString(),
-      method,
-      url,
-      body,
-      headers,
+    if (context.getType() === 'http') {
+      return this.logHttpCall(context, next);
+    }
+  }
+  private async pushToGrafana(body: string) {
+    const logs = {
+      streams: [
+        {
+          stream: {
+            env: process.env.NODE_ENV,
+          },
+          values: [[(Date.now() * 1e6).toString(), body]],
+        },
+      ],
     };
-
-    this.logger.info('Incoming Request', logData);
-
+    try {
+      // await firstValueFrom(
+      //   this.httpService
+      //     .post('URL Grafana', logs, {
+      //       headers: {
+      //         'Content-Type': 'application/json',
+      //         // Authorization: `Bearer ${Config.grafana.userId}:${Config.grafana.api}`,
+      //       },
+      //     })
+      //     .pipe(
+      //       catchError((error: AxiosError) => {
+      //         this.logger.error(error.response.data);
+      //         throw error;
+      //       }),
+      //     ),
+      // );
+    } catch (error) {
+      this.logger.error(error.toString());
+    }
+  }
+  private logHttpCall(context: ExecutionContext, next: CallHandler) {
+    const request = context.switchToHttp().getRequest();
+    const userAgent = request.get('user-agent') || '';
+    const { ip, method, path: url, body, headers } = request;
+    if (!this.allowedUrls.includes(url)) return next.handle();
+    const correlationKey = uuidv4();
+    const userId = request.user?.userId;
+    this.logger.log(`[${correlationKey}] ${method} ${url} ${userId} ${userAgent} ${ip}: ${context.getClass().name} ${context.getHandler().name} ${JSON.stringify(body)}`);
     const now = Date.now();
     return next.handle().pipe(
-      tap({
-        next: (responseBody) => {
-          this.logger.info('Request Completed', {
-            ...logData,
-            responseTime: `${Date.now() - now}ms`,
-            body: responseBody, // This will log the response body
-          });
-        },
-        error: (err) => {
-          this.logger.error('Request Failed', {
-            ...logData,
-            responseTime: `${Date.now() - now}ms`,
-            error: err.message,
-          });
-        },
+      tap(async () => {
+        const response = context.switchToHttp().getResponse();
+        const { statusCode } = response;
+        const contentLength = response.get('content-length');
+        const logData = `[${correlationKey}] ${method} ${url} ${statusCode} ${contentLength}: ${
+          Date.now() - now
+        }ms`;
+        this.logger.log(logData);
+        await this.pushToGrafana(logData);
       }),
     );
   }

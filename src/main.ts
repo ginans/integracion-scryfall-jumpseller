@@ -5,8 +5,11 @@ import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import {NestExpressApplication} from "@nestjs/platform-express";
 import { join } from 'path';
+import {LokiLogger} from "./common/logger/logging.service";
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule,{
+    logger: new LokiLogger(),
+  });
   app.useStaticAssets(join(__dirname, '..', 'uploads/pdfs'), {
     prefix: '/pdfs',
   });

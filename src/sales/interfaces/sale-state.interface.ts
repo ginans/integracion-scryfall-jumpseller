@@ -14,3 +14,4 @@ export interface IDetails {
   sku: string;
   barcode: string;
 }
+//TODO: Solucionar Problemas de Datos en el modelo, tienen los

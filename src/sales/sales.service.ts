@@ -1,21 +1,23 @@
-import { BadRequestException, Injectable, Logger, NotAcceptableException, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Sale, SaleDocument } from './entities/sale.entity';
-import { AgilizarService } from '../agilizar/agilizar.service';
-import { Model } from 'mongoose';
-import { IReportSell } from '../agilizar/interface/sell-response.interface';
-import { ClientsService } from '../clients/clients.service';
-import { ClientInterface } from '../clients/interface/client.interface';
-import { ProductsService } from '../products/products.service';
-import { ProductInterface } from '../products/interface/product.interface';
-import { formatDate } from '../common/formatDate';
-import { DefontanaService } from '../defontana/defontana.service';
-import { SaleState } from './interfaces/sale-state.interface';
-import { JobsService } from 'src/jobs/jobs.service';
-import { IDetalle, IReceptor, TicketDto } from './dto/ticket.dto';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { OrderDetailInterface, OrderRequestInterface } from '../defontana/interfaces/defontana-request.interface';
-import { ProductDto } from './dto/product.dto';
+import {Injectable, Logger, NotAcceptableException} from '@nestjs/common';
+import {InjectModel} from '@nestjs/mongoose';
+import {Sale, SaleDocument} from './entities/sale.entity';
+import {AgilizarService} from '../agilizar/agilizar.service';
+import {Model} from 'mongoose';
+import {IReportSell} from '../agilizar/interface/sell-response.interface';
+import {ClientsService} from '../clients/clients.service';
+import {ClientInterface} from '../clients/interface/client.interface';
+import {ProductsService} from '../products/products.service';
+import {ProductInterface} from '../products/interface/product.interface';
+import {formatDate} from '../common/formatDate';
+import {DefontanaService} from '../defontana/defontana.service';
+import {SaleState} from './interfaces/sale-state.interface';
+import {IDetalle, IReceptor, TicketDto} from './dto/ticket.dto';
+import {PaginationQueryDto} from '../common/dto/pagination-query.dto';
+import {OrderDetailInterface, OrderRequestInterface} from '../defontana/interfaces/defontana-request.interface';
+import {ProductDto} from './dto/product.dto';
+import {formatRut} from "../common/formatRut";
+import {FilesService} from "../files/files.service";
+import {EnvConfiguration} from "../config/app.config";
 
 @Injectable()
 export class SalesService {
@@ -25,11 +27,11 @@ export class SalesService {
   constructor(
     @InjectModel(Sale.name)
     private readonly model: Model<SaleDocument>,
-    private readonly jobs: JobsService,
     private readonly agilizar: AgilizarService,
     private readonly defontana: DefontanaService,
     private readonly client: ClientsService,
     private readonly product: ProductsService,
+    private readonly files: FilesService,
   ) {}
   async findAllSales(query: PaginationQueryDto) {
     const data = await this.model.find().exec();
@@ -45,30 +47,36 @@ export class SalesService {
       },
     };
   }
+  /**
+   * Crear una venta en DeFontana
+   * Pasos:
+   *   1. Validar que la venta no haya sido procesada con algún identificador único
+   *   2. Validar que cliente exista en la BD de clientes
+   *   3. Si no existe, crearlo
+   *   4. Generar un Pedido en DeFontana
+   *   5. Rescatar NR de pedido de DeFontana
+   *   6. Generar una orden de venta en DeFontana
+   *   7. Rescatar folio de orden de venta y pdf
+   *   8. Retornar la URL del PDF y el folio
+ */
   async createSale(data: TicketDto) {
+    const sale = await this.findOneByOrderId(data.condicionpago.IdVenta);
+    if (sale) {
+      this.logger.error('Venta ya procesada');
+      return {
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: 'Venta ya procesada',
+      };
+    }
     try {
-      /*
-        Pasos:
-        1. Validar que la venta no haya sido procesada con algun identificador unico
-        2. Validar que cliente exista en la BD de clientes
-        3. Si no existe, crearlo
-        4. Crear un Pedido en DeFontana
-        5. Rescatar NR de pedido de DeFontana
-        6. Generar una orden de venta en DeFontana
-        7. Rescatar folio de orden de venta y pdf
-        8. Retornar la URL del PDF y el folio
-       */
-      const sale = await this.findOneByOrderId(data.condicionpago.IdVenta);
-      if (sale) throw new Error('Venta ya procesada');
-      let client = await this.client.findClientByRut(
-        data.Encabezado.Receptor.RUTRecep,
-      );
-      if (!client && data.Encabezado.Receptor.RUTRecep)
-        await this.createClient(data.Encabezado.Receptor);
+      const rut = formatRut(data.Encabezado.Receptor.RUTRecep);
+      let client = await this.client.findClientByRut(rut);
+      const clientObject: IReceptor = {...data.Encabezado.Receptor, RUTRecep: rut};
+      if (!client && rut) await this.createClient(clientObject);
       client = client ?? (await this.client.findClientByRut('11.111.111-1'));
-
       //TODO: Preguntar por este flujo
-      //Create orderBody for DeFontana
       // const orderBody = this.createOrder(
       //   client.fileid,
       //   client.giro,
@@ -85,7 +93,6 @@ export class SalesService {
       // return {
       //   order: orderResponse,
       // }
-
       //Crear Venta en DeFontana
       const saleBody = this.createSaleBody(
         data.Detalles,
@@ -98,7 +105,6 @@ export class SalesService {
         const errorMessage = `${message} - ${exceptionMessage}`;
         return { ok: '0', folio: null, pdf: null, error: errorMessage, };
       }
-      //Registrar venta en BD
       await this.model.create({
         document_type: data.Encabezado.IdDoc.TipoDTE,
         emisor_rut: data.Encabezado.Emisor.RUTEmisor,
@@ -118,13 +124,18 @@ export class SalesService {
         defontana_id: defontanaResponse.folio,
         error: null,
       });
-      //Obtener PDF
-      //const pdf = await this.defontana.getPdf(defontanaResponse.folio);
+      const pdf = await this.defontana.getPdf8Cm(defontanaResponse.folio);
+      const pdfUrl = await this.files.savePdfFromBase64(pdf);
       return {
         ok: '1',
         folio: defontanaResponse.folio,
-        pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+        pdf: `${EnvConfiguration().url_app}${pdfUrl}`,
       };
+      // return {
+      //   ok: '1',
+      //   folio: defontanaResponse.folio,
+      //   pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
+      // };
     } catch (error) {
       this.logger.error(error.message);
       const response = {
@@ -136,12 +147,6 @@ export class SalesService {
       throw new NotAcceptableException(response);
     }
   }
-  async findOne(id: number): Promise<Sale> {
-    const sale = await this.model.findOne({ order_id: id }).exec();
-    if (!sale) throw new NotFoundException('Venta no encontrada');
-    return sale;
-  }
-
   async findOneByOrderId(id: number): Promise<Sale | null> {
     return this.model.findOne({ OBJECT_ID: id }).exec();
   }
@@ -469,8 +474,8 @@ export class SalesService {
     };
     return {
       documentType: 'BOLETAELECRS',
-      firstFolio: 7,
-      lastFolio: 7,
+      firstFolio: 0,
+      lastFolio: 0,
       externalDocumentID: `${IdVenta}`,
       emissionDate: date,
       firstFeePaid: date,

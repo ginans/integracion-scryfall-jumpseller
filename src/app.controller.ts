@@ -1,18 +1,18 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {Body, Controller, Get, Logger, Post} from '@nestjs/common';
 import { AppService } from './app.service';
 import { TicketDto } from './sales/dto/ticket.dto';
 
 @Controller()
 export class AppController {
+  private readonly logger = new Logger(AppController.name);
   constructor(private readonly appService: AppService) {}
 
   @Get('health')
   status() {
+    this.logger.log('This is an info message');
+    this.logger.warn('This is a warning');
+    this.logger.error('This is an error');
     return 'ok';
-  }
-  @Get('seed')
-  seed() {
-    return this.appService.seed();
   }
   @Post('factura')
   factura(@Body() body: any) {
@@ -30,13 +30,8 @@ export class AppController {
   despacho() {
     return this.appService.genericResponse3();
   }
-
   @Post('notacredito')
   notacredito() {
     return this.appService.genericResponse4();
-  }
-  @Get('test')
-  testController() {
-    return this.appService.test();
   }
 }

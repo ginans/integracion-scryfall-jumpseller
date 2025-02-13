@@ -1,4 +1,4 @@
-import {Injectable, Logger, NotAcceptableException} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotAcceptableException } from '@nestjs/common';
 import {InjectModel} from '@nestjs/mongoose';
 import {Sale, SaleDocument} from './entities/sale.entity';
 import {AgilizarService} from '../agilizar/agilizar.service';
@@ -146,6 +146,11 @@ export class SalesService {
       };
       throw new NotAcceptableException(response);
     }
+  }
+  async findOne(id: number): Promise<Sale | null> {
+    const sale = await this.model.findOne({ order_id: id }).exec();
+    if (!sale) throw new BadRequestException('Venta no encontrada');
+    return sale;
   }
   async findOneByOrderId(id: number): Promise<Sale | null> {
     return this.model.findOne({ OBJECT_ID: id }).exec();

@@ -17,7 +17,6 @@ export class SalesController {
   async getSale(
     @Param('id') id: string
   ): Promise<Sale> {
-    console.log(id);
     return await this.salesService.findOne(+id);
   }
 }

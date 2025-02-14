@@ -12,6 +12,7 @@ import { Model } from 'mongoose';
 import { OrderResponse } from '../order/interface/order-response.interface';
 import { ISellResponse } from './interface/sell-response.interface';
 import { ConfigService } from '@nestjs/config';
+import {Cron, CronExpression} from "@nestjs/schedule";
 
 @Injectable()
 export class AgilizarService {
@@ -63,6 +64,11 @@ export class AgilizarService {
     return data.GenerarTokenResult;
   }
 
+  @Cron(CronExpression.EVERY_6_HOURS)
+  async updateToken(): Promise<void> {
+    await this.model.deleteMany({});
+    await this.generateToken();
+  }
   async getToken(): Promise<string> {
     const token = await this.model.findOne({});
     return token ? token.token : this.generateToken();

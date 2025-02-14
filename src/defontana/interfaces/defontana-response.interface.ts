@@ -3,7 +3,12 @@ export interface BaseDefontanaResponse {
   message: string;
   exceptionMessage: string;
 }
-
+export interface SalesResponse extends BaseDefontanaResponse {
+  documentType: string;
+  firstFolio: number;
+  lastFolio: number;
+  ted: null;
+}
 export interface DefontanaResponse extends BaseDefontanaResponse {
   folio: number;
 }

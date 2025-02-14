@@ -16,20 +16,6 @@ export class AppService {
     private readonly clientService: ClientsService,
     private readonly defontanaService: DefontanaService,
   ) {}
-
-  async seed() {
-    await this.user.deleteMany();
-    const password = await this.auth.hashPassword('12345678');
-    const user = {
-      name: 'Sistemas',
-      email: 'sistemas@fixlabs.cl',
-      password,
-      role: UserRole.Admin,
-    };
-    await this.user.create(user);
-    return 'Seed Data';
-  }
-
   async genericResponse() {
     return {
       ok: '1',
@@ -57,14 +43,15 @@ export class AppService {
       pdf: 'https://fullerton.sfo3.digitaloceanspaces.com/simulador_carlos/archivo_pdf_simulador_prueba.pdf',
     };
   }
-  async test() {
-    const credential = {
-      client: '20250107171152111005',
-      company: '20250107171152111005',
-      user: 'INTEGRACION',
-      password: 'Fixlabs.2024!',
-      urlApi: 'https://api.defontana.com/api/',
-    }
-    return this.defontanaService.generateToken();
-  }
+  async
+  // async test() {
+  //   const credential = {
+  //     client: '20250107171152111005',
+  //     company: '20250107171152111005',
+  //     user: 'INTEGRACION',
+  //     password: 'Fixlabs.2024!',
+  //     urlApi: 'https://api.defontana.com/api/',
+  //   }
+  //   return this.defontanaService.generateToken();
+  // }
 }

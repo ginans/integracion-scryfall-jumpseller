@@ -13,8 +13,8 @@ export class ClientsService {
     return await this.model.find().exec();
   }
 
-  async findClientByRut(rut: string): Promise<Client | null> {
-    const client = await this.model.findOne({ rut }).exec();
+  async findClientByRut(legalCode: string): Promise<Client | null> {
+    const client = await this.model.findOne({ legalCode }).exec();
     if (!client) return null;
     return client;
   }

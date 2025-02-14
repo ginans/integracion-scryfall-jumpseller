@@ -30,6 +30,10 @@ export class OrderController {
   getAttachmentToForm() {
     return this.orderService.getAttachmentToForm();
   }
+  @Get(':id')
+  getOrder(@Param('id') id: string) {
+    return this.orderService.findOne(+id);
+  }
   @Post()
   generateOrder(@Body() body: GetReporteComprasResult) {
     return this.orderService.processNewOrder(body);

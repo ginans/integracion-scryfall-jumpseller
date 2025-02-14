@@ -6,6 +6,6 @@ export enum DefontanaEndpointsEnum {
   CREATE_CLIENT = 'sale/saveclient',
   CREATE_ORDER = 'order/saveorder',
   CREATE_SALE = 'sale/savesale',
-  GET_PDF_BOLETA = 'sale/GetStandardPDFDocumentBase64',
-  GET_PDF_FACTURA = 'sale/Get8CmsPDFDocumentBase64',
+  GET_PDF_FACTURA = 'sale/GetStandardPDFDocumentBase64',
+  GET_PDF_BOLETA = 'sale/Get8CmsPDFDocumentBase64',
 }

@@ -53,6 +53,11 @@ export class Sale {
     default: null,
     required: false,
   })
+  url_pdf: string | null;
+  @Prop({
+    default: null,
+    required: false,
+  })
   error: string | null;
 }
 export type SaleDocument = HydratedDocument<Sale>;

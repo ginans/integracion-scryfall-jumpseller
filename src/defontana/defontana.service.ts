@@ -8,7 +8,7 @@ import {OrderRequestInterface, PurchaseInterface, SaleRequestInterface} from './
 import {
   BaseDefontanaResponse,
   DefontanaResponse, PdfResponse,
-  PurchaseOrderResponse,
+  PurchaseOrderResponse, SalesResponse,
 } from './interfaces/defontana-response.interface';
 import { IProvider } from '../order/interface/provider.interface';
 import { IPurchaseOrderRequest } from '../order/interface/purchase-order-request.interface';
@@ -154,11 +154,11 @@ export class DefontanaService {
     }
   }
 
-  async createSale(sale: SaleRequestInterface): Promise<DefontanaResponse> {
+  async createSale(sale: SaleRequestInterface): Promise<SalesResponse> {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.CREATE_SALE}`;
-    const { data } = await axios.post<DefontanaResponse>(url, sale, {
+    const { data } = await axios.post<SalesResponse>(url, sale, {
       headers: { Authorization: token },
     });
     return data;
@@ -167,11 +167,15 @@ export class DefontanaService {
     const token = await this.getAuthToken();
     const { urlApi } = await this.getCredential();
     const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF_BOLETA}?documentType=BOLETAELECRS&folio=${folio}&siiUnit=TEST_SiiUnit`;
-    const { data } = await axios.get<PdfResponse>(url, {
-      headers: { Authorization: token },
-      responseType: 'arraybuffer',
-    });
-    return data.document;
+   try {
+      const { data } = await axios.get<PdfResponse>(url, {
+        headers: { Authorization: token },
+      });
+      return data.document;
+    } catch (error) {
+      this.loggerService.error(error);
+      throw new ServiceUnavailableException('Error al obtener PDF');
+    }
   }
   async getPdfStandardBase64(folio: number) {
     const token = await this.getAuthToken();

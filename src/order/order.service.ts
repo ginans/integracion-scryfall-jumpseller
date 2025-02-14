@@ -1,4 +1,4 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
+import {BadRequestException, Injectable, NotFoundException} from '@nestjs/common';
 import {ImportCosts, Order, OrderDocument, OrderState} from './entities/order.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -241,5 +241,11 @@ export class OrderService {
     order.import_costs.push(newImportCost);
     await order.save();
     return { message: 'Coste de importación creado' };
+  }
+
+  async findOne(id: number): Promise<Order | null> {
+    const order = await this.model.findOne({ numero_documento: id }).exec();
+    if (!order) throw new BadRequestException('Orden no encontrada');
+    return order;
   }
 }

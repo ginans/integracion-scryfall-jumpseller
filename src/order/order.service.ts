@@ -57,7 +57,7 @@ export class OrderService {
       items: data,
       meta: {
         totalItems: total,
-        itemsPerPage: limit,
+        itemsPerPage: data.length,
         totalPages: Math.ceil(total / limit),
         currentPage: page,
         hasNextPage: total > limit * page,

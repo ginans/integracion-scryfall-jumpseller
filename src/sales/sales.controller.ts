@@ -13,6 +13,10 @@ export class SalesController {
   ): Promise<PaginatedResponse<Sale>> {
     return await this.salesService.findAllSales(query);
   }
+  @Get('resume')
+  async getResume() {
+    return await this.salesService.getResumeToSales();
+  }
   @Get(':id')
   async getSale(
     @Param('id') id: string

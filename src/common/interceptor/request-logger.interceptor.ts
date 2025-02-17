@@ -5,18 +5,12 @@ import {
   CallHandler,
   Logger
 } from '@nestjs/common';
-import { Observable, firstValueFrom } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
-import { HttpService } from '@nestjs/axios';
-import { AxiosError } from 'axios';
-//Traer el .env o el ConfigService
-
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
-  constructor(
-    //private readonly httpService: HttpService
-  ) {}
+  constructor() {}
   private readonly logger = new Logger(RequestLoggerInterceptor.name);
 
   private allowedUrls: string[] = [
@@ -75,6 +69,7 @@ export class RequestLoggerInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(async () => {
         const response = context.switchToHttp().getResponse();
+        response.setHeader('X-Correlation-Key', correlationKey);
         const { statusCode } = response;
         const contentLength = response.get('content-length');
         const logData = `[${correlationKey}] ${method} ${url} ${statusCode} ${contentLength}: ${

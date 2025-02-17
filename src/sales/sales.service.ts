@@ -1,18 +1,44 @@
-import { BadRequestException, Injectable, Logger, NotAcceptableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotAcceptableException,
+  ServiceUnavailableException
+} from '@nestjs/common';
 import {InjectModel} from '@nestjs/mongoose';
 import {Sale, SaleDocument} from './entities/sale.entity';
-import {Model} from 'mongoose';
+import {Model, SortOrder } from 'mongoose';
 import {ClientsService} from '../clients/clients.service';
 import {ClientInterface} from '../clients/interface/client.interface';
 import {DefontanaService} from '../defontana/defontana.service';
-import {SaleState} from './interfaces/sale-state.interface';
-import {IDetalle, IReceptor, TicketDto} from './dto/ticket.dto';
+import {IDetails, SaleState} from './interfaces/sale-state.interface';
+import {TicketDto} from './dto/ticket.dto';
 import {PaginationQueryDto} from '../common/dto/pagination-query.dto';
 import {ProductDto} from './dto/product.dto';
 import {formatRut} from "../common/formatRut";
 import {FilesService} from "../files/files.service";
+import {PaginatedResponse} from "../common/interfaces/paginated-response.interface";
+import {CreateBillDto} from "./dto/bill.dto";
+import {SaleRequestInterface} from "../defontana/interfaces/defontana-request.interface";
 import {EnvConfiguration} from "../config/app.config";
 
+interface SortOptions {
+  [key: string]: SortOrder;
+}
+interface MongoRegexMatch {
+  $regexMatch: {
+    input: { $toString: string };
+    regex: string;
+    options?: string;
+  };
+}
+
+interface MongoExpr {
+  $expr: MongoRegexMatch;
+}
+type MongoQuery = {
+  $or?: (MongoExpr | { [key: string]: any })[];
+} & Partial<Record<keyof Sale, any>>;
 @Injectable()
 export class SalesService {
   private readonly logger = new Logger(SalesService.name);
@@ -25,19 +51,63 @@ export class SalesService {
     private readonly client: ClientsService,
     private readonly files: FilesService,
   ) {}
-  async findAllSales(query: PaginationQueryDto) {
-    const data = await this.model.find().exec();
-    return {
-      items: data,
-      meta: {
-        totalItems: data.length,
-        itemsPerPage: 5,
-        totalPages: data.length / 5,
-        currentPage: 1,
-        hasNextPage: true,
-        hasPreviousPage: false,
-      },
-    };
+  async findAllSales(query: PaginationQueryDto): Promise<PaginatedResponse<Sale>> {
+    const { limit = 10, page = 1, filters = {}, sortOrder, sortBy, search } = query;
+    let filter: MongoQuery  = { ...filters }
+    if (search !== undefined) {
+      filter.$or = [{
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$order_id" },
+            regex: search.toString(),
+            options: "i"
+          }
+        }
+      }];
+    }
+    const sort: SortOptions  = {};
+    if (sortOrder && sortBy) sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    try {
+      const [total, data] = await Promise.all([
+        this.model.countDocuments(filter),
+        this.model
+          .find(filter)
+          .sort(sort)
+          .skip(Math.max(0, limit * (page - 1)))
+          .limit(limit)
+          .exec(),
+      ]);
+      const totalPages = Math.ceil(total / limit);
+      return {
+        items: data,
+        meta: {
+          totalItems: total,
+          itemsPerPage: data.length,
+          totalPages,
+          currentPage: page,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        },
+      };
+    } catch (error) {
+      this.logger.error(error.message);
+      throw new BadRequestException(error.message);
+    }
+  }
+  private async checkOrderState(orderId: number) {
+    const sale = await this.findOneByOrderId(orderId);
+    if (sale && sale.state !== SaleState.FALLIDO) {
+      this.logger.error('Venta ya procesada');
+      throw new NotAcceptableException({
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: 'Venta ya procesada',
+      });
+    }
+    //Borrar venta si esta fallida
+    if (sale && sale.state === SaleState.FALLIDO)
+      await this.model.findOneAndDelete({ order_id: orderId });
   }
   /**
    * Crear una venta en DeFontana
@@ -50,84 +120,83 @@ export class SalesService {
    *   6. Generar una orden de venta en DeFontana
    *   7. Rescatar folio de orden de venta y pdf
    *   8. Retornar la URL del PDF y el folio
- */
-  async createSale(data: TicketDto) {
-    const sale = await this.findOneByOrderId(data.condicionpago.IdVenta);
-    if (sale && sale.state !== SaleState.FALLIDO) {
-      this.logger.error('Venta ya procesada');
-      return {
-        ok: '0',
-        folio: null,
-        pdf: null,
-        error: 'Venta ya procesada',
-      };
-    }
+   */
+  async createTicket(data: TicketDto) {
+    const DOC_TYPE = 39;
+    await this.checkOrderState(data.condicionpago.IdVenta);
+    const rut = formatRut(data.Encabezado.Receptor.RUTRecep ?? '11111111-1');
+    let client = await this.client.findClientByRut(rut);
+    const clientObject: ClientInterface = {
+      legalCode: rut,
+      fileid: rut,
+      name: data.Encabezado.Receptor.RznSocRecep,
+      giro: data.Encabezado.Receptor.GiroRecep,
+      address: data.Encabezado.Receptor.DirRecep,
+      business: data.Encabezado.Receptor.GiroRecep,
+      city: data.Encabezado.Receptor.CiudadRecep,
+      district: data.Encabezado.Receptor.CmnaRecep,
+      email: '',
+      rubroId: '',
+    };
     try {
-      const rut = formatRut(data.Encabezado.Receptor.RUTRecep ?? '11111111-1');
-      let client = await this.client.findClientByRut(rut);
-      const clientObject: IReceptor = {...data.Encabezado.Receptor, RUTRecep: rut};
       if (!client && rut) await this.createClient(clientObject);
       client = client ?? (await this.client.findClientByRut('11.111.111-1'));
-      console.log(data.condicionpago.IdVenta);
-      await this.model.create({
+      await this.createSale({
+        Detalles: data.Detalles.map((detail) => ({
+          name: detail.NmbItem,
+          discount: detail.DscItem,
+          price: detail.PrcItem,
+          quantity: detail.QtyItem,
+          unit: detail.UnmdItem,
+          sku: detail.SKU,
+          barcode: detail.barCode,
+        }) as IDetails),
+        rut,
         document_type: data.Encabezado.IdDoc.TipoDTE,
-        emisor_rut: data.Encabezado.Emisor.RUTEmisor,
-        client_rut: client.legalCode,
-        client_rznSoc: client.name,
-        client_giro: client.giro,
-        client_direction: client.address,
-        client_comune: client.district,
-        client_city: client.city,
         total: data.Encabezado.Totales.MntTotal,
         iva: data.Encabezado.Totales.IVA,
-        details: data.Detalles,
         payment_method: data.condicionpago.CondicionPago,
         seller: data.condicionpago.Vendedor,
         order_id: data.condicionpago.IdVenta,
-        state: SaleState.PROCESANDO,
-        defontana_id: null,
-        error: null,
-      });
-      //Crear Venta en DeFontana
+      }, client);
       const saleBody = this.createSaleBody(
-        data.Detalles,
+        data.Detalles.map(
+          (detail) => ({
+            name: detail.NmbItem,
+            discount: detail.DscItem,
+            price: detail.PrcItem,
+            quantity: detail.QtyItem,
+            unit: detail.UnmdItem,
+            sku: detail.SKU,
+            barcode: detail.barCode,
+          }),
+        ),
         data.condicionpago.IdVenta,
+        data.condicionpago.CondicionPago,
+        data.condicionpago.Vendedor,
         client,
+        DOC_TYPE,
       );
-      const defontanaResponse = await this.defontana.createSale(saleBody);
-      if (!defontanaResponse.success) {
-        const { message, exceptionMessage } = defontanaResponse;
-        const errorMessage = `${message} - ${exceptionMessage}`;
-        //Actualizar estado de la venta y guardar error
-        await this.model.findOneAndUpdate(
-          { order_id: data.condicionpago.IdVenta },
-          {
-            state: SaleState.FALLIDO,
-            error: errorMessage,
-          },
-        );
-        return { ok: '0', folio: null, pdf: null, error: errorMessage, };
+      const response = await this.processSale(saleBody);
+      if (response.ok === '0') return {
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: response.error,
       }
-      //Asignar folio de venta a la venta y cambiar estado
-      await this.model.findOneAndUpdate(
-        { order_id: data.condicionpago.IdVenta },
-        {
-          state: SaleState.CREADO,
-          defontana_id: defontanaResponse.firstFolio,
-        },
-      );
-      const pdf = await this.defontana.getPdf8Cm(defontanaResponse.firstFolio);
+      const pdf = await this.defontana.getPdf8Cm(response.folio);
       const pdfUrl = await this.files.savePdfFromBase64(pdf);
+      const url_pdf = `${EnvConfiguration().url_app}${pdfUrl}`;
       await this.model.findOneAndUpdate(
         { order_id: data.condicionpago.IdVenta },
         {
-          url_pdf: `${EnvConfiguration().url_app}${pdfUrl}`,
+          url_pdf,
         },
       );
       return {
         ok: '1',
-        folio: defontanaResponse.firstFolio,
-        pdf: `${EnvConfiguration().url_app}${pdfUrl}`,
+        folio: response.folio,
+        pdf: url_pdf,
       };
     } catch (error) {
       this.logger.error(error.message);
@@ -138,7 +207,130 @@ export class SalesService {
         pdf: null,
         error: error.message,
       };
-      throw new NotAcceptableException(response);
+      throw new BadRequestException(response);
+    }
+  }
+  async createBill(data: CreateBillDto){
+    const DOC_TYPE = 33;
+    await this.checkOrderState(data.Orden.IdVenta);
+    const rut = formatRut('11111111-1');
+    let client = await this.client.findClientByRut(rut);
+    const clientObject: ClientInterface = {
+      legalCode: rut,
+      fileid: rut,
+      name: data.Cliente.Nombre,
+      giro: data.Cliente.Giro,
+      address: data.Cliente.Direccion,
+      business: data.Cliente.Giro,
+      city: '',
+      district: '',
+      email: data.Cliente.Email,
+      rubroId : '',
+    };
+    try {
+      if (!client && rut) await this.createClient(clientObject);
+      client = client ?? (await this.client.findClientByRut('11.111.111-1'));
+      await this.createSale({
+          Detalles: data.Productos.map(product => ({
+            name: 'Sin información',
+            discount: '',
+            price: product.total / product.cantidad,
+            quantity: product.cantidad,
+            unit: 'UN',
+            sku: product.SKU,
+            barcode: product.BarCode
+            })),
+          rut,
+          document_type: 39,
+          total: data.Totales.MntTotal,
+          iva: data.Totales.IVA,
+          payment_method: data.Orden.CondicionPago,
+          seller: data.Orden.Vendedor,
+          order_id: data.Orden.IdVenta,
+        }, client);
+      const saleBody = this.createSaleBody(
+        data.Productos.map(product => ({
+          name: 'Sin información',
+          discount: '',
+          price: product.total / product.cantidad,
+          quantity: product.cantidad,
+          unit: 'UN',
+          sku: product.SKU,
+          barcode: product.BarCode
+        })),
+        data.Orden.IdVenta,
+        data.Orden.CondicionPago,
+        data.Orden.Vendedor,
+        client,
+        DOC_TYPE,
+      );
+      const response = await this.processSale(saleBody);
+      if (response.ok === '0'){
+        await this.saveFailedSale(data.Orden.IdVenta, response.error);
+        return {
+          ok: '0',
+          folio: null,
+          pdf: null,
+          error: response.error,
+        }
+      }
+      const pdf = await this.defontana.getPdfStandardBase64(response.folio);
+      const pdfUrl = await this.files.savePdfFromBase64(pdf);
+      const url_pdf = `${EnvConfiguration().url_app}${pdfUrl}`;
+      await this.model.findOneAndUpdate(
+        { order_id: data.Orden.IdVenta },
+        {
+          url_pdf,
+        },
+      );
+      return {
+        ok: '1',
+        folio: response.folio,
+        pdf: url_pdf,
+      };
+    } catch (error) {
+      this.logger.error(error.message);
+      await this.saveFailedSale(data.Orden.IdVenta, error.message);
+      const response = {
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: error.message
+      }
+      throw new BadRequestException(response);
+    }
+  }
+
+  private async saveFailedSale(order_id: number, error: string) {
+    await this.model.findOneAndUpdate({ order_id }, { state: SaleState.FALLIDO, error });
+  }
+  async processSale(data: SaleRequestInterface): Promise<{
+    ok: string;
+    folio: number | null;
+    pdf: null;
+    error?: string | null
+  }> {
+    try {
+      const { success, exceptionMessage, firstFolio, message } = await this.defontana.createSale(data);
+      if (!success) {
+        const errorMessage = `${message} - ${exceptionMessage}`;
+        await this.saveFailedSale(+data.externalDocumentID.toString(), errorMessage);
+        return { ok: '0', folio: null, pdf: null, error: errorMessage };
+      }
+      await this.model.findOneAndUpdate(
+        { order_id: data.externalDocumentID },
+        { state: SaleState.CREADO, defontana_id: firstFolio },
+      );
+      return { ok: '1', folio: firstFolio, pdf: null };
+    } catch (error) {
+      this.logger.error(error.message);
+      await this.saveFailedSale(+data.externalDocumentID, error.message);
+      throw new ServiceUnavailableException({
+        ok: '0',
+        folio: null,
+        pdf: null,
+        error: error.message,
+      });
     }
   }
   async findOne(id: number): Promise<Sale | null> {
@@ -149,38 +341,56 @@ export class SalesService {
   async findOneByOrderId(id: number): Promise<Sale | null> {
     return this.model.findOne({ order_id: id }).exec();
   }
-  private async updateSaleState(id: number, state: SaleState) {
-    await this.model.updateOne({ order_id: id }, { $set: { state } });
+
+  private async createClient(client: ClientInterface) {
+    await this.defontana.createClient(client);
+    await this.client.createClient(client);
   }
-  private async createClient(client: IReceptor) {
-    const newClient: ClientInterface = {
-      legalCode: client.RUTRecep,
-      fileid: client.RUTRecep,
-      name: client.RznSocRecep,
-      address: client.DirRecep,
-      district: client.CmnaRecep,
-      email: '',
-      business: '',
-      rubroId: '',
-      giro: client.GiroRecep,
-      city: client.CiudadRecep,
-    };
-    await this.defontana.createClient(newClient);
-    await this.client.createClient(newClient);
+
+  private async createSale(data: {
+    Detalles: IDetails[];
+    rut: string;
+    document_type: number;
+    total: number;
+    iva: number;
+    payment_method: string;
+    seller: string;
+    order_id: number;
+  }, client: ClientInterface) {
+    await this.model.create({
+      document_type: data.document_type,
+      emisor_rut: data.rut,
+      client_rut: client.legalCode,
+      client_rznSoc: client.name,
+      client_giro: client.giro,
+      client_direction: client.address,
+      client_comune: client.district,
+      client_city: client.city,
+      total: data.total,
+      iva: data.iva,
+      details: data.Detalles,
+      payment_method: data.payment_method,
+      seller: data.seller,
+      order_id: data.order_id
+    });
   }
+
   private createSaleBody(
-    details: IDetalle[],
+    details: IDetails[],
     IdVenta: number,
+    CondicionPago: string,
+    Vendedor: string,
     client: ClientInterface,
-  ) {
+    documentType: number,
+  ): SaleRequestInterface {
     const detailsFormat: ProductDto[] = details.map((detail) => ({
       type: 'A',
       isExempt: false,
-      code: detail.SKU,
-      count: detail.QtyItem,
-      productName: detail.NmbItem,
-      productNameBarCode: detail.barCode,
-      price: detail.PrcItem,
+      code: detail.sku,
+      count: detail.quantity,
+      productName: detail.name,
+      productNameBarCode: detail.barcode,
+      price: detail.price,
       discount: { type: 0, value: -0 },
       especificTax: {
         value: 0,
@@ -203,7 +413,7 @@ export class SalesService {
       year: today.getFullYear(),
     };
     return {
-      documentType: 'BOLETAELECRS',
+      documentType: this.getDocumentType(documentType),
       firstFolio: 0,
       lastFolio: 0,
       externalDocumentID: `${IdVenta}`,
@@ -212,8 +422,8 @@ export class SalesService {
       clientFile: `${client.fileid}`,
       contactIndex: client.address,
       rutMandante: '',
-      paymentCondition: 'CONTADO',
-      sellerFileId: 'VENDEDOR',
+      paymentCondition: CondicionPago,
+      sellerFileId: Vendedor,
       clientAnalysis: {
         accountNumber: '1110401001',
         businessCenter: this.businessCenter,
@@ -257,5 +467,24 @@ export class SalesService {
       customFields: [],
       isTransferDocument: true,
     };
+  }
+
+  private getDocumentType(documentType: number) {
+    switch (documentType) {
+      case 33: return 'FVARSELECT';
+      case 39: return 'BOLETAELECRS';
+      case 61: return 'NCVRSELECT';
+      default: return 'BOLETAELECRS';
+    }
+  }
+
+  async getResumeToSales () {
+    const [total, completed, pending, failed] = await Promise.all([
+      this.model.countDocuments(),
+      this.model.countDocuments({ state: SaleState.CREADO }),
+      this.model.countDocuments({ state: SaleState.PROCESANDO }),
+      this.model.countDocuments({ state: SaleState.FALLIDO }),
+    ]);
+    return { total, completed, pending, failed };
   }
 }

@@ -177,14 +177,18 @@ export class DefontanaService {
       throw new ServiceUnavailableException('Error al obtener PDF');
     }
   }
-  async getPdfStandardBase64(folio: number) {
-    const token = await this.getAuthToken();
-    const { urlApi } = await this.getCredential();
-    const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF_FACTURA}?documentType=BOLETAELECRS&folio=${folio}&siiUnit=TEST_SiiUnit`;
-    const { data } = await axios.get(url, {
-      headers: { Authorization: token },
-      responseType: 'arraybuffer',
-    });
-    return data;
+  async getPdfStandardBase64(folio: number): Promise<string> {
+    try {
+      const token = await this.getAuthToken();
+      const { urlApi } = await this.getCredential();
+      const url = `${urlApi}${DefontanaEndpointsEnum.GET_PDF_FACTURA}?documentType=FVARSELECT&folio=${folio}&siiUnit=TEST_SiiUnit`;
+      const { data } = await axios.get<PdfResponse>(url, {
+        headers: { Authorization: token },
+      });
+      return data.document;
+    } catch (error) {
+      this.loggerService.error(error);
+      throw new ServiceUnavailableException('Error al obtener PDF');
+    }
   }
 }

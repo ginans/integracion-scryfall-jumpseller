@@ -1,7 +1,8 @@
 export interface Payload {
   sub: string;
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   iat: number;
   exp: number;
 }

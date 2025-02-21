@@ -15,6 +15,7 @@ import { ReplacePassDto } from './dto/replace-pass.dto';
 import { MailService } from '../mail/mail.service';
 import { RecoverPassDto } from './dto/recover.dto';
 import { User } from '../users/entities/user.entity';
+import { last } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -36,7 +37,7 @@ export class AuthService {
   async hashPassword(password: string): Promise<string> {
     return await argon2.hash(password);
   }
-  async createToken(payload: { sub: string; email: string; name: string }) {
+  async createToken(payload: { sub: string; email: string; firstName: string }) {
     return await this.jwtService.signAsync(payload);
   }
   async validateToken(token: string): Promise<Payload> {
@@ -54,11 +55,12 @@ export class AuthService {
     const validarPass = await this.compare(password, User.password);
     if (!validarPass)
       throw new UnauthorizedException('Correo/contraseña incorrecto');
-    if (!User.status) throw new UnauthorizedException('Usuario deshabilitado');
+    if (!User.isActive) throw new UnauthorizedException('Usuario deshabilitado');
     const payload = {
       sub: User._id.toString(),
       email: User.email,
-      name: User.name,
+      firstName: User.firstName,
+      lastName: User.lastName,
     };
     const access_token = await this.createToken(payload);
     await this.createRegister({ email });
@@ -68,7 +70,8 @@ export class AuthService {
       user: {
         id: User._id,
         email: User.email,
-        name: User.name,
+        firstName: User.firstName,
+        lastName: User.lastName,
         role: User.role,
       },
     };
@@ -80,10 +83,11 @@ export class AuthService {
     const payload = {
       sub: user._id.toHexString(),
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
     const token = await this.createToken(payload);
-    this.mailService.sendMail(user.email, user.name, token);
+    // this.mailService.sendMail(user.email, user.name, token);
     return {
       message: 'Enviamos a tu correo el método de recuperación',
     };
@@ -102,7 +106,7 @@ export class AuthService {
   async validateUser(id: string): Promise<User> {
     const user = await this.userService.findById(id);
     if (!user) throw new UnauthorizedException('Token inválido');
-    if (!user.status) throw new UnauthorizedException('Usuario deshabilitado');
+    if (!user.isActive) throw new UnauthorizedException('Usuario deshabilitado');
     user.password = undefined;
     return user;
   }

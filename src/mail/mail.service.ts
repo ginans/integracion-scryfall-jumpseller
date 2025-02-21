@@ -7,7 +7,7 @@ export class MailService {
   private readonly transmitter = process.env.SMTP_USER;
   private readonly url_app = process.env.URL_APP;
 
-  sendMail(emailUser: string, nameUser: string, token: string) {
+  changePassword(emailUser: string, nameUser: string, token: string) {
     try {
       //TODO: Evitar que el mail bote el servidor
       this.mailerService.sendMail({
@@ -24,13 +24,5 @@ export class MailService {
     } catch (error) {
       console.error(error);
     }
-  }
-  sendFinallyTask(emailUser: string, nameUser: string, message: string) {
-    this.mailerService.sendMail({
-      to: emailUser,
-      from: this.transmitter,
-      subject: 'Procesar margenes',
-      text: `Hola ${nameUser}, ${message}`,
-    });
   }
 }

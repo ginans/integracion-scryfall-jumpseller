@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
         secret: jwtConstants.secret,
       });
       const User = await this.userService.findByEmail(payload.email);
-      if (!User.status) {
+      if (!User.isActive) {
         throw new UnauthorizedException(
           `Usuario ${User.email} está desactivado`,
         );

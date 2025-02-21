@@ -9,10 +9,13 @@ export class User implements BaseUser {
   _id: Types.ObjectId;
 
   @Prop({ default: true })
-  status: boolean;
+  isActive: boolean;
 
   @Prop({ required: true })
-  name: string;
+  firstName: string;
+
+  @Prop({ required: true })
+  lastName: string;
 
   @Prop({ unique: true })
   email: string;

@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
   @ApiProperty({
-    default: 'sistemas',
+    default: 'Sistemas',
   })
   @IsNotEmpty({
     message: 'name no puede estar vacío.',
@@ -12,7 +12,19 @@ export class CreateUserDto {
   @IsString({
     message: 'name tiene que ser de Tipo String',
   })
-  name: string;
+  firstName: string;
+
+  @ApiProperty({
+    default: 'Fixlabs',
+  })
+  @IsNotEmpty({
+    message: 'lastName no puede estar vacío.',
+  })
+  @IsString({
+    message: 'name tiene que ser de Tipo String',
+  })
+  lastName: string;
+
   @ApiProperty({
     default: 'test@test.cl',
   })
@@ -21,6 +33,7 @@ export class CreateUserDto {
   })
   @IsEmail()
   email: string;
+
   @ApiProperty({
     default: 'password',
   })

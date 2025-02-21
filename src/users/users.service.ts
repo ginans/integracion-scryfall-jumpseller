@@ -55,12 +55,12 @@ export class UsersService {
     return this.userModel.findOne({ email }).select('+password').exec();
   }
 
-  async updateStatus(id: string): Promise<User | null> {
+  async updateIsActive(id: string): Promise<User | null> {
     const user: UserDocument = await this.userModel
       .findById(new Types.ObjectId(id))
       .exec();
     if (!user) return null;
-    user.status = !user.status;
+    user.isActive = !user.isActive;
     return user.save();
   }
 

@@ -4,13 +4,22 @@ import { UserRole } from '../enums/user-role.enum';
 
 export class UpdateUserDto {
   @ApiProperty({
-    default: 'sistemas',
+    default: 'Sistemas',
   })
   @IsOptional()
   @IsString({
     message: 'name tiene que ser de Tipo String',
   })
-  name?: string;
+  firstName?: string;
+
+  @ApiProperty({
+    default: 'Fixlabs',
+  })
+  @IsOptional()
+  @IsString({
+    message: 'lastName tiene que ser de Tipo String',
+  })
+  lastName?: string;
 
   @ApiProperty({
     default: 'test@test.cl',

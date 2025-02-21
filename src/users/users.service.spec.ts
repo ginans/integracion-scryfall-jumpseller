@@ -6,7 +6,8 @@ import { Model } from 'mongoose';
 
 const mockUser = {
   _id: '1',
-  name: 'Test User',
+  firstName: 'Test',
+  lastName: 'User',
   email: 'test@example.com',
   password: 'password',
   status: true,
@@ -94,7 +95,7 @@ describe('UsersService', () => {
     jest.spyOn(model, 'findById').mockReturnValue({
       exec: jest.fn().mockResolvedValueOnce(mockUser),
     } as any);
-    const user = await service.updateStatus('1');
+    const user = await service.updateIsActive('1');
     expect(user).toEqual(mockUser);
   });
 

@@ -40,6 +40,7 @@ export class UsersController {
   getUser(@Param('id') id: string): Promise<User | null> {
     return this.usersService.findById(id);
   }
+
   @ApiBearerAuth()
   @ApiOperation({ summary: 'crear un nuevo usuario' })
   @Post()
@@ -67,9 +68,9 @@ export class UsersController {
     status: 201,
     description: 'Operación exitosa',
   })
-  @Patch(':id/status')
-  updateUserStatus(@Param('id') id: string): Promise<User | null> {
-    return this.usersService.updateStatus(id);
+  @Patch(':id/isActive')
+  updateUserIsActive(@Param('id') id: string): Promise<User | null> {
+    return this.usersService.updateIsActive(id);
   }
   @ApiBearerAuth()
   @ApiOperation({ summary: 'eliminar usuario por id' })

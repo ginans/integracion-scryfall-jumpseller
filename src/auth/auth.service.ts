@@ -87,7 +87,7 @@ export class AuthService {
       lastName: user.lastName,
     };
     const token = await this.createToken(payload);
-    // this.mailService.sendMail(user.email, user.name, token);
+    this.mailService.changePassword(user.email, user.firstName, user.lastName, token);
     return {
       message: 'Enviamos a tu correo el método de recuperación',
     };

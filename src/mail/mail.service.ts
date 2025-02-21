@@ -7,16 +7,21 @@ export class MailService {
   private readonly transmitter = process.env.SMTP_USER;
   private readonly url_app = process.env.URL_APP;
 
-  changePassword(emailUser: string, nameUser: string, token: string) {
+  // async sendMail(email: string, firstName: string, lastName: string, token: string): Promise<void> {
+  //   // Implementation for sending email
+  // }
+// }
+
+  changePassword(email: string, firstName: string, lastName: string, token: string) {
     try {
       //TODO: Evitar que el mail bote el servidor
       this.mailerService.sendMail({
-        to: emailUser,
+        to: email,
         from: this.transmitter,
         subject: 'Cambio de contraseña',
         text: 'Bienvenido',
         html: `<div style="display:flex; flex-direction: column;">
-        <p>Hola ${nameUser}!, Por favor revisa el siguiente link para cambiar tu contraseña</p>
+        <p>Hola ${firstName} ${lastName}!, Por favor revisa el siguiente link para cambiar tu contraseña</p>
         <br>
         <a href="${this.url_app}new-password?t=${token}"><p>Cambiar contraseña</p></a>
         </div>`,

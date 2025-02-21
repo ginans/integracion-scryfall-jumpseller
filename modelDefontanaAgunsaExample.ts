@@ -107,8 +107,8 @@ interface Users {
     isActive: boolean, 
     rememberToken: string,
     createdAt: Date,
-    updatedAt: Date,
-    deletedAt: Date,
+    updatedAt: Date, 
+    deletedAt: Date,//???
 }
 
 //-------------------------------------------------

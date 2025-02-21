@@ -27,6 +27,9 @@ export class User implements BaseUser {
   role: UserRole;
 
   @Prop({ default: null })
+  rememberToken: string;
+
+  @Prop({ default: null })
   lastLogin: Date | null;
 }
 export type UserDocument = HydratedDocument<User>;

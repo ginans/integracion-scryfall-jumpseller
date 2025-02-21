@@ -65,6 +65,7 @@ export class AuthService {
     const access_token = await this.createToken(payload);
     await this.createRegister({ email });
     await this.userService.updateLogin(User._id.toString());
+    await this.userService.updateToken(User._id.toString(), access_token);
     return {
       access_token,
       user: {

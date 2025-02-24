@@ -6,6 +6,7 @@ export interface BaseUser {
   email: string;
   password: string;
   role: UserRole;
+  rememberToken: string;
   lastLogin: Date;
 }
 

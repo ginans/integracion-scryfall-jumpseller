@@ -22,10 +22,11 @@ export class RequestLoggerInterceptor implements NestInterceptor {
   private logHttpCall(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const userAgent = request.get('user-agent') || '';
-    const { ip, method, path: url, body, headers } = request;
+    const { ip, method, path: url, body, headers, query } = request;
     const correlationKey = uuidv4();
     const userId = request.user?.userId;
-    this.logger.log(`[${correlationKey}] ${method} ${url} ${userId} ${userAgent} ${ip}: ${context.getClass().name} ${context.getHandler().name} ${JSON.stringify(body)}`);
+    this.logger.log(`[${correlationKey}] ${method} ${url} ${JSON.stringify(query)} ${userId} ${userAgent} ${ip}: ${context.getClass().name} ${context.getHandler().name} ${JSON.stringify(body)}`);
+    //TODO: enviar ip
     const now = Date.now();
     return next.handle().pipe(
       tap(async () => {

@@ -35,7 +35,7 @@ export class CreateKardexDto {
   @Expose({ name: 'created_at' })
   @Type(() => Date)
   @IsDate()
-  readonly createdAt: Date; // Timestamp del movimiento
+  readonly createdAtData: Date; // Timestamp del movimiento
 
   // readonly transmissionType: string; 
 }

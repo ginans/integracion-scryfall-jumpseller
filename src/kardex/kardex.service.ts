@@ -5,6 +5,9 @@ import { Kardex, KardexDocument } from './entities/kardex.entity';
 import { CreateKardexDto } from './dto/create-kardex.dto';
 import { UpdateKardexDto } from './dto/update-kardex.dto';
 import { plainToClass } from 'class-transformer';
+import { QueryDto, SortBy } from './dto/query-kardex.dto';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { SortOrder } from 'src/common/dto/pagination-query.dto';
 
 @Injectable()
 export class KardexService {
@@ -25,9 +28,31 @@ export class KardexService {
     }
   }
 
-  async getAllKardex(): Promise<Kardex[]> {
+  async getAllKardex(query: QueryDto): Promise<PaginatedResponse<Kardex>> {
+    const {limit, page, sortBy, sortOrder , search} = query;
+    console.log("query: ", query)
+    const sort: { [key: string]: 1 | -1 } = {
+      [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
+    };
+
+    const skip = (page - 1) * limit;
+    const filters = {}
     try {
-      return await this.kardexModel.find().exec();
+      const [kardex, total] = await Promise.all([
+        this.kardexModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+        this.kardexModel.countDocuments(filters).exec()
+      ]);
+      return {
+        items: kardex,
+        meta: {
+          totalItems: total,
+          itemsPerPage: kardex.length,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          hasNextPage: total > (page * limit),
+          hasPreviousPage: page > 1,
+      }
+    }
     } catch (error) {
       throw new InternalServerErrorException(`Error fetching Kardex: ${error.message}`);
     }
@@ -88,25 +113,4 @@ export class KardexService {
     }
   }
 
-  async deleteKardex(id: string): Promise<any> {
-    try {
-      let objectId;
-      try {
-        objectId = new Types.ObjectId(id);
-      } catch (error) {
-        throw new BadRequestException(`ID "${id}" no es un formato válido de MongoDB`);
-      }
-      const kardex = await this.kardexModel.collection.findOne({ _id: objectId });
-      if (!kardex) {
-        throw new NotFoundException(`Kardex con ID "${id}" no encontrado`);
-      }
-      await this.kardexModel.collection.deleteOne({ _id: objectId });
-      return `El Kardex con ID "${id}" fue eliminado exitosamente`;
-    } catch (error) {
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(`Error eliminando Kardex: ${error.message}`);
-    }
-  }
 }

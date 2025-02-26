@@ -1,5 +1,6 @@
 export enum EnumState {
   PENDING = 'Pendiente',
-  APPROVED = 'Aprobado',
-  //agregar mas estados
+  COMPLETED = 'Completado',
+  PROCESSED = 'Procesado',
+  FAILED = 'Fallido',
 }

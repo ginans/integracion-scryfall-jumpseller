@@ -4,73 +4,62 @@ import { EnumState } from '../../common/enums/state.enum';
 
 export type KardexDocument = Kardex & Document;
 
-@Schema()
+@Schema({
+  timestamps: true
+})
 export class Kardex extends Document {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
 
   @Prop({ 
-    default: null,
     required: true, 
     unique: true
   })
   idTransmission: number;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   initialErpReference: string;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   finalErpReference: string;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   facility: string;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   initialZone: string;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   finalZone: string;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   sku: string;
 
   @Prop({ 
-    default: null,
     required: true 
   })
   qtyAction: number;
 
   @Prop({
-    default: new Date()
+    default: null
   })
-  createdAt: Date;
+  createdAtData: Date | null;
 
   @Prop({
-    default: new Date()
-  })
-  updatedAt: Date;
-
-  @Prop({
-    default: EnumState.PENDING,
-    required: true
+    required: false,
+    default: EnumState.PENDING
   })
   state: EnumState;
 }

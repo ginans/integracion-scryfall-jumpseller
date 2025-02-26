@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { KardexService } from './kardex.service';
 import { CreateKardexDto } from './dto/create-kardex.dto';
 import { UpdateKardexDto } from './dto/update-kardex.dto';
+import { QueryDto } from './dto/query-kardex.dto';
 
 @Controller('kardex')
 export class KardexController {
@@ -14,8 +15,8 @@ export class KardexController {
   }
 
   @Get()
-  findAll() {
-    return this.kardexService.getAllKardex();
+  findAll(@Query() query: QueryDto) {
+    return this.kardexService.getAllKardex(query);
   }
 
   @Get(':id')
@@ -28,8 +29,4 @@ export class KardexController {
   return this.kardexService.updateKardex(id, updateKardexDto);
 }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.kardexService.deleteKardex(id);
-  }
 }

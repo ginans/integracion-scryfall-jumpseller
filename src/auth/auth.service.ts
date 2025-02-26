@@ -65,7 +65,6 @@ export class AuthService {
     const access_token = await this.createToken(payload);
     await this.createRegister({ email });
     await this.userService.updateLogin(User._id.toString());
-    await this.userService.updateToken(User._id.toString(), access_token);
     return {
       access_token,
       user: {
@@ -77,10 +76,14 @@ export class AuthService {
       },
     };
   }
+
   async recoverPass(body: RecoverPassDto) {
     const user = await this.userService.findByEmail(body.email);
     if (!user)
       return { message: 'Enviamos a tu correo el método de recuperación' };
+    if (user.rememberToken === null) {
+      throw new BadRequestException('No se ha solicitado recuperación de contraseña');
+    }
     const payload = {
       sub: user._id.toHexString(),
       email: user.email,
@@ -88,8 +91,12 @@ export class AuthService {
       lastName: user.lastName,
     };
     const token = await this.createToken(payload);
+    if (token){
+      user.rememberToken = token;
+      await this.userService.update(user._id.toHexString(), user);
+    }
     this.mailService.changePassword(user.email, user.firstName, user.lastName, token);
-    return {
+       return {
       message: 'Enviamos a tu correo el método de recuperación',
     };
   }

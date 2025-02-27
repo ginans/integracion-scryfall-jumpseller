@@ -17,8 +17,8 @@ export class KardexService {
 
   async createKardex(createKardexDto: CreateKardexDto): Promise<Kardex> {
     try {
-      //const transformedDto = plainToClass(CreateKardexDto, createKardexDto);  
-      const createdKardex = new this.kardexModel(createKardexDto);
+      const transformedDto = plainToClass(CreateKardexDto, createKardexDto);  
+      const createdKardex = new this.kardexModel(transformedDto);
       return await createdKardex.save();
     } catch (error) {
       if (error.code === 11000) {
@@ -29,14 +29,14 @@ export class KardexService {
   }
 
   async getAllKardex(query: QueryDto): Promise<PaginatedResponse<Kardex>> {
-    const {limit, page, sortBy, sortOrder , search, to, from} = query;
-    console.log("query: ", query)
+    const { limit, page, sortBy, sortOrder, search, to, from, state } = query;
+    console.log("query: ", query);
     const sort: { [key: string]: 1 | -1 } = {
       [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
     };
 
     const skip = (page - 1) * limit;
-    const filters: { $or?: any[], $and?: any[] } = {}
+    const filters: { $or?: any[], $and?: any[] } = {};
 
     if (search && search.length > 0) {
       const searchValue = search.trim();
@@ -44,10 +44,19 @@ export class KardexService {
       if (!isNaN(Number(searchValue))) {
         filters.$or.push({ idTransmission: Number(searchValue) });
       }
-      filters.$or.push({ 
-        $expr: { 
-          $regexMatch: { 
-            input: { $toString: "$idTransmission" }, 
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$idTransmission" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$state" },
             regex: searchValue,
             options: "i"
           }
@@ -57,14 +66,27 @@ export class KardexService {
 
     if (from && to) {
       filters.$and = [
-      { createdAtData: { 
-        $gte: new Date(`${from}T00:00:00.000Z`), 
-        $lte: new Date(`${to}T23:59:59.999Z`)
-        } 
-      },
+        {
+          createdAtData: {
+            $gte: new Date(`${from}T00:00:00.000Z`),
+            $lte: new Date(`${to}T23:59:59.999Z`)
+          }
+        },
       ];
-    }   
-   
+    }
+
+    if (state) {
+      const stateFilter = { state };
+      filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
+    }
+
+    console.log('Filtros:', filters);
+    console.log('Orden:', sort);
+    console.log('Saltar:', skip);
+    console.log('Limit:', limit);
+    console.log('Página:', page);
+    console.log('Búsqueda:', search);
+
     try {
       const [kardex, total] = await Promise.all([
         this.kardexModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
@@ -79,8 +101,8 @@ export class KardexService {
           currentPage: page,
           hasNextPage: total > (page * limit),
           hasPreviousPage: page > 1,
+        }
       }
-    }
     } catch (error) {
       throw new InternalServerErrorException(`Error fetching Kardex: ${error.message}`);
     }

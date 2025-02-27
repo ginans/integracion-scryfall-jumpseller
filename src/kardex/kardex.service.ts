@@ -57,19 +57,13 @@ export class KardexService {
 
     if (from && to) {
       filters.$and = [
-        { createdAtData: { $gte: new Date(from), $lte: new Date(to) } },
+      { createdAtData: { 
+        $gte: new Date(`${from}T00:00:00.000Z`), 
+        $lte: new Date(`${to}T23:59:59.999Z`)
+        } 
+      },
       ];
-    }
-
-    console.log('Filtros:', filters);
-    console.log('Orden:', sort);
-    console.log('Saltar:', skip);
-    console.log('Limit:', limit);
-    console.log('Página:', page);
-    console.log('Búsqueda:', search);
-    console.log('Desde:', from);
-    console.log('Hasta:', to);
-   
+    }   
    
     try {
       const [kardex, total] = await Promise.all([

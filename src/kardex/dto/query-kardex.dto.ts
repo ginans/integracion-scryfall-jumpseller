@@ -58,10 +58,7 @@ export class QueryDto {
     @IsString()
     from?: string | null;
 
-    @IsEnum({
-        enum: EnumState,
-        message: `El estado debe ser uno de los siguientes valores ${Object.values(EnumState).join(', ')}`
-    })
+    @IsString()
     @IsOptional()
     state?: EnumState | null;
 

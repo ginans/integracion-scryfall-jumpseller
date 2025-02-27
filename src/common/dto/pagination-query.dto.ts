@@ -12,7 +12,6 @@ export enum SortOrder {
   ASC = 'asc',
   DESC = 'desc',
 }
-
 export class PaginationQueryDto {
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()

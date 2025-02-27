@@ -23,7 +23,11 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('backend/docs', app, documentFactory);
   const logger = new Logger('NestBootstrap');
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+  }));
   app.enableCors();
   app.setGlobalPrefix('backend');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

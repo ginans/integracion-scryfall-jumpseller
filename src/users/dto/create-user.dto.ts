@@ -21,7 +21,7 @@ export class CreateUserDto {
     message: 'lastName no puede estar vacío.',
   })
   @IsString({
-    message: 'name tiene que ser de Tipo String',
+    message: 'lastName tiene que ser de Tipo String',
   })
   lastName: string;
 

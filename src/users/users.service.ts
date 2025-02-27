@@ -41,8 +41,6 @@ export class UsersService {
     return user;
   }
 
-  //TODO: que el token quede almacenado en rememberToken en base de datos al crear usuario
-
   async update(
     id: string,
     userDto: Partial<UpdateUserDto>,
@@ -93,17 +91,6 @@ export class UsersService {
     }
   }
 
-  async updateToken(id: string, newToken: string): Promise<User | null> {
-    try {
-      const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
-      if (!user) return null;
-      user.rememberToken = newToken;
-      return user.save();
-    } catch {
-      return null;
-    }
-  }
-  
   private async hashPassword(password: string): Promise<string> {
     return await argon2.hash(password);
   }

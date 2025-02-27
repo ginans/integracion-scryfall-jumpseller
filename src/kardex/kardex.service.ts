@@ -17,8 +17,8 @@ export class KardexService {
 
   async createKardex(createKardexDto: CreateKardexDto): Promise<Kardex> {
     try {
-      const transformedDto = plainToClass(CreateKardexDto, createKardexDto);
-      const createdKardex = new this.kardexModel(transformedDto);
+      //const transformedDto = plainToClass(CreateKardexDto, createKardexDto);  
+      const createdKardex = new this.kardexModel(createKardexDto);
       return await createdKardex.save();
     } catch (error) {
       if (error.code === 11000) {
@@ -29,14 +29,48 @@ export class KardexService {
   }
 
   async getAllKardex(query: QueryDto): Promise<PaginatedResponse<Kardex>> {
-    const {limit, page, sortBy, sortOrder , search} = query;
+    const {limit, page, sortBy, sortOrder , search, to, from} = query;
     console.log("query: ", query)
     const sort: { [key: string]: 1 | -1 } = {
       [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
     };
 
     const skip = (page - 1) * limit;
-    const filters = {}
+    const filters: { $or?: any[], $and?: any[] } = {}
+
+    if (search && search.length > 0) {
+      const searchValue = search.trim();
+      filters.$or = [];
+      if (!isNaN(Number(searchValue))) {
+        filters.$or.push({ idTransmission: Number(searchValue) });
+      }
+      filters.$or.push({ 
+        $expr: { 
+          $regexMatch: { 
+            input: { $toString: "$idTransmission" }, 
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+    }
+
+    if (from && to) {
+      filters.$and = [
+        { createdAtData: { $gte: new Date(from), $lte: new Date(to) } },
+      ];
+    }
+
+    console.log('Filtros:', filters);
+    console.log('Orden:', sort);
+    console.log('Saltar:', skip);
+    console.log('Limit:', limit);
+    console.log('Página:', page);
+    console.log('Búsqueda:', search);
+    console.log('Desde:', from);
+    console.log('Hasta:', to);
+   
+   
     try {
       const [kardex, total] = await Promise.all([
         this.kardexModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),

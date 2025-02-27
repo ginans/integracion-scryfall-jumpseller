@@ -17,6 +17,7 @@ export class CreateKardexDto {
   @IsString()
   readonly facility: string; // Bodega: aun no esta creada pero deberia llamarse UMABABY
 
+
   @Expose({ name: 'initial_zone' })
   @IsString()
   readonly initialZone: string; // Zona de la bodega del movimiento (inicial)

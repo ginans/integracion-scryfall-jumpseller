@@ -50,12 +50,12 @@ export class QueryDto {
     @IsOptional()
     search?: string | null;
 
-    @IsDate()
     @IsOptional()
+    @IsString()
     to?: string | null;
 
     @IsOptional()
-    @IsDate()
+    @IsString()
     from?: string | null;
 
     @IsEnum({

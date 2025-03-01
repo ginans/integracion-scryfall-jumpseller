@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Query } from '@nestjs/common';
 import { KardexService } from './kardex.service';
 import { CreateKardexDto } from './dto/create-kardex.dto';
 import { UpdateKardexDto } from './dto/update-kardex.dto';
-import { QueryDto } from './dto/query-kardex.dto';
+import { QueryKardexDto } from './dto/query-kardex.dto';
 
 @Controller('kardex')
 export class KardexController {
@@ -11,11 +11,11 @@ export class KardexController {
 
   @Post()
   create(@Body() createKardexDto: CreateKardexDto) {
-    return this.kardexService.createKardex(createKardexDto);
+    return this.kardexService.createKardex(createKardexDto); 
   }
 
   @Get()
-  findAll(@Query() query: QueryDto) {
+  findAll(@Query() query: QueryKardexDto) {
     return this.kardexService.getAllKardex(query);
   }
 

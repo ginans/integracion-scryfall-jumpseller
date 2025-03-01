@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, Document } from 'mongoose';
-import { EnumState } from '../../common/enums/state.enum';
+import { KardexState } from '../enums/kardexState.enum';
 
 export type KardexDocument = Kardex & Document;
 
@@ -59,9 +59,9 @@ export class Kardex extends Document {
 
   @Prop({
     required: false,
-    default: EnumState.PENDING
+    default: KardexState.INFORMED
   })
-  state: EnumState;
+  state: KardexState;
 }
 
 export const KardexSchema = SchemaFactory.createForClass(Kardex);

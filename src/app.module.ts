@@ -24,6 +24,7 @@ import { FilesModule } from './files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
 import { KardexModule } from './kardex/kardex.module';
+import { ReceptionsModule } from './receptions/receptions.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { KardexModule } from './kardex/kardex.module';
     }),
     FilesModule,
     KardexModule,
+    ReceptionsModule,
   ],
   controllers: [AppController],
   providers: [

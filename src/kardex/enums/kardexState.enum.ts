@@ -1,6 +1,6 @@
-export enum EnumState {
+export enum KardexState {
+  INFORMED = 'Informado',
   PENDING = 'Pendiente',
   COMPLETED = 'Completado',
-  PROCESSED = 'Procesado',
   FAILED = 'Fallido',
 }

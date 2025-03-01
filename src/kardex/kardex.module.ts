@@ -15,4 +15,4 @@ import { Kardex, KardexSchema } from './entities/kardex.entity';
   exports: [KardexService],
 })
 export class KardexModule {}
- 
+  

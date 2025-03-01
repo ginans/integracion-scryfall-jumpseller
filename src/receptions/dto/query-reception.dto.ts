@@ -1,12 +1,13 @@
-import { Transform } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import { IsNumber, IsString, IsOptional, IsEnum, Max, Min } from 'class-validator';
+import { ReceptionsState } from '../enums/receptionsState.enum';
 import { SortOrder } from 'src/common/enums/sortOrder.enum';
-import { KardexState } from 'src/kardex/enums/kardexState.enum';
 
 export enum SortBy {
-    idTransmission = 'idTransmission',
+    receptionNbr = 'receptionNbr',
 }
-export class QueryKardexDto {
+
+export class QueryReceptionDto {
     @IsOptional()
     @IsNumber({
         allowNaN: false,
@@ -40,8 +41,8 @@ export class QueryKardexDto {
     @IsEnum(SortOrder)
     sortOrder?: SortOrder = SortOrder.ASC;
 
-    @IsString()
     @IsOptional()
+    @IsString()
     search?: string | null;
 
     @IsOptional()
@@ -52,8 +53,8 @@ export class QueryKardexDto {
     @IsString()
     from?: string | null;
 
-    @IsString()
     @IsOptional()
-    state?: KardexState | null;
+    @IsString()
+    state?: ReceptionsState | null;
 
 }

@@ -1,12 +1,12 @@
 import { Transform } from 'class-transformer';
 import { IsNumber, IsString, IsOptional, IsEnum, Max, Min } from 'class-validator';
 import { SortOrder } from 'src/common/enums/sortOrder.enum';
-import { KardexState } from 'src/kardex/enums/kardexState.enum';
+import { TransfersState } from 'src/transfers/enums/transfersState.enum';
 
 export enum SortBy {
     idTransmission = 'idTransmission',
 }
-export class QueryKardexDto {
+export class QueryTransfersDto {
     @IsOptional()
     @IsNumber({
         allowNaN: false,
@@ -54,6 +54,6 @@ export class QueryKardexDto {
 
     @IsString()
     @IsOptional()
-    state?: KardexState | null;
+    state?: TransfersState | null;
 
 }

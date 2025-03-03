@@ -1,4 +1,4 @@
-export enum KardexState {
+export enum TransfersState {
   INFORMED = 'Informado',
   PENDING = 'Pendiente',
   COMPLETED = 'Completado',

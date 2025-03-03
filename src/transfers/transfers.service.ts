@@ -1,34 +1,34 @@
 import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Kardex, KardexDocument } from './entities/kardex.entity';
-import { CreateKardexDto } from './dto/create-kardex.dto';
-import { UpdateKardexDto } from './dto/update-kardex.dto';
+import { Transfers, TransfersDocument } from './entities/transfers.entity';
+import { CreateTransfersDto } from './dto/create-transfers.dto';
+import { UpdateTransfersDto } from './dto/update-transfers.dto';
 // import { plainToClass } from 'class-transformer';
-import { QueryKardexDto } from './dto/query-kardex.dto';
+import { QueryTransfersDto } from './dto/query-transfers.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { SortOrder } from 'src/common/enums/sortOrder.enum'
 
 @Injectable() 
-export class KardexService {
+export class TransfersService {
   constructor(
-    @InjectModel(Kardex.name) private readonly kardexModel: Model<KardexDocument>,
+    @InjectModel(Transfers.name) private readonly transfersModel: Model<TransfersDocument>,
   ) {}
 
-  async createKardex(createKardexDto: CreateKardexDto): Promise<Kardex> {
+  async createTransfers(createTransfersDto: CreateTransfersDto): Promise<Transfers> {
     try {
-      // const transformedDto = plainToClass(CreateKardexDto, createKardexDto);  
-      const createdKardex = new this.kardexModel(createKardexDto);
-      return await createdKardex.save();
+      // const transformedDto = plainToClass(CreateTransfersDto, createTransfersDto);  
+      const createdTransfers = new this.transfersModel(createTransfersDto);
+      return await createdTransfers.save();
     } catch (error) {
       if (error.code === 11000) {
         throw new BadRequestException(`El idTransmission ya existe en la base de datos`);
       }
-      throw new InternalServerErrorException(`Error al crear el Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error al crear el Transfers: ${error.message}`);
     }
   }
 
-  async getAllKardex(query: QueryKardexDto): Promise<PaginatedResponse<Kardex>> {
+  async getAllTransfers(query: QueryTransfersDto): Promise<PaginatedResponse<Transfers>> {
     const { limit, page, sortBy, sortOrder, search, to, from, state } = query;
     console.log("query: ", query);
     const sort: { [key: string]: 1 | -1 } = {
@@ -88,15 +88,15 @@ export class KardexService {
     console.log('Búsqueda:', search);
 
     try {
-      const [kardex, total] = await Promise.all([
-        this.kardexModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
-        this.kardexModel.countDocuments(filters).exec()
+      const [transfers, total] = await Promise.all([
+        this.transfersModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+        this.transfersModel.countDocuments(filters).exec()
       ]);
       return {
-        items: kardex,
+        items: transfers,
         meta: {
           totalItems: total,
-          itemsPerPage: kardex.length,
+          itemsPerPage: transfers.length,
           totalPages: Math.ceil(total / limit),
           currentPage: page,
           hasNextPage: total > (page * limit),
@@ -104,13 +104,13 @@ export class KardexService {
         }
       }
     } catch (error) {
-      throw new InternalServerErrorException(`Error fetching Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
     }
   }
 
-  async getKardexById(id: string): Promise<Kardex> {
+  async getTransfersById(id: string): Promise<Transfers> {
     try {
-      console.log(`Buscando Kardex con ID: ${id}`);
+      console.log(`Buscando Transfers con ID: ${id}`);
       
       let objectId;
       try {
@@ -119,24 +119,24 @@ export class KardexService {
         throw new BadRequestException(`ID "${id}" no es un formato válido de MongoDB`);
       }
       
-      const kardex = await this.kardexModel.collection.findOne({ _id: objectId });
+      const transfers = await this.transfersModel.collection.findOne({ _id: objectId });
       
-      if (!kardex) {
+      if (!transfers) {
         console.log('No se encontró el documento'); 
-        throw new NotFoundException(`Kardex con ID "${id}" no encontrado`);
+        throw new NotFoundException(`Transfers con ID "${id}" no encontrado`);
       }
-      console.log('Documento encontrado:', kardex);
-      return kardex as unknown as Kardex;
+      console.log('Documento encontrado:', transfers);
+      return transfers as unknown as Transfers;
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
       console.error('Error completo:', error);
-      throw new InternalServerErrorException(`Error al obtener el Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error al obtener el Transfers: ${error.message}`);
     }
   }
 
-  async updateKardex(id: string, updateKardexDto: UpdateKardexDto): Promise<Kardex> {
+  async updateTransfers(id: string, updateTransfersDto: UpdateTransfersDto): Promise<Transfers> {
     try {
       let objectId;
       try {
@@ -145,21 +145,21 @@ export class KardexService {
         throw new BadRequestException(`ID "${id}" no es un formato válido de MongoDB`);
       }
   
-      const result = await this.kardexModel.collection.updateOne(
+      const result = await this.transfersModel.collection.updateOne(
         { _id: objectId },
-        { $set: { ...updateKardexDto, updatedAt: new Date() } }
+        { $set: { ...updateTransfersDto, updatedAt: new Date() } }
       );
       
       if (result.matchedCount === 0) {
-        throw new NotFoundException(`Kardex con ID "${id}" no encontrado`);
+        throw new NotFoundException(`Transfers con ID "${id}" no encontrado`);
       }
       
-      return await this.getKardexById(id);
+      return await this.getTransfersById(id);
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
-      throw new InternalServerErrorException(`Error actualizando Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error actualizando Transfers: ${error.message}`);
     }
   }
 

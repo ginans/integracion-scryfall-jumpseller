@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import { IsNumber, IsString, IsDate } from 'class-validator';
 
-export class CreateKardexDto {
+export class CreateTransfersDto {
   @Expose({ name: 'id_transmission' })
   @IsNumber()
   readonly idTransmission: number; // Identificador único del movimiento

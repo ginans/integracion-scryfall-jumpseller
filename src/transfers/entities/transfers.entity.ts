@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types, Document } from 'mongoose';
-import { EnumState } from '../../common/enums/state.enum';
+import { TransfersState } from '../enums/transfersState.enum';
 
-export type KardexDocument = Kardex & Document;
+export type TransfersDocument = Transfers & Document;
 
 @Schema({
   timestamps: true
 })
-export class Kardex extends Document {
+export class Transfers extends Document {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
 
@@ -59,9 +59,9 @@ export class Kardex extends Document {
 
   @Prop({
     required: false,
-    default: EnumState.PENDING
+    default: TransfersState.INFORMED
   })
-  state: EnumState;
+  state: TransfersState;
 }
 
-export const KardexSchema = SchemaFactory.createForClass(Kardex);
+export const TransfersSchema = SchemaFactory.createForClass(Transfers);

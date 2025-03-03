@@ -1,34 +1,32 @@
 import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Kardex, KardexDocument } from './entities/kardex.entity';
-import { CreateKardexDto } from './dto/create-kardex.dto';
-import { UpdateKardexDto } from './dto/update-kardex.dto';
-import { plainToClass } from 'class-transformer';
-import { QueryDto, SortBy } from './dto/query-kardex.dto';
+import { Reception, ReceptionDocument } from './entities/reception.entity';
+import { CreateReceptionDto } from './dto/create-reception.dto';
+import { UpdateReceptionDto } from './dto/update-reception.dto';
+import { QueryReceptionDto } from './dto/query-reception.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
-import { SortOrder } from 'src/common/dto/pagination-query.dto';
+import { SortOrder } from 'src/common/enums/sortOrder.enum'
 
-@Injectable()
-export class KardexService {
+@Injectable() 
+export class ReceptionsService {
   constructor(
-    @InjectModel(Kardex.name) private readonly kardexModel: Model<KardexDocument>,
+    @InjectModel(Reception.name) private readonly receptionModel: Model<ReceptionDocument>,
   ) {}
 
-  async createKardex(createKardexDto: CreateKardexDto): Promise<Kardex> {
-    try {
-      const transformedDto = plainToClass(CreateKardexDto, createKardexDto);  
-      const createdKardex = new this.kardexModel(transformedDto);
-      return await createdKardex.save();
+  async createReceptions(createReceptionDto: CreateReceptionDto): Promise<Reception> {
+    try { 
+      const createdReception = new this.receptionModel(createReceptionDto);
+      return await createdReception.save();
     } catch (error) {
       if (error.code === 11000) {
-        throw new BadRequestException(`El idTransmission ya existe en la base de datos`);
+        throw new BadRequestException(`El receptionNbr ya existe en la base de datos`);
       }
-      throw new InternalServerErrorException(`Error al crear el Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error al crear el Reception: ${error.message}`);
     }
   }
 
-  async getAllKardex(query: QueryDto): Promise<PaginatedResponse<Kardex>> {
+  async getAllReceptions(query: QueryReceptionDto): Promise<PaginatedResponse<Reception>> {
     const { limit, page, sortBy, sortOrder, search, to, from, state } = query;
     console.log("query: ", query);
     const sort: { [key: string]: 1 | -1 } = {
@@ -41,13 +39,13 @@ export class KardexService {
     if (search && search.length > 0) {
       const searchValue = search.trim();
       filters.$or = [];
-      if (!isNaN(Number(searchValue))) {
-        filters.$or.push({ idTransmission: Number(searchValue) });
-      }
+      // if (!isNaN(Number(searchValue))) {
+      //   filters.$or.push({ receptionNbr: Number(searchValue) });
+      // }
       filters.$or.push({
         $expr: {
           $regexMatch: {
-            input: { $toString: "$idTransmission" },
+            input: { $toString: "$receptionNbr" },
             regex: searchValue,
             options: "i"
           }
@@ -67,7 +65,7 @@ export class KardexService {
     if (from && to) {
       filters.$and = [
         {
-          createdAtData: {
+          createdAt: { //preguntar
             $gte: new Date(`${from}T00:00:00.000Z`),
             $lte: new Date(`${to}T23:59:59.999Z`)
           }
@@ -88,15 +86,15 @@ export class KardexService {
     console.log('Búsqueda:', search);
 
     try {
-      const [kardex, total] = await Promise.all([
-        this.kardexModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
-        this.kardexModel.countDocuments(filters).exec()
+      const [reception, total] = await Promise.all([
+        this.receptionModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+        this.receptionModel.countDocuments(filters).exec()
       ]);
       return {
-        items: kardex,
+        items: reception,
         meta: {
           totalItems: total,
-          itemsPerPage: kardex.length,
+          itemsPerPage: reception.length,
           totalPages: Math.ceil(total / limit),
           currentPage: page,
           hasNextPage: total > (page * limit),
@@ -104,13 +102,13 @@ export class KardexService {
         }
       }
     } catch (error) {
-      throw new InternalServerErrorException(`Error fetching Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error fetching Receptions: ${error.message}`);
     }
   }
 
-  async getKardexById(id: string): Promise<Kardex> {
+  async getReceptionById(id: string): Promise<Reception> {
     try {
-      console.log(`Buscando Kardex con ID: ${id}`);
+      console.log(`Buscando Reception con ID: ${id}`);
       
       let objectId;
       try {
@@ -119,24 +117,24 @@ export class KardexService {
         throw new BadRequestException(`ID "${id}" no es un formato válido de MongoDB`);
       }
       
-      const kardex = await this.kardexModel.collection.findOne({ _id: objectId });
+      const reception = await this.receptionModel.collection.findOne({ _id: objectId });
       
-      if (!kardex) {
+      if (!reception) {
         console.log('No se encontró el documento'); 
-        throw new NotFoundException(`Kardex con ID "${id}" no encontrado`);
+        throw new NotFoundException(`Reception con ID "${id}" no encontrado`);
       }
-      console.log('Documento encontrado:', kardex);
-      return kardex as unknown as Kardex;
+      console.log('Documento encontrado:', reception);
+      return reception as unknown as Reception;
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
       console.error('Error completo:', error);
-      throw new InternalServerErrorException(`Error al obtener el Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error al obtener el Reception: ${error.message}`);
     }
   }
 
-  async updateKardex(id: string, updateKardexDto: UpdateKardexDto): Promise<Kardex> {
+  async updateReception(id: string, updateReceptionDto: UpdateReceptionDto): Promise<Reception> {
     try {
       let objectId;
       try {
@@ -145,21 +143,21 @@ export class KardexService {
         throw new BadRequestException(`ID "${id}" no es un formato válido de MongoDB`);
       }
   
-      const result = await this.kardexModel.collection.updateOne(
+      const result = await this.receptionModel.collection.updateOne(
         { _id: objectId },
-        { $set: { ...updateKardexDto, updatedAt: new Date() } }
+        { $set: { ...updateReceptionDto, updatedAt: new Date() } }
       );
       
       if (result.matchedCount === 0) {
-        throw new NotFoundException(`Kardex con ID "${id}" no encontrado`);
+        throw new NotFoundException(`Reception con ID "${id}" no encontrado`);
       }
       
-      return await this.getKardexById(id);
+      return await this.getReceptionById(id);
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
-      throw new InternalServerErrorException(`Error actualizando Kardex: ${error.message}`);
+      throw new InternalServerErrorException(`Error actualizando Reception: ${error.message}`);
     }
   }
 

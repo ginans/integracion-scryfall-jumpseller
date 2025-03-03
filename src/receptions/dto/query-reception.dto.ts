@@ -1,18 +1,13 @@
 import { Expose, Transform, Type } from 'class-transformer';
-import { IsNumber, IsString, IsDate, isNumber, IsOptional, IsEnum, Max, Min } from 'class-validator';
-import { from } from 'rxjs';
-import { EnumState } from 'src/common/enums/state.enum';
+import { IsNumber, IsString, IsOptional, IsEnum, Max, Min } from 'class-validator';
+import { ReceptionsState } from '../enums/receptionsState.enum';
+import { SortOrder } from 'src/common/enums/sortOrder.enum';
 
 export enum SortBy {
-    idTransmission = 'idTransmission',
+    receptionNbr = 'receptionNbr',
 }
 
-export enum SortOrder {
-    ASC = 'asc',
-    DESC = 'desc'
-}
-
-export class QueryDto {
+export class QueryReceptionDto {
     @IsOptional()
     @IsNumber({
         allowNaN: false,
@@ -46,8 +41,8 @@ export class QueryDto {
     @IsEnum(SortOrder)
     sortOrder?: SortOrder = SortOrder.ASC;
 
-    @IsString()
     @IsOptional()
+    @IsString()
     search?: string | null;
 
     @IsOptional()
@@ -58,8 +53,8 @@ export class QueryDto {
     @IsString()
     from?: string | null;
 
-    @IsString()
     @IsOptional()
-    state?: EnumState | null;
+    @IsString()
+    state?: ReceptionsState | null;
 
 }

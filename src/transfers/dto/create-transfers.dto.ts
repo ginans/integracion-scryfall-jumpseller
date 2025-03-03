@@ -19,7 +19,7 @@ export class CreateTransfersDto {
 
 
   @Expose({ name: 'initial_zone' })
-  @IsString()
+  @IsString({ message: 'initial_zone debe ser un string' })
   readonly initialZone: string; // Zona de la bodega del movimiento (inicial)
 
   @Expose({ name: 'final_zone' })

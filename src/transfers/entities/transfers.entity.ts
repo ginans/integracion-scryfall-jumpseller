@@ -1,13 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types, Document } from 'mongoose';
+import { Types, Document, HydratedDocument } from 'mongoose';
 import { TransfersState } from '../enums/transfersState.enum';
-
-export type TransfersDocument = Transfers & Document;
 
 @Schema({
   timestamps: true
 })
-export class Transfers extends Document {
+export class Transfers {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
 
@@ -65,3 +63,4 @@ export class Transfers extends Document {
 }
 
 export const TransfersSchema = SchemaFactory.createForClass(Transfers);
+export type TransfersDocument = HydratedDocument<Transfers>;

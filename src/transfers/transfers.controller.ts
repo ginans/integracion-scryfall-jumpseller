@@ -21,12 +21,12 @@ export class TransfersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-  return this.transfersService.getTransfersById(id); 
+  return this.transfersService.getTransferById(id); 
 }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTransfersDto: UpdateTransfersDto) {
-  return this.transfersService.updateTransfers(id, updateTransfersDto);
+  return this.transfersService.updateTransfer(id, updateTransfersDto);
 }
 
 }

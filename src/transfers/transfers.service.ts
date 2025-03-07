@@ -80,13 +80,6 @@ export class TransfersService {
       filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
     }
 
-    console.log('Filtros:', filters);
-    console.log('Orden:', sort);
-    console.log('Saltar:', skip);
-    console.log('Limit:', limit);
-    console.log('Página:', page);
-    console.log('Búsqueda:', search);
-
     try {
       const [transfers, total] = await Promise.all([
         this.transfersModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
@@ -108,7 +101,7 @@ export class TransfersService {
     }
   }
 
-  async getTransfersById(id: string): Promise<Transfers> {
+  async getTransferById(id: string): Promise<Transfers> {
     try {
       console.log(`Buscando Transfers con ID: ${id}`);
       
@@ -136,25 +129,18 @@ export class TransfersService {
     }
   }
 
-  async updateTransfers(id: string, updateTransfersDto: UpdateTransfersDto): Promise<Transfers> {
+  async updateTransfer(id: string, updateTransfersDto: UpdateTransfersDto): Promise<Transfers> {
     try {
-      let objectId;
+      //TODO: Buscar Información de pipes en NestJS
+      let objectId: Types.ObjectId;
       try {
         objectId = new Types.ObjectId(id);
       } catch (error) {
         throw new BadRequestException(`ID "${id}" no es un formato válido de MongoDB`);
       }
-  
-      const result = await this.transfersModel.collection.updateOne(
-        { _id: objectId },
-        { $set: { ...updateTransfersDto, updatedAt: new Date() } }
-      );
-      
-      if (result.matchedCount === 0) {
-        throw new NotFoundException(`Transfers con ID "${id}" no encontrado`);
-      }
-      
-      return await this.getTransfersById(id);
+      const transfer = await this.transfersModel.findByIdAndUpdate(objectId, updateTransfersDto, { new: true });
+      if (!transfer) throw new NotFoundException(`Transfers con ID "${id}" no encontrado`);
+      return transfer;
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;

@@ -1,8 +1,7 @@
 import { UserRole } from '../enums/user-role.enum';
 export interface BaseUser {
   isActive: boolean;
-  firstName: string;
-  lastName: string;
+  name: string;
   email: string;
   password: string;
   role: UserRole;

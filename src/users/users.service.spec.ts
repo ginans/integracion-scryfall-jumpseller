@@ -6,8 +6,7 @@ import { Model } from 'mongoose';
 
 const mockUser = {
   _id: '1',
-  firstName: 'Test',
-  lastName: 'User',
+  name: 'Test',
   email: 'test@example.com',
   password: 'password',
   status: true,

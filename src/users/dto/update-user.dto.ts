@@ -10,16 +10,8 @@ export class UpdateUserDto {
   @IsString({
     message: 'name tiene que ser de Tipo String',
   })
-  firstName?: string;
+  name?: string;
 
-  @ApiProperty({
-    default: 'Fixlabs',
-  })
-  @IsOptional()
-  @IsString({
-    message: 'lastName tiene que ser de Tipo String',
-  })
-  lastName?: string;
 
   @ApiProperty({
     default: 'test@test.cl',

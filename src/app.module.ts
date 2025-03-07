@@ -23,8 +23,6 @@ import { LoggerModule } from './common/logger/logger.module';
 import { FilesModule } from './files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
-import { TransfersModule } from './transfers/transfers.module';
-import { ReceptionsModule } from './receptions/receptions.module';
 
 @Module({
   imports: [
@@ -65,9 +63,7 @@ import { ReceptionsModule } from './receptions/receptions.module';
       rootPath: join(__dirname, '..', 'uploads/pdfs'),
       serveRoot: '/pdfs',
     }),
-    FilesModule,
-    TransfersModule,
-    ReceptionsModule,
+    FilesModule
   ],
   controllers: [AppController],
   providers: [

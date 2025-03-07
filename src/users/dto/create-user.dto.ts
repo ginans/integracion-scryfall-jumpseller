@@ -12,18 +12,7 @@ export class CreateUserDto {
   @IsString({
     message: 'name tiene que ser de Tipo String',
   })
-  firstName: string;
-
-  @ApiProperty({
-    default: 'Fixlabs',
-  })
-  @IsNotEmpty({
-    message: 'lastName no puede estar vacío.',
-  })
-  @IsString({
-    message: 'lastName tiene que ser de Tipo String',
-  })
-  lastName: string;
+  name: string;
 
   @ApiProperty({
     default: 'test@test.cl',

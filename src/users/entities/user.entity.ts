@@ -12,10 +12,7 @@ export class User implements BaseUser {
   isActive: boolean;
 
   @Prop({ required: true })
-  firstName: string;
-
-  @Prop({ required: true })
-  lastName: string;
+  name: string;
 
   @Prop({ unique: true })
   email: string;

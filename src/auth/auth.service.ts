@@ -37,7 +37,7 @@ export class AuthService {
   async hashPassword(password: string): Promise<string> {
     return await argon2.hash(password);
   }
-  async createToken(payload: { sub: string; email: string; firstName: string }) {
+  async createToken(payload: { sub: string; email: string; name: string }) {
     return await this.jwtService.signAsync(payload);
   }
   async validateToken(token: string): Promise<Payload> {
@@ -59,8 +59,7 @@ export class AuthService {
     const payload = {
       sub: User._id.toString(),
       email: User.email,
-      firstName: User.firstName,
-      lastName: User.lastName,
+      name: User.name,
     };
     const access_token = await this.createToken(payload);
     await this.createRegister({ email });
@@ -70,8 +69,7 @@ export class AuthService {
       user: {
         id: User._id,
         email: User.email,
-        firstName: User.firstName,
-        lastName: User.lastName,
+        name: User.name,
         role: User.role,
       },
     };
@@ -87,15 +85,14 @@ export class AuthService {
     const payload = {
       sub: user._id.toHexString(),
       email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      name: user.name,
     };
     const token = await this.createToken(payload);
     if (token){
       user.rememberToken = token;
       await this.userService.update(user._id.toHexString(), user);
     }
-    this.mailService.changePassword(user.email, user.firstName, user.lastName, token);
+    this.mailService.changePassword(user.email, user.name, token);
        return {
       message: 'Enviamos a tu correo el método de recuperación',
     };

@@ -22,8 +22,11 @@ export class MailService {
           <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
         </div>`,
       });
+
     } catch (error) {
       console.error(error);
     }
   }
 }
+
+

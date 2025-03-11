@@ -9,7 +9,7 @@ export class MailService {
   constructor(private mailerService: MailerService) {}
 
   private readonly transmitter = process.env.SMTP_USER
-  private readonly url_app = process.env.URL_APP;
+  private readonly url_app = process.env.URL_APP_BACKEND;
 
   async changePassword(email: string, name: string, rememberToken: string) {
     try {
@@ -21,7 +21,7 @@ export class MailService {
       const template = handlebars.compile(templateSource)
 
       // Preparar los datos para la plantilla
-      const resetUrl = `${this.url_app}new-password?t=${rememberToken}`
+      const resetUrl = `${this.url_app}new-password?rt=${rememberToken}`//poner url del front para cambio de contraseña
       const data = {
         name: name,
         resetUrl: resetUrl,

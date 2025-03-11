@@ -36,11 +36,14 @@ export class AuthController {
     return this.authService.recoverPass(body);
   }
  
+  //deberia tener un guard? token de autorizacion? se supone que 
+  // si quieres recuperar contraseña es porque no puedes entrar a la app, no deberia tener token
   @Post('new-password')
   // @UseGuards(JwtAuthGuard)
   changePass(
     @Body() body: ReplacePassDto,
     @Query() query: QueryRecover,
+    // @Headers('Authorization') token: string,
   ) {
     return this.authService.changePass(body, query.rt);
   }

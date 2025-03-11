@@ -97,6 +97,7 @@ export class AuthService {
       message: 'Enviamos a tu correo el método de recuperación',
     };
   }
+  //TODO: si se uso el rememberToken para cambiar la contraseña, se debe eliminar el rememberToken
   async changePass(body: ReplacePassDto, rememberToken: string) {
     const { password } = body;
     const user = await this.validateToken(rememberToken);

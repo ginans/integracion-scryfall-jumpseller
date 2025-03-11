@@ -1,11 +1,13 @@
-import { Injectable } from "@nestjs/common"
+import { Injectable, Logger } from "@nestjs/common"
 import { MailerService } from "@nestjs-modules/mailer"
 import * as fs from "fs"
 import * as path from "path"
 import * as handlebars from "handlebars"
+import { AppController } from "src/app.controller"
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(AppController.name);
   constructor(private mailerService: MailerService) {}
 
   private readonly transmitter = process.env.SMTP_USER
@@ -14,7 +16,8 @@ export class MailService {
   async changePassword(email: string, name: string, rememberToken: string) {
     try {
       // Leer la plantilla
-      const templatePath = path.resolve("@/src/mail/templates/reset-password-mail.hbs")
+      const templatePath = path.resolve(__dirname, "../mail/templates/reset-password-mail.hbs")
+      this.logger.log("template", templatePath)
       const templateSource = fs.readFileSync(templatePath, "utf-8")
 
       // Compilar la plantilla con Handlebars
@@ -34,12 +37,19 @@ export class MailService {
       const html = template(data)
 
       // Enviar el correo
-      await this.mailerService.sendMail({
-        to: email,
-        from: this.transmitter,
-        subject: "Restablece tu contraseña",
-        html: html,
-      })
+      try{
+
+        await this.mailerService.sendMail({
+          to: email,
+          from: this.transmitter,
+          // from: process.env.SMTP_USER,
+          subject: "Restablece tu contraseña",
+          html: html,
+        })
+        this.logger.log("Correo de recuperación enviado a:", this.transmitter)
+      }catch(error){
+        this.logger.error("Error al enviar correo de recuperación:", error)
+      }
 
       return true
     } catch (error) {

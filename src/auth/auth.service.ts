@@ -78,7 +78,7 @@ export class AuthService {
   async recoverPass(body: RecoverPassDto) {
     const user = await this.userService.findByEmail(body.email);
     if (!user)
-      return { message: 'Enviamos a tu correo el método de recuperación' };
+      return { message: 'Enviamos a tu correo el método de recuperación 1 ' };
     if (user.rememberToken !== null) {
       return { message: 'Enviamos a tu correo el método de recuperación' };
     }
@@ -93,8 +93,8 @@ export class AuthService {
       await this.userService.update(user._id.toHexString(), user);
     }
     this.mailService.changePassword(user.email, user.name, token);
-       return {
-      message: 'Enviamos a tu correo el método de recuperación',
+    return {
+      message: 'Enviamos a tu correo el método de recuperación 2',
     };
   }
   //TODO: si se uso el rememberToken para cambiar la contraseña, se debe eliminar el rememberToken

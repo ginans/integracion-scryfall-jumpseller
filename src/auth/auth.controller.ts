@@ -6,6 +6,7 @@ import {
   Get,
   UseGuards,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -14,9 +15,11 @@ import { ReplacePassDto } from './dto/replace-pass.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { QueryRecover } from './dto/QueryRecover';
+import { AppController } from 'src/app.controller';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AppController.name);
   constructor(private readonly authService: AuthService) {}
   @ApiOperation({ summary: 'autenticar usuario con credenciales' })
   @ApiResponse({
@@ -33,6 +36,7 @@ export class AuthController {
   }
   @Post('recover_pass')
   SendEmail(@Body() body: RecoverPassDto) {
+    this.logger.log("Email recibido:", body.email);
     return this.authService.recoverPass(body);
   }
  

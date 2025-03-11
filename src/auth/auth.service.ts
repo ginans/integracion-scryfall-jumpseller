@@ -79,8 +79,8 @@ export class AuthService {
     const user = await this.userService.findByEmail(body.email);
     if (!user)
       return { message: 'Enviamos a tu correo el método de recuperación' };
-    if (user.rememberToken === null) {
-      throw new BadRequestException('No se ha solicitado recuperación de contraseña');
+    if (user.rememberToken !== null) {
+      return { message: 'Enviamos a tu correo el método de recuperación' };
     }
     const payload = {
       sub: user._id.toHexString(),
@@ -97,10 +97,13 @@ export class AuthService {
       message: 'Enviamos a tu correo el método de recuperación',
     };
   }
-  async changePass(body: ReplacePassDto, token: string) {
+  async changePass(body: ReplacePassDto, rememberToken: string) {
     const { password } = body;
-    const user = await this.validateToken(token);
+    const user = await this.validateToken(rememberToken);
     const userDB = await this.userService.findByEmail(user.email);
+    if (!userDB.rememberToken) {
+      throw new BadRequestException('No se ha solicitado recuperación de contraseña');
+    }
     const hashPassword = await this.hashPassword(password);
     userDB.password = hashPassword;
     await this.userService.updatePass(userDB._id.toHexString(), hashPassword);

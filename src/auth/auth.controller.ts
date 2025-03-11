@@ -5,6 +5,7 @@ import {
   Headers,
   Get,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -12,6 +13,7 @@ import { RecoverPassDto } from './dto/recover.dto';
 import { ReplacePassDto } from './dto/replace-pass.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { QueryRecover } from './dto/QueryRecover';
 
 @Controller('auth')
 export class AuthController {
@@ -33,12 +35,13 @@ export class AuthController {
   SendEmail(@Body() body: RecoverPassDto) {
     return this.authService.recoverPass(body);
   }
+ 
   @Post('new-password')
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   changePass(
     @Body() body: ReplacePassDto,
-    @Headers('Authorization') token: string,
+    @Query() query: QueryRecover,
   ) {
-    return this.authService.changePass(body, token);
+    return this.authService.changePass(body, query.rt);
   }
 }

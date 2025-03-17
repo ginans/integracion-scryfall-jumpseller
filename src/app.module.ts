@@ -23,6 +23,7 @@ import { FilesModule } from './files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
 import { ScryfallModule } from './scryfall/scryfall.module';
+import { ProductCardsModule } from './product-cards/product-cards.module';
 
 @Module({
   imports: [
@@ -54,7 +55,8 @@ import { ScryfallModule } from './scryfall/scryfall.module';
       serveRoot: '/pdfs',
     }),
     FilesModule,
-    ScryfallModule
+    ScryfallModule,
+    ProductCardsModule,
   ],
   controllers: [AppController],
   providers: [

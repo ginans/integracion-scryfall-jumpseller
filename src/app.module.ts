@@ -10,7 +10,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { JobsService } from './jobs/jobs.service';
 import { JobsModule } from './jobs/jobs.module';
 import { BullModule } from '@nestjs/bullmq';
@@ -33,16 +32,6 @@ import {join} from "path";
     }),
     MongooseModule.forRoot(EnvConfiguration().db_uri, {
       dbName: EnvConfiguration().db_name,
-    }),
-    MailerModule.forRoot({
-      transport: {
-        host: 'smtp.gmail.com',
-        port: 587,
-        auth: {
-          user: 'user',
-          pass: 'pass',
-        },
-      },
     }),
     BullModule.forRoot({
       connection: {

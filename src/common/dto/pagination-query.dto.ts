@@ -43,4 +43,15 @@ export class PaginationQueryDto {
   @ApiProperty({ required: false })
   @IsOptional()
   filters?: Record<string, string>;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  to?: string;
+  
 }

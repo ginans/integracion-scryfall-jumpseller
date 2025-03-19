@@ -38,7 +38,9 @@ export class AuthService {
     return await argon2.hash(password);
   }
   async createToken(payload: { sub: string; email: string; name: string }) {
-    return await this.jwtService.signAsync(payload);
+    const token = await this.jwtService.signAsync(payload);
+    this.logger.log("token generado", token)
+    return token
   }
   async validateToken(token: string): Promise<Payload> {
     try {
@@ -51,10 +53,10 @@ export class AuthService {
   }
   async signIn(email: string, password: string) {
     const User = await this.userService.findByEmail(email);
-    if (!User) throw new BadRequestException('Correo o contraseña incorrecto');
+    if (!User) throw new BadRequestException('Correo o contraseña incorrecto 1');
     const validarPass = await this.compare(password, User.password);
     if (!validarPass)
-      throw new UnauthorizedException('Correo/contraseña incorrecto');
+      throw new UnauthorizedException('Correo/contraseña incorrecto 2');
     if (!User.isActive) throw new UnauthorizedException('Usuario deshabilitado');
     const payload = {
       sub: User._id.toString(),
@@ -62,6 +64,7 @@ export class AuthService {
       name: User.name,
     };
     const access_token = await this.createToken(payload);
+    this.logger.log('token 2', access_token);
     await this.createRegister({ email });
     await this.userService.updateLogin(User._id.toString());
     return {
@@ -78,7 +81,7 @@ export class AuthService {
   async recoverPass(body: RecoverPassDto) {
     const user = await this.userService.findByEmail(body.email);
     if (!user)
-      return { message: 'Enviamos a tu correo el método de recuperación 1 ' };
+      return { message: 'Enviamos a tu correo el método de recuperación' };
     if (user.rememberToken !== null) {
       return { message: 'Enviamos a tu correo el método de recuperación' };
     }
@@ -87,14 +90,14 @@ export class AuthService {
       email: user.email,
       name: user.name,
     };
-    const token = await this.createToken(payload);
-    if (token){
-      user.rememberToken = token;
+    const rememberToken = await this.createToken(payload);
+    if (rememberToken){
+      user.rememberToken = rememberToken;
       await this.userService.update(user._id.toHexString(), user);
     }
-    this.mailService.changePassword(user.email, user.name, token);
+    this.mailService.changePassword(user.email, user.name, rememberToken);
     return {
-      message: 'Enviamos a tu correo el método de recuperación 2',
+      message: 'Enviamos a tu correo el método de recuperación',
     };
   }
   //TODO: si se uso el rememberToken para cambiar la contraseña, se debe eliminar el rememberToken

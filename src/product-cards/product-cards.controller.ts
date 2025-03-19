@@ -1,6 +1,9 @@
-import { Controller, Get, Post, Body} from '@nestjs/common';
+import { Controller, Get, Post, Body, Query} from '@nestjs/common';
 import { ProductCardsService } from './product-cards.service';
 import { CreateProductCardDto } from './dto/create-product-card.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { ProductCard } from './entities/product-card.entity';
 
 @Controller('product-cards')
 export class ProductCardsController {
@@ -8,12 +11,12 @@ export class ProductCardsController {
 
   @Post()
   async create(@Body() createProductCardDto: CreateProductCardDto) {
-    return this.productCardsService.fetchAndCreate(createProductCardDto);
+    return this.productCardsService.fetchAndCreateCards(createProductCardDto);
   }
 
   @Get()
-  findAll() {
-    return this.productCardsService.findAll(); 
+  async findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponse<ProductCard>> {
+    return this.productCardsService.findAllCards(query); 
   }
 
   // @Get(':id')

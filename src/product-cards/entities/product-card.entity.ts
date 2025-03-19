@@ -10,7 +10,7 @@ export class ProductCard {
   @Prop({ required: true })
   id: string;
 
-  @Prop({ required: true })
+  @Prop()
   oracleId: string;
 
   @Prop()
@@ -98,7 +98,7 @@ export class ProductCard {
     predh?: string;
   };
 
-  @Prop({ type: Object, required: true })
+  @Prop({ type: Object })
   prices?: {
     usd?: string | null;
     usdFoil?: string | null;

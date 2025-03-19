@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ScryfallService } from '../scryfall/scryfall.service';
 import { IenumURLLang } from '../scryfall/enums/lang.enum';
 import { ScryfallCard, ScryfallCardResponse } from '../scryfall/interfaces/scryfall.interface';
@@ -7,6 +7,9 @@ import { ProductCard, productCardDocument } from './entities/product-card.entity
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { MappedProductCard } from './interfaces/mapped-product-card.interface';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { SortOrder } from 'src/common/enums/sortOrder.enum';
 
 @Injectable()
 export class ProductCardsService {
@@ -89,11 +92,11 @@ export class ProductCardsService {
             setId: card.set_id || '',
             set: card.set || '',
             setName: card.set_name || '',
-            sku: `M${card.set?.toUpperCase() || ''}${card.collector_number || ''}-${card.lang?.toUpperCase() || ''}`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collector_number || ''}-${card.lang?.toUpperCase() || ''}`,
         };
     }
 
-    async fetchAndCreate(createProductCardDto: CreateProductCardDto) {
+    async fetchAndCreateCards(createProductCardDto: CreateProductCardDto) {
         const onPageFetched = async (cards: ScryfallCardResponse[]) => {
             // Mapeo y guardado de los datos de la página actual
             const mappedCardData: MappedProductCard[] = cards.map(this.mapCardData);
@@ -112,8 +115,48 @@ export class ProductCardsService {
     
     
 
-    findAll() {
-        return `This action returns all productCards`;
+    async findAllCards(query: PaginationQueryDto) {
+        const { limit, page, sortBy, sortOrder, to, from } = query;
+           
+            const sort: { [key: string]: 1 | -1 } = {
+              [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
+            };
+        
+            const skip = (page - 1) * limit;
+            const filters: { $or?: any[], $and?: any[] } = {};
+             
+            //implementar filtros de fecha a futuro
+
+            //   if (from && to) {
+            //     filters.$and = [
+            //       {
+            //         lastLogin: {
+            //           $gte: new Date(`${from}T00:00:00.000Z`),
+            //           $lte: new Date(`${to}T23:59:59.999Z`)
+            //         }
+            //       },
+            //     ];
+            //   }
+
+              try {
+                const [productCards, total] = await Promise.all([
+                  this.productCardModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+                  this.productCardModel.countDocuments(filters).exec()
+                ]);
+                return {
+                  items: productCards.map(user => user.toObject()),
+                  meta: {
+                    totalItems: total,
+                    itemsPerPage: productCards.length,
+                    totalPages: Math.ceil(total / limit),
+                    currentPage: page,
+                    hasNextPage: total > (page * limit),
+                    hasPreviousPage: page > 1,
+                  }
+                }
+              } catch (error) {
+                throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
+              }
     }
 
     // findOne(id: number) {

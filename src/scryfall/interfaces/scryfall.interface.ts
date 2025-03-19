@@ -1,3 +1,4 @@
+//toda la respuesta de scryfall
 export interface ScryfallCardResponse {
     object?: string;
     id?: string;
@@ -29,6 +30,7 @@ export interface ScryfallCardResponse {
     colors?: string[];
     color_identity?: string[];
     keywords?: string[];
+    card_faces?: CardFace[];
     produced_mana?: string[];
     legalities?: {
         standard?: string;
@@ -59,7 +61,7 @@ export interface ScryfallCardResponse {
     game_changer?: boolean;
     foil?: boolean; 
     nonfoil?: boolean;
-    finishes?: string[];//revisar si puede ser enum
+    finishes?: string[];
     oversized?: boolean;
     promo?: boolean;
     reprint?: boolean;
@@ -110,23 +112,27 @@ export interface ScryfallCardResponse {
     };
 }
 
+//Datos a mapear
 export interface ScryfallCard {
-    name: string;
-    printed_name: string;
-    lang: string;
-    uri: string;
-    layout: string;
+    id?: string;
+    oracle_id?: string;
+    name?: string;
+    printed_name?: string;
+    lang?: string;
+    uri?: string;
+    layout?: string;
     image_uris?: {
         small?: string;
         large?: string;
     };
-    mana_cost: string;
-    cmc: number;
-    type_line: string;
-    printed_type_line: string;
-    colors: string[];
-    color_identity: string[];
-    keywords: string[];
+    mana_cost?: string;
+    cmc?: number;
+    type_line?: string;
+    printed_type_line?: string;
+    colors?: string[];
+    color_identity?: string[];
+    keywords?: string[];
+    card_faces?: CardFace[];
     legalities?: {
         standard?: string;
         future?: string;
@@ -156,7 +162,35 @@ export interface ScryfallCard {
         usd_foil?: string | null;
         usd_etched?: string | null;
     };
-    game_changer: boolean;
-    rarity: string;
-    artist: string;
+    game_changer?: boolean;
+    rarity?: string;
+    artist?: string;
+    collector_number?: string;
+    set_id?: string;
+    set?: string;
+    set_name?: string;
+}
+interface CardFace {
+    object?: string;
+    name?: string;
+    printed_name?: string;
+    mana_cost?: string;
+    type_line?: string;
+    printed_type_line?: string;
+    oracle_text?: string;
+    printed_text?: string;
+    colors?: string[];
+    power?: string; 
+    toughness?: string; 
+    artist?: string;
+    artist_id?: string;
+    illustration_id?: string;
+    image_uris?: {
+      small?: string;
+      normal?: string;
+      large?: string;
+      png?: string;
+      art_crop?: string;
+      border_crop?: string;
+    };
 }

@@ -1,58 +1,51 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { ScryfallCard, ScryfallCardResponse } from './interfaces/scryfall.interface';
-
-enum IenumLang {
-  ES = 'lang:es',
-  EN = 'lang:en'
-}
+import { ScryfallCardResponse } from './interfaces/scryfall.interface';
+import { IenumURLLang } from './enums/lang.enum';
 
 @Injectable()
 export class ScryfallService {
-    async getScryfallCards(lang:IenumLang): Promise<ScryfallCardResponse>  {
-      try {
-      const url = "https://api.scryfall.com/cards/search";
-      const params = {
-        format: 'json',
-        include_extras: true,
-        include_multilingual: true,
-        include_variations: true,
-        order: 'released',
-        page: 1,
-        q: lang,
-        unique: 'prints'
-      };
-      const {data} = await axios.get(url, { params });
+    async getScryfallCards(lang: IenumURLLang, onPageFetched: (cards: ScryfallCardResponse[]) => void): Promise<ScryfallCardResponse[]> {
+        const url = "https://api.scryfall.com/cards/search";
+        let page = 1;
+        let allCards: ScryfallCardResponse[] = [];
+        let hasMore = true;
 
-      const mappedCardData: ScryfallCard = data.map((card: ScryfallCard) => ({
-        name: card.name,
-        printedName: card.printed_name,
-        lang: card.lang,
-        uri: card.uri,
-        layout: card.layout,
-        imageUrisLarge: card.image_uris.large,
-        imageUrisSmall: card.image_uris.small,
-        manaCost: card.mana_cost,
-        cmc: card.cmc,
-        typeLine: card.type_line,
-        color: card.colors,
-        colorIdentity: card.color_identity,
-        keywords: card.keywords,
-        legalities: card.legalities,
-        gameChanger: card.game_changer,
-        rarity: card.rarity,
-        artist: card.artist,
-        
-      }));
+        while (hasMore) {
+            try {
+                const params = {
+                    format: 'json',
+                    include_extras: true,
+                    include_multilingual: true,
+                    include_variations: true,
+                    order: 'released',
+                    page: page,
+                    unique: 'prints'
+                };
+                
+                // Construir manualmente la cadena de consulta de idioma
+                const queryString = new URLSearchParams(params as any).toString() + `&q=${lang}`;
+                console.log(`Requesting: ${url}?${queryString}`);
+                
+                const { data } = await axios.get(`${url}?${queryString}`);
 
+                 // Llamar al callback para procesar y guardar los datos por página
+                 onPageFetched(data.data);
 
-      return mappedCardData;
+                hasMore = data.has_more; //has_more es un booleano, se vuelve false en la ultima pagina
+                page++;
 
+                // retraso de 300ms
+                await this.delay(300);
+            } catch (error) {
+                throw new Error(`Fallo al traer las cartas: ${error.message}`);
+            }
+        }
 
-      } catch (error) {
-      throw new Error(`Failed to fetch Scryfall cards: ${error.message}`);
-      }
+        return allCards;
     }
 
-
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 }

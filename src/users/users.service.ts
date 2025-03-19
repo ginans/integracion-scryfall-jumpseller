@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { User, UserDocument } from './entities/user.entity';
@@ -9,8 +10,15 @@ import { get, Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { SortOrder } from 'src/common/enums/sortOrder.enum';
+import { Logger } from '@nestjs/common';
+
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
@@ -20,9 +28,53 @@ export class UsersService {
     return user.save();
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userModel.find().exec();
-  }
+  async findAll(query: PaginationQueryDto): Promise<PaginatedResponse<User>> {
+    const { limit, page, sortBy, sortOrder, to, from } = query;
+   
+    const sort: { [key: string]: 1 | -1 } = {
+      [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
+    };
+
+    const skip = (page - 1) * limit;
+    const filters: { $or?: any[], $and?: any[] } = {};
+
+    this.logger.log(`Fetching Users with query: ${JSON.stringify(query)}`);
+
+
+      if (from && to) {
+        filters.$and = [
+          {
+            lastLogin: {
+              $gte: new Date(`${from}T00:00:00.000Z`),
+              $lte: new Date(`${to}T23:59:59.999Z`)
+            }
+          },
+        ];
+      }
+
+  
+      try {
+        const [users, total] = await Promise.all([
+          this.userModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+          this.userModel.countDocuments(filters).exec()
+        ]);
+        return {
+          items: users.map(user => user.toObject()),
+          meta: {
+            totalItems: total,
+            itemsPerPage: users.length,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+            hasNextPage: total > (page * limit),
+            hasPreviousPage: page > 1,
+          }
+        }
+      } catch (error) {
+        throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
+      }
+    }
+
+  
 
   async findById(id: string): Promise<User | null> {
     if (!Types.ObjectId.isValid(id))

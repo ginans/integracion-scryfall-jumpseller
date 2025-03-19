@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
@@ -18,6 +19,8 @@ import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UserRole } from './enums/user-role.enum';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,8 +35,8 @@ export class UsersController {
   })
   @Roles(UserRole.Admin, UserRole.User)
   @Get()
-  getUsers(): Promise<User[]> {
-    return this.usersService.findAll();
+  getUsers(@Query() query: PaginationQueryDto): Promise<PaginatedResponse<User>> {
+    return this.usersService.findAll(query);
   }
   
   @ApiBearerAuth()

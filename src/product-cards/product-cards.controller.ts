@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query} from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param} from '@nestjs/common';
 import { ProductCardsService } from './product-cards.service';
 import { CreateProductCardDto } from './dto/create-product-card.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
@@ -19,10 +19,10 @@ export class ProductCardsController {
     return this.productCardsService.findAllCards(query); 
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.productCardsService.findOne(id);
-  // }
+  @Get(':id')
+  async findOne(@Param('id') _id: string): Promise<ProductCard | null> {
+    return this.productCardsService.findOneCard(_id);
+  }
 
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateProductCardDto: UpdateProductCardDto) {

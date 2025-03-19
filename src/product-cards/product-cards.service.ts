@@ -91,7 +91,7 @@ export class ProductCardsService {
             setId: card.set_id || '',
             set: card.set || '',
             setName: card.set_name || '',
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collector_number || ''}-${card.lang?.toUpperCase() || ''}`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collector_number.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}`,
         };
     }
 

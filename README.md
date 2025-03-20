@@ -22,8 +22,8 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-# Fullertor
-Fullertor es un middleware diseñado para facilitar la integración entre los sistemas Defontana y Agilizar, optimizando la gestión de ventas, compras y logística en la organización. Este sistema permite:
+# Magic 4ever
+  Magic 4ever es un middleware diseñado para facilitar la integración entre los sistemas Defontana y Agilizar, optimizando la gestión de ventas, compras y logística en la organización. Este sistema permite:
 
 ## Obtener ventas:
 Recopila y procesa información de ventas provenientes de diferentes fuentes.
@@ -47,7 +47,7 @@ Desarrollado con Next.js 15 y React 19, permitiendo una interfaz ágil y dinámi
 ## Componentes:
 Interfaz de usuario implementada con la librería de componentes Shadcn, garantizando consistencia visual y alta personalización.
 
-## Fullertor permite mejorar la eficiencia operativa y centralizar la información, agilizando el proceso de toma de decisiones y reduciendo el tiempo necesario para la actualización de los datos entre sistemas.
+## Magic 4ever permite mejorar la eficiencia operativa y centralizar la información, agilizando el proceso de toma de decisiones y reduciendo el tiempo necesario para la actualización de los datos entre sistemas.
 
 ## Configurations and Environment Variables
 

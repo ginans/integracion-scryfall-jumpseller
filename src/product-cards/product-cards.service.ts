@@ -1,13 +1,12 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ScryfallService } from '../scryfall/scryfall.service';
 import { IenumURLLang } from '../scryfall/enums/lang.enum';
 import { ScryfallCard, ScryfallCardResponse } from '../scryfall/interfaces/scryfall.interface';
 import { CreateProductCardDto } from './dto/create-product-card.dto';
 import { ProductCard, productCardDocument } from './entities/product-card.entity';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { MappedProductCard } from './interfaces/mapped-product-card.interface';
-import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/sortOrder.enum';
 
@@ -33,7 +32,7 @@ export class ProductCardsService {
             imageUris: card.image_uris ? {
                 large: card.image_uris.large || '',
                 small: card.image_uris.small || ''
-            } : undefined,  // Si no hay imagen, lo dejamos como undefined
+            } : { small: '', large: ''},  // Si no hay imagen, lo dejamos como undefined
             typeLine: card.type_line || '',
             printedTypeLine: card.printed_type_line || '',
             cmc: card.cmc || 0,
@@ -42,20 +41,20 @@ export class ProductCardsService {
             colorIdentity: card.color_identity || [],
             keywords: card.keywords || [],
             cardFaces: card.card_faces?.map((face) => ({
-                name: face.name || '',
-                printedName: face.printed_name || '',
-                manaCost: face.mana_cost || '',
-                typeLine: face.type_line || '',
-                printedTypeLine: face.printed_type_line || '',
-                oracleText: face.oracle_text || '',
-                printedText: face.printed_text || '',
-                colors: face.colors || [],
-                artist: face.artist || '',
-                imageUris: face.image_uris ? {
-                    small: face.image_uris.small || '',
-                    large: face.image_uris.large || ''
-                } : undefined,  // Si no hay imagen, lo dejamos como undefined
-            })),
+              name: face.name || '',
+              printedName: face.printed_name || '',
+              manaCost: face.mana_cost || '',
+              typeLine: face.type_line || '',
+              printedTypeLine: face.printed_type_line || '',
+              oracleText: face.oracle_text || '',
+              printedText: face.printed_text || '',
+              colors: face.colors || [],
+              artist: face.artist || '',
+              imageUris: face.image_uris ? {
+                small: face.image_uris.small || '',
+                large: face.image_uris.large || ''
+              } : { small: '', large: '' },  
+            })) || [],
             legalities: card.legalities ? {
                 standard: card.legalities.standard || '',
                 future: card.legalities.future || '',
@@ -92,7 +91,7 @@ export class ProductCardsService {
             setId: card.set_id || '',
             set: card.set || '',
             setName: card.set_name || '',
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collector_number || ''}-${card.lang?.toUpperCase() || ''}`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collector_number.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}`,
         };
     }
 
@@ -159,12 +158,17 @@ export class ProductCardsService {
               }
     }
 
-    // findOne(id: number) {
-    //     return `This action returns a #${id} productCard`;
-    // }
+    async findOneCard(_id: string): Promise<ProductCard | null> {
+      if (!Types.ObjectId.isValid(_id))
+            throw new BadRequestException('Formato de ID inválido');
+          const card = await this.productCardModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
+          if (!card) throw new NotFoundException('Card no encontrada');
+          return card;
+    }
+    }
 
     // update(id: number, updateProductCardDto: UpdateProductCardDto) {
     //     return `This action updates a #${id} productCard`;
     // }
 
-}
+

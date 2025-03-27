@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Body, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ScryfallService } from '../scryfall/scryfall.service';
 import { IenumURLLang } from '../scryfall/enums/lang.enum';
 import { ScryfallCard, ScryfallCardResponse } from '../scryfall/interfaces/scryfall.interface';
@@ -9,6 +9,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { MappedProductCard } from './interfaces/mapped-product-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/sortOrder.enum';
+import { JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
+import axios from 'axios';
+import { GetJumpsellerProduct } from './interfaces/getJumpsellerProducts';
 
 @Injectable()
 export class ProductCardsService {
@@ -26,13 +29,15 @@ export class ProductCardsService {
             oracleId: card.oracle_id || '',
             name: card.name || '',
             printedName: card.printed_name || '',
+            oracleText: card.oracle_text || '',
+            printedText: card.printed_text || '',
             lang: card.lang || '',
             uri: card.uri || '',
             layout: card.layout || '',
             imageUris: card.image_uris ? {
                 large: card.image_uris.large || '',
                 small: card.image_uris.small || ''
-            } : { small: '', large: ''},  // Si no hay imagen, lo dejamos como undefined
+            } : { small: '', large: ''},  // Si no hay imagen, lo dejamos como ""
             typeLine: card.type_line || '',
             printedTypeLine: card.printed_type_line || '',
             cmc: card.cmc || 0,
@@ -40,6 +45,9 @@ export class ProductCardsService {
             colors: card.colors || [],
             colorIdentity: card.color_identity || [],
             keywords: card.keywords || [],
+            finishes: card.finishes || [],
+            foil: card.foil || null,
+            nonfoil: card.nonfoil || null,
             cardFaces: card.card_faces?.map((face) => ({
               name: face.name || '',
               printedName: face.printed_name || '',
@@ -91,27 +99,151 @@ export class ProductCardsService {
             setId: card.set_id || '',
             set: card.set || '',
             setName: card.set_name || '',
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collector_number.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}`,
         };
     }
 
     async fetchAndCreateCards(createProductCardDto: CreateProductCardDto) {
-        const onPageFetched = async (cards: ScryfallCardResponse[]) => {
-            // Mapeo y guardado de los datos de la página actual
-            const mappedCardData: MappedProductCard[] = cards.map(this.mapCardData);
-            await this.productCardModel.insertMany(mappedCardData);  // Guardar los datos
-        };
-    
-        // Obtener cartas de Scryfall
-        const cardsInSpanish = await this.scryfallService.getScryfallCards(IenumURLLang.ES, onPageFetched);
-        this.logger.log(`✅ Cartas en español obtenidas: ${cardsInSpanish.length}`);
-    
-        const cardsInEnglish = await this.scryfallService.getScryfallCards(IenumURLLang.EN, onPageFetched);
-        this.logger.log(`✅ Cartas en inglés obtenidas: ${cardsInEnglish.length}`);
-    
-        this.logger.log("Todos los datos han sido guardados.");
+      const onPageFetched = async (cards: ScryfallCardResponse[]) => {
+        // Mapeo de los datos por pagina
+        const mappedCardData: MappedProductCard[] = cards.map(this.mapCardData);
+
+        // Verificar duplicados por ID y actualizar o insertar
+        for (const card of mappedCardData) {
+          const existingCard = await this.productCardModel.findOne({ id: card.id });
+          if (existingCard) {
+        await this.productCardModel.updateOne({ id: card.id }, card); // Actualizar si existe
+          } else {
+        await this.productCardModel.create(card); // Insertar si no existe
+          }
+        }
+      };
+
+      // Obtener cartas de Scryfall
+      const cardsInSpanish = await this.scryfallService.getScryfallCards(IenumURLLang.ES, onPageFetched);
+      this.logger.log(`✅ Cartas en español obtenidas: ${cardsInSpanish.length}`);
+
+      const cardsInEnglish = await this.scryfallService.getScryfallCards(IenumURLLang.EN, onPageFetched);
+      this.logger.log(`✅ Cartas en inglés obtenidas: ${cardsInEnglish.length}`);
+
+      this.logger.log("Todos los datos nuevos de han guardado y los duplicados se han actualizado");
+      return { message: "Todos los datos nuevos de han guardado y los duplicados se han actualizado." };
     }
-    
+
+      // Mapeo a JumpsellerProduct
+      private jumpsellerProduct(card: Partial<MappedProductCard>): JumpsellerProductRequest[] {
+        const products: JumpsellerProductRequest[] = [];
+      
+        // Crear producto para la variante foil si foil es true
+        if (card.foil) {
+            products.push({
+            name: card.name || '',
+            description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: Foil` || '',
+            price: parseFloat(card.prices?.usdFoil || card.prices?.usd || '0.00'), // Usar precio foil si está disponible
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-F`,
+            images: card.imageUris?.large 
+              ? [{ url: card.imageUris.large, position: 1 }] 
+              : card.cardFaces?.flatMap((face, index) => face.imageUris?.large ? [{ url: face.imageUris.large, position: index + 1 }] : []) || [],
+            stock: 0,
+            categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
+            });
+        }
+      
+        // Crear producto para la variante nonfoil si nonfoil es true 
+        if (card.nonfoil) {
+          products.push({
+            name: card.name || '',
+            description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: Non foil` || '',
+            price: parseFloat(card.prices?.usd || '0.00'), // Usar precio normal
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-NF`,
+            images: card.imageUris?.large 
+              ? [{ url: card.imageUris.large, position: 1 }] 
+              : card.cardFaces?.flatMap((face, index) => face.imageUris?.large ? [{ url: face.imageUris.large, position: index + 1 }] : []) || [],
+            stock: 0,
+            categories: card.setId ? [{ name: card.setName, id:1 }] : [],
+          });
+        }
+      
+        return products;
+      }
+      
+      // Crear productos en Jumpseller usando datos de la base de datos y actualizar la base de datos con el ID de Jumpseller
+      async createJumpsellerProducts(card: Partial<MappedProductCard>): Promise<JumpsellerProductRequest[]> { 
+        const query = { limit: 10000000000000000000, page: 1, sortBy: 'sku', sortOrder: SortOrder.ASC };
+        const { items: cards } = await this.findAllCards(query); 
+
+        const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
+        const login = '96562eb2a4eb81e37f9ac714b71923bf';
+        const authtoken = 'a7597b834a8ba025e2b3f69570cf29c8';
+        const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+
+        const products = cards.flatMap(card => this.jumpsellerProduct(card));
+
+        for (const product of products) {
+          try {
+        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
+      
+        const response = await axios.post<ProductCard>(jumpsellerApiUrl, { product }, {
+          headers: {
+            Authorization: `Basic ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const jumpsellerId = response.data.id;
+        this.logger.log(`✅ Producto creado en Jumpseller: ${response.data.id} con ID: ${jumpsellerId}`);
+
+        // Actualizar la base de datos con el ID de Jumpseller
+        await this.productCardModel.updateOne(
+          { id: card },
+          { $set: { jumpsellerId }, status: "completed" } 
+        );
+        this.logger.log(`✅ Base de datos actualizada con Jumpseller ID: ${jumpsellerId}`);
+          } catch (error) {
+        this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(`Código de estado: ${error.response.status}`);
+          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+        }
+          }
+      
+          // Esperar 300 ms antes de la siguiente solicitud
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      
+        return products;
+      }
+
+      //crear endpoint que borre todos los productos de jumpseller
+
+      // async deleteAllJumpsellerProducts(): Promise<void> {
+      //   //traer los productos de jumpseller
+      //   let response;
+      //   try {
+      //     response = await axios.get<GetJumpsellerProduct>('https://api.jumpseller.com/v1/products/status/available.json?login=96562eb2a4eb81e37f9ac714b71923bf&authtoken=a7597b834a8ba025e2b3f69570cf29c8');
+      //     //iterar por todos los productos por su id
+      //     const products = response.data.products;
+      //     for (const product of products) {
+      //       const id = product.id;
+            
+      //       // Borrar cada producto
+      //           const login = '96562eb2a4eb81e37f9ac714b71923bf';
+      //       const authtoken = 'a7597b834a8ba025e2b3f69570cf29c8';
+      //       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');
+      //       await axios.delete(`https://api.jumpseller.com/v1/products/${id}.json`, {
+      //         headers: {
+      //           Authorization: `Basic ${authToken}`,
+      //           'Content-Type': 'application/json',
+      //         },
+      //       });
+      //       this.logger.log(`✅ Producto con ID ${id} eliminado de Jumpseller`);
+      //     }
+      //   } catch (error) {
+      //     this.logger.error(`❌ Error al eliminar productos de Jumpseller: ${error.message}`);
+      //   }
+      // }
+          
     
 
     async findAllCards(query: PaginationQueryDto) {

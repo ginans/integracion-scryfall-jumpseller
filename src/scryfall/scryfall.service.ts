@@ -31,7 +31,7 @@ export class ScryfallService {
 
                  // Llamar al callback para procesar y guardar los datos por página
                  onPageFetched(data.data);
-                 hasMore = false
+                 hasMore = false 
 
                 // hasMore = data.has_more; //has_more es un booleano, se vuelve false en la ultima pagina
                 // page++;

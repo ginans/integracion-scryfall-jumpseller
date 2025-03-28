@@ -89,11 +89,6 @@ const scryfallCard = {
     "setId": "dae4bf74-97f7-40a6-ac46-54b6b0d8a58d",
     "set": "afdn",
     "setName": "Foundations Art Series",
-    "gameName": "Magic: The Gathering",
-    "weight": 2,
-    "height": 3.5,
-    "width": 2.5,
-    "sku": "M-AFDN54-EN",
     "status": "pending",
     "__v": 0,
     "createdAt": {
@@ -107,10 +102,75 @@ const scryfallCard = {
 
     //reglas
     //categorias:setName
-    //brand:gameName
-    //variantes: finishes, lang, diferencia de precio/imagen, estados de la carta
-
-    
+    //agregar:
     //sku, crear nuevo producto con sku diferente por ser diferente 
-    //variable de la carta, si tiene foil y no foil debe tener dos 
-    //sku diferentes, eso deberia crear mas de un producto?
+    //brand: "gameName": "Magic: The Gathering",
+    //"weight": 2,
+    //variantes: finishes, lang, diferencia de precio/imagen, estados de la carta
+    //"height": 3.5,
+    //"width": 2.5,
+
+
+
+    //Solicitud a Jumpseller
+// {
+//   "name": "string",
+//   "description": "string",
+//   "page_title": "string",
+//   "meta_description": "string",
+//   "type": "string",
+//   "days_to_expire": 0,
+//   "price": 0,
+//   "weight": 0,
+//   "stock": 0,
+//   "stock_unlimited": false,
+//   "stock_threshold": 0,
+//   "stock_notification": false,
+//   "cost_per_item": 0,
+//   "compare_at_price": 0,
+//   "minimum_quantity": 0,
+//   "maximum_quantity": 0,
+//   "sku": "string",
+//   "barcode": "string",
+//   "google_product_category": "string",
+//   "featured": false,
+//   "shipping_required": true,
+//   "status": "available",
+//   "package_format": "box",
+//   "length": 0,
+//   "width": 0,
+//   "height": 0,
+//   "diameter": 0,
+//   "categories": [
+//     {
+//       "id": 0,
+//       "name": "string",
+//       "parent_id": 0,
+//       "permalink": "string"
+//     }
+//   ],
+//   "variants": [
+//     {
+//       "price": 0,
+//       "sku": "string",
+//       "barcode": "string",
+//       "stock": 0,
+//       "stock_unlimited": false,
+//       "stock_threshold": 0,
+//       "stock_notification": false,
+//       "cost_per_item": 0,
+//       "compare_at_price": 0,
+//       "image_id": 0,
+//       "options": [
+//         {
+//           "name": "string",
+//           "option_type": "option",
+//           "value": "string",
+//           "custom": "string",
+//           "product_option_position": 0,
+//           "product_value_position": 0
+//         }
+//       ]
+//     }
+//   ]
+// }

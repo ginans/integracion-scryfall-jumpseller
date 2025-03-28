@@ -138,11 +138,8 @@ export class ProductCardsService {
             products.push({
             name: card.name || '',
             description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: Foil` || '',
-            price: parseFloat(card.prices?.usdFoil || card.prices?.usd || '0.00'), // Usar precio foil si está disponible
+            price: parseFloat(card.prices?.usd || '0.00'), 
             sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-F`,
-            images: card.imageUris?.large 
-              ? [{ url: card.imageUris.large, position: 1 }] 
-              : card.cardFaces?.flatMap((face, index) => face.imageUris?.large ? [{ url: face.imageUris.large, position: index + 1 }] : []) || [],
             stock: 0,
             categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
             });
@@ -153,13 +150,10 @@ export class ProductCardsService {
           products.push({
             name: card.name || '',
             description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: Non foil` || '',
-            price: parseFloat(card.prices?.usd || '0.00'), // Usar precio normal
+            price: parseFloat(card.prices?.usd || '0.00'), 
             sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-NF`,
-            images: card.imageUris?.large 
-              ? [{ url: card.imageUris.large, position: 1 }] 
-              : card.cardFaces?.flatMap((face, index) => face.imageUris?.large ? [{ url: face.imageUris.large, position: index + 1 }] : []) || [],
             stock: 0,
-            categories: card.setId ? [{ name: card.setName, id:1 }] : [],
+            categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
           });
         }
       
@@ -183,24 +177,35 @@ export class ProductCardsService {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
         this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
       
-        const response = await axios.post<ProductCard>(jumpsellerApiUrl, { product }, {
-          headers: {
-            Authorization: `Basic ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        const jumpsellerId = response.data.id;
-        this.logger.log(`✅ Producto creado en Jumpseller: ${response.data.id} con ID: ${jumpsellerId}`);
-
-        // Actualizar la base de datos con el ID de Jumpseller
-        await this.productCardModel.updateOne(
-          { id: card },
-          { $set: { jumpsellerId }, status: "completed" } 
+        const { data }: { data: GetJumpsellerProduct } = await axios.post<ProductCard, { data: GetJumpsellerProduct }>(
+          jumpsellerApiUrl, 
+          { product }, 
+          { 
+            headers: {
+              Authorization: `Basic ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
         );
+        // Sacar el id de jumpseller
+        const jumpsellerData = data.product;
+        const jumpsellerId = jumpsellerData.id;
+
+        // Actualizar el jumpsellerId en la base de datos
+        const mappedCardData: MappedProductCard[] = cards.map(this.mapCardData);
+        
+        for (const card of mappedCardData) {
+          const existingCard = await this.productCardModel.findOne({ id: card.id });
+          if (existingCard) {
+        await this.productCardModel.updateOne({ id: card.id }, { jumpsellerId, status: "completed" }); // Actualizar si existe
+        }
+
+      } 
+        this.logger.log(`✅ Jumpseller ID actualizado para el producto con ID: ${card.id}`); 
+
         this.logger.log(`✅ Base de datos actualizada con Jumpseller ID: ${jumpsellerId}`);
           } catch (error) {
-        this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
+        this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`); 
         if (error.response) {
           this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
           this.logger.error(`Código de estado: ${error.response.status}`);
@@ -214,38 +219,7 @@ export class ProductCardsService {
       
         return products;
       }
-
-      //crear endpoint que borre todos los productos de jumpseller
-
-      // async deleteAllJumpsellerProducts(): Promise<void> {
-      //   //traer los productos de jumpseller
-      //   let response;
-      //   try {
-      //     response = await axios.get<GetJumpsellerProduct>('https://api.jumpseller.com/v1/products/status/available.json?login=96562eb2a4eb81e37f9ac714b71923bf&authtoken=a7597b834a8ba025e2b3f69570cf29c8');
-      //     //iterar por todos los productos por su id
-      //     const products = response.data.products;
-      //     for (const product of products) {
-      //       const id = product.id;
-            
-      //       // Borrar cada producto
-      //           const login = '96562eb2a4eb81e37f9ac714b71923bf';
-      //       const authtoken = 'a7597b834a8ba025e2b3f69570cf29c8';
-      //       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');
-      //       await axios.delete(`https://api.jumpseller.com/v1/products/${id}.json`, {
-      //         headers: {
-      //           Authorization: `Basic ${authToken}`,
-      //           'Content-Type': 'application/json',
-      //         },
-      //       });
-      //       this.logger.log(`✅ Producto con ID ${id} eliminado de Jumpseller`);
-      //     }
-      //   } catch (error) {
-      //     this.logger.error(`❌ Error al eliminar productos de Jumpseller: ${error.message}`);
-      //   }
-      // }
-          
-    
-
+       
     async findAllCards(query: PaginationQueryDto) {
         const { limit, page, sortBy, sortOrder, to, from } = query;
            

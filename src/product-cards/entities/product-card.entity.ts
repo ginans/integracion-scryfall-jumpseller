@@ -169,7 +169,7 @@ export class ProductCard {
   })
   status: string;
 
-  @Prop({ nullable: true, default: null })
+  @Prop({ default: null })
   jumpsellerId?: string;
 }
 

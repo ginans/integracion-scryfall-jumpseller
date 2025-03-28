@@ -30,12 +30,7 @@ export class ProductCardsController {
   async findOne(@Param('id') _id: string): Promise<ProductCard | null> {
     return this.productCardsService.findOneCard(_id);
   }
-
-  // @Delete()
-  // async removeAll(): Promise<void> {
-  //   return this.productCardsService.deleteAllJumpsellerProducts();
-  // }
-  
+    
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateProductCardDto: UpdateProductCardDto) {
     //   return this.productCardsService.update(id, updateProductCardDto);

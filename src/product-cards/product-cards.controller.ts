@@ -9,7 +9,7 @@ import { ProductCard } from './entities/product-card.entity';
 export class ProductCardsController {
   constructor(private readonly productCardsService: ProductCardsService) {}
 
-  @Post()
+  @Post("get-and-create")
   async create(@Body() createProductCardDto: CreateProductCardDto) {
     return this.productCardsService.fetchAndCreateCards(createProductCardDto);
   }

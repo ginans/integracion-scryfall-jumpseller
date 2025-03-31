@@ -29,9 +29,9 @@ export class ProductCard {
   layout: string;
 
   @Prop({ type: Object })
-  imageUris?: {
-    small?: string;
-    large?: string;
+  imageUris: {
+    small: string;
+    large: string;
   };
 
   @Prop()
@@ -56,53 +56,53 @@ export class ProductCard {
   keywords: string[];
 
   @Prop({ type: Object })
-  cardFaces?: {
-    name?: string;
-    printedName?: string;
-    manaCost?: string;
-    typeLine?: string;
-    printedTypeLine?: string;
-    oracleText?: string;
-    printedText?: string;
-    colors?: string[];
-    artist?: string;
-    imageUris?: {
-      small?: string;
-      large?: string;
+  cardFaces: {
+    name: string;
+    printedName: string;
+    manaCost: string;
+    typeLine: string;
+    printedTypeLine: string;
+    oracleText: string;
+    printedText: string;
+    colors: string[];
+    artist: string;
+    imageUris: {
+      small: string;
+      large: string;
     };
   }[];
 
   @Prop({ type: Object })
-  legalities?: {
-    standard?: string;
-    future?: string;
-    historic?: string;
-    timeless?: string;
-    gladiator?: string;
-    pioneer?: string;
-    explorer?: string;
-    modern?: string;
-    legacy?: string;
-    pauper?: string;
-    vintage?: string;
-    penny?: string;
-    commander?: string;
-    oathbreaker?: string;
-    standardbrawl?: string;
-    brawl?: string;
-    alchemy?: string;
-    paupercommander?: string;
-    duel?: string;
-    oldschool?: string;
-    premodern?: string;
-    predh?: string;
+  legalities: {
+    standard: string;
+    future: string;
+    historic: string;
+    timeless: string;
+    gladiator: string;
+    pioneer: string;
+    explorer: string;
+    modern: string;
+    legacy: string;
+    pauper: string;
+    vintage: string;
+    penny: string;
+    commander: string;
+    oathbreaker: string;
+    standardbrawl: string;
+    brawl: string;
+    alchemy: string;
+    paupercommander: string;
+    duel: string;
+    oldschool: string;
+    premodern: string;
+    predh: string;
   };
 
   @Prop({ type: Object })
-  prices?: {
-    usd?: string | null;
-    usdFoil?: string | null;
-    usdEtched?: string | null;
+  prices: {
+    usd: string | null;
+    usdFoil: string | null;
+    usdEtched: string | null;
   };
 
   @Prop()
@@ -114,25 +114,45 @@ export class ProductCard {
   @Prop()
   artist: string;
 
-  @Prop()
+  @Prop({ nulleable: true })
   collectorNumber?: string;
 
-  @Prop()
-  setId?: string
+  @Prop({ nulleable: true })
+  setId: string
 
-  @Prop()
-  set?: string;
+  @Prop({ nulleable: true })
+  set: string;
 
   @Prop()
   setName?: string;
 
+  @Prop({
+    default: "Magic: The Gathering", //modificar
+  })
+  gameName: string;
+
+  @Prop({
+    default: 2 //peso en gramos
+  })
+  weight: number;
+
+  @Prop({
+    default: 3.5 //alto en pulgadas
+  })
+  height: number;
+
+  @Prop({
+    default: 2.5
+  })
+  width: number;
+
   @Prop()
-  sku?: string;
+  sku: string;
 
   @Prop({
     default: "pending",
   })
-  status?: string;
+  status: string;
 }
 
 export type productCardDocument = HydratedDocument<ProductCard>;

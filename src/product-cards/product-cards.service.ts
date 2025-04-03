@@ -8,7 +8,7 @@ import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { MappedProductCard } from './interfaces/mapped-product-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { SortOrder } from 'src/common/enums/sortOrder.enum';
+import { EnumLang, SortOrder } from 'src/common/enums/query.enum';
 import { JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
 import axios from 'axios';
 import { GetJumpsellerProduct } from './interfaces/getJumpsellerProducts';
@@ -219,7 +219,7 @@ export class ProductCardsService {
 
 
   async findAllCards(query: PaginationQueryDto) {
-    const { limit, page, sortBy, sortOrder, to, from } = query;
+    const { limit, page, sortBy, sortOrder, to, from, search, status, lang } = query;
 
     const sort: { [key: string]: 1 | -1 } = {
       [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
@@ -228,18 +228,69 @@ export class ProductCardsService {
     const skip = (page - 1) * limit;
     const filters: { $or?: any[], $and?: any[] } = {};
 
-    //implementar filtros de fecha a futuro
 
-    //   if (from && to) {
-    //     filters.$and = [
-    //       {
-    //         lastLogin: {
-    //           $gte: new Date(`${from}T00:00:00.000Z`),
-    //           $lte: new Date(`${to}T23:59:59.999Z`)
-    //         }
-    //       },
-    //     ];
-    //   }
+    if (search && search.length > 0) {
+      const searchValue = search.trim();
+      filters.$or = [];
+      if (!isNaN(Number(searchValue))) {
+        filters.$or.push({ receptionNbr: Number(searchValue) });
+      }
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$name" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$printedName" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$status" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        products: {
+          $elemMatch: {
+            sku: { $regex: searchValue, $options: "i" }
+          }
+        }
+      });
+    }
+
+    if (from && to) {
+      filters.$and = [
+        {
+          createdAt: { //preguntar
+            $gte: new Date(`${from}T00:00:00.000Z`),
+            $lte: new Date(`${to}T23:59:59.999Z`)
+          }
+        },
+      ];
+    }
+
+    if (status) {
+      const stateFilter = { status: { $regex: `^${status}$`, $options: "i" } };
+      filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
+    }
+
+    if (lang) {
+      const langFilter = { lang: { $regex: `^${lang}$`, $options: "i" } };
+      filters.$and = filters.$and ? [...filters.$and, langFilter] : [langFilter];
+    }
 
     try {
       const [productCards, total] = await Promise.all([

@@ -24,6 +24,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
 import { ScryfallModule } from './scryfall/scryfall.module';
 import { ProductCardsModule } from './product-cards/product-cards.module';
+import { JumpsellerModule } from './jumpseller/jumpseller.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { ProductCardsModule } from './product-cards/product-cards.module';
     FilesModule,
     ScryfallModule,
     ProductCardsModule,
+    JumpsellerModule,
   ],
   controllers: [AppController],
   providers: [

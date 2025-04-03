@@ -25,6 +25,7 @@ import {join} from "path";
 import { ScryfallModule } from './scryfall/scryfall.module';
 import { ProductCardsModule } from './product-cards/product-cards.module';
 import { JumpsellerModule } from './jumpseller/jumpseller.module';
+import { ProcessModule } from './process/process.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { JumpsellerModule } from './jumpseller/jumpseller.module';
     ScryfallModule,
     ProductCardsModule,
     JumpsellerModule,
+    ProcessModule,
   ],
   controllers: [AppController],
   providers: [

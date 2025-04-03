@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { string } from 'joi';
 import { HydratedDocument, Types } from 'mongoose';
+import { JumpsellerProductResponse } from '../interfaces/jumpsellerProductResponse.interface';
 
 @Schema({ timestamps: true })
 export class ProductCard {
@@ -141,26 +142,6 @@ export class ProductCard {
   @Prop()
   setName?: string;
 
-  // @Prop({
-  //   default: "Magic: The Gathering", //modificar
-  // })
-  // gameName: string;
-
-  // @Prop({
-  //   default: 2 //peso en gramos
-  // })
-  // weight: number;
-
-  // @Prop({
-  //   default: 3.5 //alto en pulgadas
-  // })
-  // height: number;
-
-  // @Prop({
-  //   default: 2.5
-  // })
-  // width: number;
-
   @Prop()
   sku: string;
 
@@ -169,9 +150,14 @@ export class ProductCard {
   })
   status: string;
 
-  @Prop({ default: null })
-  jumpsellerId?: string;
+  // @Prop({ default: null })
+  // jumpsellerId?: string;
+
+  @Prop({ type: [Object], default: [] })
+  products: JumpsellerProductResponse[]; 
 }
+
+
 
 export type productCardDocument = HydratedDocument<ProductCard>;
 export const productCardSchema = SchemaFactory.createForClass(ProductCard);

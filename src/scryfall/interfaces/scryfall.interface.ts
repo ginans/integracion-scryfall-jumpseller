@@ -118,6 +118,8 @@ export interface ScryfallCard {
     oracle_id?: string;
     name?: string;
     printed_name?: string;
+    oracle_text?: string;
+    printed_text?: string;
     lang?: string;
     uri?: string;
     layout?: string;
@@ -132,6 +134,9 @@ export interface ScryfallCard {
     colors?: string[];
     color_identity?: string[];
     keywords?: string[];
+    foil?: boolean; 
+    nonfoil?: boolean;
+    finishes?: string[];
     card_faces?: CardFace[];
     legalities?: {
         standard?: string;

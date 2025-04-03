@@ -20,6 +20,12 @@ export class ProductCard {
   printedName: string;
 
   @Prop()
+  oracleText: string;
+
+  @Prop()
+  printedText: string;
+
+  @Prop()
   lang: string;
 
   @Prop()
@@ -54,6 +60,15 @@ export class ProductCard {
 
   @Prop({ type: [String]})
   keywords: string[];
+
+  @Prop({ type: [String]})
+  finishes: string[];
+
+  @Prop()
+  foil: boolean;
+
+  @Prop()
+  nonfoil: boolean;
 
   @Prop({ type: Object })
   cardFaces: {
@@ -126,25 +141,25 @@ export class ProductCard {
   @Prop()
   setName?: string;
 
-  @Prop({
-    default: "Magic: The Gathering", //modificar
-  })
-  gameName: string;
+  // @Prop({
+  //   default: "Magic: The Gathering", //modificar
+  // })
+  // gameName: string;
 
-  @Prop({
-    default: 2 //peso en gramos
-  })
-  weight: number;
+  // @Prop({
+  //   default: 2 //peso en gramos
+  // })
+  // weight: number;
 
-  @Prop({
-    default: 3.5 //alto en pulgadas
-  })
-  height: number;
+  // @Prop({
+  //   default: 3.5 //alto en pulgadas
+  // })
+  // height: number;
 
-  @Prop({
-    default: 2.5
-  })
-  width: number;
+  // @Prop({
+  //   default: 2.5
+  // })
+  // width: number;
 
   @Prop()
   sku: string;
@@ -153,6 +168,9 @@ export class ProductCard {
     default: "pending",
   })
   status: string;
+
+  @Prop({ default: null })
+  jumpsellerId?: string;
 }
 
 export type productCardDocument = HydratedDocument<ProductCard>;

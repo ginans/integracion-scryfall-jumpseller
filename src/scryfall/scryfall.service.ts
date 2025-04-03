@@ -31,12 +31,13 @@ export class ScryfallService {
 
                  // Llamar al callback para procesar y guardar los datos por página
                  onPageFetched(data.data);
+                 hasMore = false 
 
-                hasMore = data.has_more; //has_more es un booleano, se vuelve false en la ultima pagina
-                page++;
+                // hasMore = data.has_more; //has_more es un booleano, se vuelve false en la ultima pagina
+                // page++;
 
-                // retraso de 300ms
-                await this.delay(300);
+                // retraso de 75ms
+                await this.delay(75);
             } catch (error) {
                 throw new Error(`Fallo al traer las cartas: ${error.message}`);
             }

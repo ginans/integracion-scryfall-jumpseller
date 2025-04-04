@@ -9,7 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { MappedProductCard } from './interfaces/mapped-product-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/sortOrder.enum';
-import { JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
+import { JumpsellerOptionType, JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
 import axios from 'axios';
 import { GetJumpsellerProduct } from './interfaces/getJumpsellerProducts';
 import { JumpsellerProductResponse } from './interfaces/jumpsellerProductResponse.interface';
@@ -132,90 +132,140 @@ export class ProductCardsService {
 
   // Mapeo a JumpsellerProduct
   private jumpsellerProduct(card: Partial<MappedProductCard>): JumpsellerProductRequest[] {
-    const products: JumpsellerProductRequest[] = [];
-
-    // Crear producto para la variante foil si foil es true
-    if (card.foil) {
-      products.push({
-        name: card.name || '',
-        description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: Foil` || '',
-        price: parseFloat(card.prices?.usd || '0.00'),
-        sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-F`,
-        stock: 0,
-        categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
-      });
-    }
-
-    // Crear producto para la variante nonfoil si nonfoil es true 
-    if (card.nonfoil) {
-      products.push({
-        name: card.name || '',
-        description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: Non foil` || '',
-        price: parseFloat(card.prices?.usd || '0.00'),
-        sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-NF`,
-        stock: 0,
-        categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
-      });
-    }
-
-    return products;
+  const products: JumpsellerProductRequest[] = [];
+  
+  // Si la carta tiene ambas opciones (foil y nonfoil)
+  if (card.foil && card.nonfoil) {
+    // Crear un solo producto con variantes
+    products.push({
+      name: card.name || '',
+      description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}` || '',
+      price: parseFloat(card.prices?.usd || '0.00'),
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}`,
+      stock: 0,
+      categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
+      variants: [
+        {
+          price: parseFloat(card.prices?.usdFoil || card.prices?.usd || '0.00'),
+          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-F`,
+          stock: 0,
+          options: [
+            {
+              name: "Finish",
+              option_type: JumpsellerOptionType.OPTION,
+              value: "Foil"
+            }
+          ]
+        },
+        {
+          price: parseFloat(card.prices?.usd || '0.00'),
+          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-NF`,
+          stock: 0,
+          options: [
+            {
+              name: "Finish",
+              option_type: JumpsellerOptionType.OPTION,
+              value: "Non-foil"
+            }
+          ]
+        }
+      ]
+    });
+  } 
+  // Si solo tiene una opción (foil o nonfoil)
+  else {
+    const isFoil = card.foil;
+    products.push({
+      name: card.name || '',
+      description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: ${isFoil ? 'Foil' : 'Non foil'}` || '',
+      price: isFoil ? parseFloat(card.prices?.usdFoil || card.prices?.usd || '0.00') : parseFloat(card.prices?.usd || '0.00'),
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-${isFoil ? 'F' : 'NF'}`,
+      stock: 0,
+      categories: card.setId ? [{ name: card.setName, id: 1 }] : [], 
+    });
   }
 
-  async createJumpsellerProducts(card: Partial<MappedProductCard>): Promise<JumpsellerProductRequest[]> {
-    const query = { limit: 10000000000000000000, page: 1, sortBy: 'sku', sortOrder: SortOrder.ASC };
-    const { items: cards } = await this.findAllCards(query);
+  return products;
+}
 
+  async createJumpsellerProducts(card: Partial<MappedProductCard>): Promise<JumpsellerProductRequest[]> {
+    const cards = await this.productCardModel.find({ status: "pending" });
     const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
     const login = '96562eb2a4eb81e37f9ac714b71923bf';
     const authtoken = 'a7597b834a8ba025e2b3f69570cf29c8';
     const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');
 
-    const products = cards.flatMap(card => this.jumpsellerProduct(card));
+    // Crear un array de objetos que mantenga la relación entre productos y cartas
+    const productsWithCards = [];
+    
+    cards.forEach(card => {
+        const cardProducts = this.jumpsellerProduct(card);
+        cardProducts.forEach(product => {
+            productsWithCards.push({
+                card,
+                product
+            });
+        });
+    });
+    
+    // Ahora procesa cada producto sabiendo a qué carta pertenece
+    for (const item of productsWithCards) {
+        try {
+            this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+            this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(item.product)}`);
 
-    for (const [index, product] of products.entries()) {
-      try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
+            const { data } = await axios.post(
+                jumpsellerApiUrl,
+                { product: item.product },
+                {
+                    headers: {
+                        Authorization: `Basic ${authToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
 
-        const { data }: { data: GetJumpsellerProduct } = await axios.post<ProductCard, { data: GetJumpsellerProduct }>(
-          jumpsellerApiUrl,
-          { product },
-          {
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+            // Actualizar la carta con el nuevo producto
+            await this.productCardModel.updateOne(
+                { id: item.card.id },
+                { 
+                    $push: { products: data.product }
+                }
+            );
+            
+            // Verificar si todos los productos de esta carta ya se procesaron
+            const cardProductsCount = productsWithCards
+                .filter(p => p.card.id === item.card.id)
+                .length;
+                
+            const processedCount = await this.productCardModel.findOne(
+                { id: item.card.id }
+            ).then(doc => doc.products ? doc.products.length : 0);
+            
+            // Si se procesaron todos, marca como completado
+            if (processedCount >= cardProductsCount) {
+                await this.productCardModel.updateOne(
+                    { id: item.card.id },
+                    { status: "completed" }
+                );
+                this.logger.log(`✅ Todos los productos creados para la carta ID: ${item.card.id}`);
+            }
 
-        const jumpsellerId = data.product.id;
-
-        const originalCard = cards[index];
-
-        if (originalCard) {
-          await this.productCardModel.updateOne(
-            { id: originalCard.id },
-            { jumpsellerId, status: "completed" }
-          );
-
-          this.logger.log(`✅ Jumpseller ID actualizado para el producto con ID: ${originalCard.id}`);
+            this.logger.log(`✅ Producto creado en Jumpseller para carta ${item.card.id}`);
+        } catch (error) {
+            this.logger.error(`Error al crear producto en Jumpseller: ${error.message}`);
+            if (error.response) {
+                this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+                this.logger.error(`Código de estado: ${error.response.status}`);
+                this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+            }
         }
 
-        this.logger.log(`✅ Base de datos actualizada con Jumpseller ID: ${jumpsellerId}`);
-      } catch (error) {
-        this.logger.error(`Error al crear producto en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    return products;
-  }
+    return productsWithCards.map(item => item.product);
+}
 
 
   async findAllCards(query: PaginationQueryDto) {

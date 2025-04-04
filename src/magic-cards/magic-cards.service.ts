@@ -165,19 +165,19 @@ export class MagicCardsService {
       this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
       this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
 
-      const { data } = await axios.post(
-        jumpsellerApiUrl,
-        { product }, 
-        { 
-          headers: {
-            Authorization: `Basic ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // const { data } = await axios.post(
+      //   jumpsellerApiUrl,
+      //   { product }, 
+      //   { 
+      //     headers: {
+      //       Authorization: `Basic ${authToken}`,
+      //       'Content-Type': 'application/json',
+      //     },
+      //   }
+      // );
       
       // Añadir el producto creado a los resultados
-      results.push(data.product);
+      // results.push(data.product);
           
       await this.magicCardModel.updateOne(
         { id: mappedCard.id }, 

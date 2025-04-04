@@ -1,24 +1,19 @@
 import { Controller, Get, Post, Body, Query, Param} from '@nestjs/common';
 import { MagicCardsService } from './magic-cards.service';
-import { CreateMagicCardDto } from './dto/create-magic-card.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { MagicCard } from './entities/magic-card.entity';
-import { JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
-import { MappedMagicCard } from './interfaces/mapped-magic-card.interface';
+import { IenumURLLang } from './scryfall/enums/lang.enum';
 
 @Controller('magic-cards')
 export class MagicCardsController {
   constructor(private readonly magicCardsService: MagicCardsService) {}
   
-  @Post("get-and-create")
-  async create() {
-    return this.magicCardsService.fetchAndCreateCards();
-  }
   
   @Post("create-magic-jumpseller")
-  async createJumpsellerProduct(): Promise<JumpsellerProductRequest[]> {
-    return this.magicCardsService.createJumpsellerProducts();
+  async createJumpsellerProduct(): Promise<string> {
+    await this.magicCardsService.procesarCardMagic(IenumURLLang.EN);
+    return "ok"
   }
   
   @Get()

@@ -12,10 +12,10 @@ export class AppService {
   ) {}
 
   //ejecutar tarea cada 5 minutos
-  @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron(CronExpression.EVERY_WEEK)
   async syncRefreshTokenApp() {
     this.logger.log("ejecutar tarea");
-    await this.processService.init()
+    await this.processService.initMAGIN()
 
   }
 

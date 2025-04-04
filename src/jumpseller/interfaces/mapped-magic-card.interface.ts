@@ -1,5 +1,11 @@
+export interface IsetMagic{
+    idJumpSeller?:number;
+    status?:string
+}
+
 //info mapeada
 export interface MappedMagicCard {
+    idJumpSeller?:number //variable para identifcar si campos se debe actualizar con crear en jumpeller
     id?: string;
     oracleId?: string;
     name?: string;

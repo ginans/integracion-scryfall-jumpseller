@@ -1,17 +1,15 @@
-import { BadRequestException, Body, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { ScryfallService } from '../scryfall/scryfall.service';
-import { IenumURLLang } from '../scryfall/enums/lang.enum';
-import { ScryfallCard, ScryfallCardResponse } from '../scryfall/interfaces/scryfall.interface';
-import { CreateMagicCardDto } from './dto/create-magic-card.dto';
-import { MagicCard, magicCardDocument } from './entities/magic-card.entity';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { ScryfallService } from './scryfall/scryfall.service';
+import { ScryfallCard, ScryfallCardResponse } from './scryfall/interfaces/scryfall.interface';
+import { MagicCard, magicCardDocument as MagicCardEntity  } from './entities/magic-card.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { MappedMagicCard } from './interfaces/mapped-magic-card.interface';
+import { IsetMagic, MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
-import { JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
-import axios from 'axios';
-import { JumpsellerProductResponse } from './interfaces/jumpsellerProductResponse.interface';
+import { IenumURLLang } from './scryfall/enums/lang.enum';
+import { JumpsellerProductRequest } from 'src/jumpseller/interfaces/jumpsellerProductRequest.interface';
+import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -19,10 +17,62 @@ export class MagicCardsService {
 
   constructor(
     private readonly scryfallService: ScryfallService,
+    private readonly jumpsellerService: JumpsellerService,
     @InjectModel(MagicCard.name)
-    private magicCardModel: Model<magicCardDocument>
+    private readonly model: Model<MagicCardEntity>
   ) { }
 
+
+  async procesarCardMagic(lg:IenumURLLang):Promise<void>{
+    //obtener lista de getScryfallCards
+    const cards = await this.scryfallService.getScryfallCards(lg);
+    //guadar o actualizar
+    const requestsCards  = await this.fetchAndCreateCards(cards);
+    // jumpeller
+    for(let req of requestsCards){
+      //se de creaar un jumpseller
+      if(!req?.idJumpSeller){
+        //solo crear en jumpseller cuando es ingles
+        if(lg == IenumURLLang.EN){
+          const requestJumpseller = this.scryfallToJumpseller(req);
+          const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
+          if(response?.product?.id){
+            await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
+            //TODO actualizar o crear tabla productos con el magic _id
+             
+          }
+        }
+        //segun respuesta que entrea jummppser guardar y actualizar producto
+      }else{
+        // crear funcion de actuzalizar jumppseleer
+        //response = await this.jumpsellerService.updateJumpsellerProducts(idjumpseller,product);
+        //await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
+      }
+      this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+  }
+
+
+
+  private scryfallToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
+    const isfoil = (card.foil === true);
+    let product = {
+      name: card.name || '',
+      description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
+      price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
+      stock: 0,
+      categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [], 
+    };
+
+    console.log(`sku: ${product.sku}`);
+    console.log(`collector number: ${card.collectorNumber}`);
+    return product;
+  }
+
+  // mapear data de Scryfall para guadar en tabla  magic
   private mapCardData(card: Partial<ScryfallCard>): MappedMagicCard {
     return {
       id: card.id || '',
@@ -101,108 +151,22 @@ export class MagicCardsService {
       setName: card.set_name || '',
     };
   }
-
-  async fetchAndCreateCards() {
-    const onPageFetched = async (cards: ScryfallCardResponse[]) => {
+  //buscar actuzalizar o crear magic card
+  async fetchAndCreateCards(cards: ScryfallCardResponse[]):Promise<MappedMagicCard[]> {
       // Mapeo de los datos por pagina
-      const mappedCardData: MappedMagicCard[] = cards.map(this.mapCardData);
-
-      // Verificar duplicados por ID y actualizar o insertar
-      for (const card of mappedCardData) {
-        const existingCard = await this.magicCardModel.findOne({ id: card.id });
-        if (existingCard) {
-          await this.magicCardModel.updateOne({ id: card.id }, card);
-        } else {
-          await this.magicCardModel.create(card); // Insertar si no existe
-        }
-      }
-    };
-
-    // Obtener cartas de Scryfall
-    const cardsInSpanish = await this.scryfallService.getScryfallCards(IenumURLLang.ES, onPageFetched);
-    this.logger.log(`✅ Cartas en español obtenidas: ${cardsInSpanish.length}`);
-
-    const cardsInEnglish = await this.scryfallService.getScryfallCards(IenumURLLang.EN, onPageFetched);
-    this.logger.log(`✅ Cartas en inglés obtenidas: ${cardsInEnglish.length}`);
-
-    this.logger.log("Todos los datos nuevos de han guardado y los duplicados se han actualizado");
-    return { message: "Todos los datos nuevos de han guardado y los duplicados se han actualizado." };
-  }
-
-  // Mapeo de producto base para Jumpseller
-  private jumpsellerProduct(card: MappedMagicCard): JumpsellerProductRequest {
-    const isfoil = (card.foil === true);
-    const product = {
-      name: card.name || '',
-      description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
-      price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
-      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
-      stock: 0,
-      categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [], 
-    };
-
-    console.log(`sku: ${product.sku}`);
-    console.log(`collector number: ${card.collectorNumber}`);
-    return product;
-  }
-
-  async createJumpsellerProducts(): Promise<JumpsellerProductRequest[]> { 
-    const cards = await this.magicCardModel.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
-    
-    //TODO: mover a servicio de jumpseller
-  const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
-  const login = process.env.JUMPSELLER_LOGIN
-  const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-  const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
-
-  const mappedCards: MappedMagicCard[] = cards;
-  const results: JumpsellerProductRequest[] = [];
-
-  for (const mappedCard of mappedCards) {
-    try {
-      const product = this.jumpsellerProduct(mappedCard);
-
-      this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-      this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
-
-      // const { data } = await axios.post(
-      //   jumpsellerApiUrl,
-      //   { product }, 
-      //   { 
-      //     headers: {
-      //       Authorization: `Basic ${authToken}`,
-      //       'Content-Type': 'application/json',
-      //     },
-      //   }
-      // );
-      
-      // Añadir el producto creado a los resultados
-      // results.push(data.product);
-          
-      await this.magicCardModel.updateOne(
-        { id: mappedCard.id }, 
-        { status: "completed" } 
-      );
-      this.logger.log(`✅ Estado actualizado para el producto ${mappedCard.name} a 'completed'`);
-
-    } catch (error) {
-      this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
-      if (error.response) {
-        this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-        this.logger.error(`Código de estado: ${error.response.status}`);
-        this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+    const mappedCardData: MappedMagicCard[] = cards.map(this.mapCardData);
+    // Verificar duplicados por ID y actualizar o insertar
+    for (const x in mappedCardData) {
+      const existingCard = await this.model.findOne({ id: mappedCardData[x].id });
+      if (existingCard) {
+        await this.model.updateOne({ id: mappedCardData[x].id }, mappedCardData[x]);
+      } else {
+        await this.model.create(mappedCardData[x]); // Insertar si no existe
       }
     }
-
-    // Esperar 300 ms antes de la siguiente solicitud
-    await new Promise(resolve => setTimeout(resolve, 300));
+    return  mappedCardData;
   }
-
-  return results; 
-}
-
-
-
+  //buscar paginar magic card
   async findAllCards(query: PaginationQueryDto) {
     const { limit, page, sortBy, sortOrder, to, from, search, status, lang } = query;
 
@@ -279,8 +243,8 @@ export class MagicCardsService {
 
     try {
       const [productCards, total] = await Promise.all([
-        this.magicCardModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
-        this.magicCardModel.countDocuments(filters).exec()
+        this.model.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+        this.model.countDocuments(filters).exec()
       ]);
       return {
         items: productCards.map(user => user.toObject()),
@@ -297,18 +261,26 @@ export class MagicCardsService {
       throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
     }
   }
-
+  //buscar paginar magic card por ID
   async findOneCard(_id: string): Promise<MagicCard | null> {
     if (!Types.ObjectId.isValid(_id))
       throw new BadRequestException('Formato de ID inválido');
-    const card = await this.magicCardModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
+    const card = await this.model.findOne({ _id: new Types.ObjectId(_id) }).exec();
     if (!card) throw new NotFoundException('Card no encontrada');
     return card;
   }
+  async findCardPending():Promise<MappedMagicCard[]> {
+    const response = await this.model.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
+    return response as unknown as MappedMagicCard[];
+  }
+  //actualizar por id u estado
+  async updateByStatus(id:string,set:IsetMagic):Promise<void>{
+    await this.model.updateOne(
+      { id }, 
+      { ...set } 
+    );
+  }
 }
 
-// update(id: number, updateProductCardDto: UpdateProductCardDto) {
-//     return `This action updates a #${id} productCard`;
-// }
 
 

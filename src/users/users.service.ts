@@ -12,7 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
-import { SortOrder } from 'src/common/enums/sortOrder.enum';
+import { SortOrder } from 'src/common/enums/query.enum';
 import { Logger } from '@nestjs/common';
 
 @Injectable()

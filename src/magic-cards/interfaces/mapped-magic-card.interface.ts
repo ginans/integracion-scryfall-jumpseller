@@ -1,5 +1,5 @@
 //info mapeada
-export interface MappedProductCard {
+export interface MappedMagicCard {
     id?: string;
     oracleId?: string;
     name?: string;

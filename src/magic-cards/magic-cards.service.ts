@@ -2,29 +2,28 @@ import { BadRequestException, Body, Injectable, InternalServerErrorException, Lo
 import { ScryfallService } from '../scryfall/scryfall.service';
 import { IenumURLLang } from '../scryfall/enums/lang.enum';
 import { ScryfallCard, ScryfallCardResponse } from '../scryfall/interfaces/scryfall.interface';
-import { CreateProductCardDto } from './dto/create-product-card.dto';
-import { ProductCard, productCardDocument } from './entities/product-card.entity';
+import { CreateMagicCardDto } from './dto/create-magic-card.dto';
+import { MagicCard, magicCardDocument } from './entities/magic-card.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { MappedProductCard } from './interfaces/mapped-product-card.interface';
+import { MappedMagicCard } from './interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { EnumLang, SortOrder } from 'src/common/enums/query.enum';
-import { JumpsellerOptionType, JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
+import { SortOrder } from 'src/common/enums/query.enum';
+import { JumpsellerProductRequest } from './interfaces/jumpsellerProductRequest.interface';
 import axios from 'axios';
-import { GetJumpsellerProduct } from './interfaces/getJumpsellerProducts';
 import { JumpsellerProductResponse } from './interfaces/jumpsellerProductResponse.interface';
 
 @Injectable()
-export class ProductCardsService {
-  private readonly logger = new Logger(ProductCardsService.name);
+export class MagicCardsService {
+  private readonly logger = new Logger(MagicCardsService.name);
 
   constructor(
     private readonly scryfallService: ScryfallService,
-    @InjectModel(ProductCard.name)
-    private productCardModel: Model<productCardDocument>
+    @InjectModel(MagicCard.name)
+    private magicCardModel: Model<magicCardDocument>
   ) { }
 
-  private mapCardData(card: Partial<ScryfallCard>): MappedProductCard {
+  private mapCardData(card: Partial<ScryfallCard>): MappedMagicCard {
     return {
       id: card.id || '',
       oracleId: card.oracle_id || '',
@@ -38,7 +37,7 @@ export class ProductCardsService {
       imageUris: card.image_uris ? {
         large: card.image_uris.large || '',
         small: card.image_uris.small || ''
-      } : { small: '', large: '' },  // Si no hay imagen, lo dejamos como ""
+      } : { small: '', large: '' },
       typeLine: card.type_line || '',
       printedTypeLine: card.printed_type_line || '',
       cmc: card.cmc || 0,
@@ -87,7 +86,7 @@ export class ProductCardsService {
         premodern: card.legalities.premodern || '',
         predh: card.legalities.predh || '',
         oathbreaker: card.legalities.oathbreaker || ''
-      } : {},  // Si legalities no existe, devolver un objeto vacío
+      } : {}, 
       gameChanger: card.game_changer || false,
       rarity: card.rarity || '',
       artist: card.artist || '',
@@ -103,18 +102,18 @@ export class ProductCardsService {
     };
   }
 
-  async fetchAndCreateCards(createProductCardDto: CreateProductCardDto) {
+  async fetchAndCreateCards() {
     const onPageFetched = async (cards: ScryfallCardResponse[]) => {
       // Mapeo de los datos por pagina
-      const mappedCardData: MappedProductCard[] = cards.map(this.mapCardData);
+      const mappedCardData: MappedMagicCard[] = cards.map(this.mapCardData);
 
       // Verificar duplicados por ID y actualizar o insertar
       for (const card of mappedCardData) {
-        const existingCard = await this.productCardModel.findOne({ id: card.id });
+        const existingCard = await this.magicCardModel.findOne({ id: card.id });
         if (existingCard) {
-          await this.productCardModel.updateOne({ id: card.id }, card);
+          await this.magicCardModel.updateOne({ id: card.id }, card);
         } else {
-          await this.productCardModel.create(card); // Insertar si no existe
+          await this.magicCardModel.create(card); // Insertar si no existe
         }
       }
     };
@@ -130,142 +129,77 @@ export class ProductCardsService {
     return { message: "Todos los datos nuevos de han guardado y los duplicados se han actualizado." };
   }
 
-  // Mapeo a JumpsellerProduct
-  private jumpsellerProduct(card: Partial<MappedProductCard>): JumpsellerProductRequest[] {
-  const products: JumpsellerProductRequest[] = [];
-  
-  // Si la carta tiene ambas opciones (foil y nonfoil)
-  if (card.foil && card.nonfoil) {
-    // Crear un solo producto con variantes
-    products.push({
+  // Mapeo a JumpsellerProduct sin variantes
+  private jumpsellerProduct(card: MappedMagicCard): JumpsellerProductRequest {
+    const isfoil = (card.foil === true);
+    const product = {
       name: card.name || '',
-      description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}` || '',
-      price: parseFloat(card.prices?.usd || '0.00'),
-      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}`,
+      description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
+      price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
       stock: 0,
-      categories: card.setId ? [{ name: card.setName, id: 1 }] : [],
-      variants: [
-        {
-          price: parseFloat(card.prices?.usdFoil || card.prices?.usd || '0.00'),
-          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-F`,
-          stock: 0,
-          options: [
-            {
-              name: "Finish",
-              option_type: JumpsellerOptionType.OPTION,
-              value: "Foil"
-            }
-          ]
-        },
-        {
-          price: parseFloat(card.prices?.usd || '0.00'),
-          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-NF`,
-          stock: 0,
-          options: [
-            {
-              name: "Finish",
-              option_type: JumpsellerOptionType.OPTION,
-              value: "Non-foil"
-            }
-          ]
-        }
-      ]
-    });
-  } 
-  // Si solo tiene una opción (foil o nonfoil)
-  else {
-    const isFoil = card.foil;
-    products.push({
-      name: card.name || '',
-      description: `${card.oracleText}. ${card.printedText ? card.printedText : ""}.  Costo de maná:${card.manaCost}, Costo de maná convertido:${card.cmc}, Finish: ${isFoil ? 'Foil' : 'Non foil'}` || '',
-      price: isFoil ? parseFloat(card.prices?.usdFoil || card.prices?.usd || '0.00') : parseFloat(card.prices?.usd || '0.00'),
-      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber?.toUpperCase() || ''}-${card.lang?.toUpperCase() || ''}-${isFoil ? 'F' : 'NF'}`,
-      stock: 0,
-      categories: card.setId ? [{ name: card.setName, id: 1 }] : [], 
-    });
+      categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [], 
+    };
+
+    console.log(`sku: ${product.sku}`);
+    console.log(`collector number: ${card.collectorNumber}`);
+    return product;
   }
 
-  return products;
-}
+async createJumpsellerProducts(): Promise<JumpsellerProductRequest[]> { 
+  const cards = await this.magicCardModel.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
 
-  async createJumpsellerProducts(card: Partial<MappedProductCard>): Promise<JumpsellerProductRequest[]> {
-    const cards = await this.productCardModel.find({ status: "pending" });
-    const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
-    const login = '96562eb2a4eb81e37f9ac714b71923bf';
-    const authtoken = 'a7597b834a8ba025e2b3f69570cf29c8';
-    const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');
+  const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
+  const login = process.env.JUMPSELLER_LOGIN
+  const authtoken = process.env.JUMPSELLER_AUTHTOKEN
+  const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
 
-    // Crear un array de objetos que mantenga la relación entre productos y cartas
-    const productsWithCards = [];
-    
-    cards.forEach(card => {
-        const cardProducts = this.jumpsellerProduct(card);
-        cardProducts.forEach(product => {
-            productsWithCards.push({
-                card,
-                product
-            });
-        });
-    });
-    
-    // Ahora procesa cada producto sabiendo a qué carta pertenece
-    for (const item of productsWithCards) {
-        try {
-            this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-            this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(item.product)}`);
+  const mappedCards: MappedMagicCard[] = cards.map(card => this.mapCardData(card)); // Aseguramos que this se mantiene correcto
+  const results: JumpsellerProductRequest[] = [];
 
-            const { data } = await axios.post(
-                jumpsellerApiUrl,
-                { product: item.product },
-                {
-                    headers: {
-                        Authorization: `Basic ${authToken}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
+  for (const mappedCard of mappedCards) {
+    try {
+      const product = this.jumpsellerProduct(mappedCard);
 
-            // Actualizar la carta con el nuevo producto
-            await this.productCardModel.updateOne(
-                { id: item.card.id },
-                { 
-                    $push: { products: data.product }
-                }
-            );
-            
-            // Verificar si todos los productos de esta carta ya se procesaron
-            const cardProductsCount = productsWithCards
-                .filter(p => p.card.id === item.card.id)
-                .length;
-                
-            const processedCount = await this.productCardModel.findOne(
-                { id: item.card.id }
-            ).then(doc => doc.products ? doc.products.length : 0);
-            
-            // Si se procesaron todos, marca como completado
-            if (processedCount >= cardProductsCount) {
-                await this.productCardModel.updateOne(
-                    { id: item.card.id },
-                    { status: "completed" }
-                );
-                this.logger.log(`✅ Todos los productos creados para la carta ID: ${item.card.id}`);
-            }
+      this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+      this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
 
-            this.logger.log(`✅ Producto creado en Jumpseller para carta ${item.card.id}`);
-        } catch (error) {
-            this.logger.error(`Error al crear producto en Jumpseller: ${error.message}`);
-            if (error.response) {
-                this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-                this.logger.error(`Código de estado: ${error.response.status}`);
-                this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-            }
+      const { data } = await axios.post(
+        jumpsellerApiUrl,
+        { product }, 
+        { 
+          headers: {
+            Authorization: `Basic ${authToken}`,
+            'Content-Type': 'application/json',
+          },
         }
+      );
+      
+      // Añadir el producto creado a los resultados
+      results.push(data.product);
+          
+      await this.magicCardModel.updateOne(
+        { id: mappedCard.id }, 
+        { status: "completed" } 
+      );
+      this.logger.log(`✅ Estado actualizado para el producto ${mappedCard.name} a 'completed'`);
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (error) {
+      this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+        this.logger.error(`Código de estado: ${error.response.status}`);
+        this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+      }
     }
 
-    return productsWithCards.map(item => item.product);
+    // Esperar 300 ms antes de la siguiente solicitud
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+
+  return results; 
 }
+
 
 
   async findAllCards(query: PaginationQueryDto) {
@@ -344,8 +278,8 @@ export class ProductCardsService {
 
     try {
       const [productCards, total] = await Promise.all([
-        this.productCardModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
-        this.productCardModel.countDocuments(filters).exec()
+        this.magicCardModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+        this.magicCardModel.countDocuments(filters).exec()
       ]);
       return {
         items: productCards.map(user => user.toObject()),
@@ -363,10 +297,10 @@ export class ProductCardsService {
     }
   }
 
-  async findOneCard(_id: string): Promise<ProductCard | null> {
+  async findOneCard(_id: string): Promise<MagicCard | null> {
     if (!Types.ObjectId.isValid(_id))
       throw new BadRequestException('Formato de ID inválido');
-    const card = await this.productCardModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
+    const card = await this.magicCardModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
     if (!card) throw new NotFoundException('Card no encontrada');
     return card;
   }

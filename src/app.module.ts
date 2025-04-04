@@ -23,7 +23,7 @@ import { FilesModule } from './files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
 import { ScryfallModule } from './scryfall/scryfall.module';
-import { ProductCardsModule } from './product-cards/product-cards.module';
+import { MagicCardsModule } from './magic-cards/magic-cards.module';
 import { JumpsellerModule } from './jumpseller/jumpseller.module';
 import { ProcessModule } from './process/process.module';
 
@@ -58,7 +58,7 @@ import { ProcessModule } from './process/process.module';
     }),
     FilesModule,
     ScryfallModule,
-    ProductCardsModule,
+    MagicCardsModule,
     JumpsellerModule,
     ProcessModule,
   ],

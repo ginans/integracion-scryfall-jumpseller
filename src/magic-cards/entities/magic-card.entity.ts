@@ -1,10 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { string } from 'joi';
 import { HydratedDocument, Types } from 'mongoose';
-import { JumpsellerProductResponse } from '../interfaces/jumpsellerProductResponse.interface';
 
 @Schema({ timestamps: true })
-export class ProductCard {
+export class MagicCard {
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
 
@@ -142,23 +140,15 @@ export class ProductCard {
   @Prop()
   setName?: string;
 
-  @Prop()
-  sku: string;
-
   @Prop({
     default: "pending",
   })
   status: string;
 
-  // @Prop({ default: null })
-  // jumpsellerId?: string;
-
-  @Prop({ type: [Object], default: [] })
-  products: JumpsellerProductResponse[]; 
 }
 
 
 
-export type productCardDocument = HydratedDocument<ProductCard>;
-export const productCardSchema = SchemaFactory.createForClass(ProductCard);
+export type magicCardDocument = HydratedDocument<MagicCard>;
+export const magicCardSchema = SchemaFactory.createForClass(MagicCard);
 

@@ -31,13 +31,13 @@ export interface JumpsellerProductRequest {
   variants?: JumpsellerVariants[];
 }
 
-enum jumpsellerStatus {
+export enum jumpsellerStatus {
   AVALIABLE = "available", //Disponible
   NOTAVALIABLE = "not-available", //No disponible
   DISABLED = "disabled" //Deshabilitado
 }
 
-enum jumpsellerPackage {
+export enum jumpsellerPackage {
   BOX = "box", //Caja
   CYLINDER= "cylinder" //Cilindro
 }
@@ -65,14 +65,15 @@ export interface JumpsellerVariants {
 
 export interface JumpsellerOptions {
   name?: string;
-  option_type?: JumpsellerOptionType //Tipo de opción del producto que genera variantes
+  option_type?: string //Tipo de opción del producto que genera variantes
   value?: string //Valor de la opción del producto
   custom?: string //Valor hexadecimal del color. Solo disponible para el tipo de opción de producto 'Color'
   product_option_position?: number //Posición de la opción del producto
   product_value_position?: number; //Posición del valor de la opción del producto
 }
 
-enum JumpsellerOptionType {
+export enum JumpsellerOptionType {
   OPTION = "option", 
-  COLOR = "color"
+  COLOR = "color",
+  DROPDOWN = "dropdown"
 }

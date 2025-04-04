@@ -129,7 +129,7 @@ export class MagicCardsService {
     return { message: "Todos los datos nuevos de han guardado y los duplicados se han actualizado." };
   }
 
-  // Mapeo a JumpsellerProduct sin variantes
+  // Mapeo de producto base para Jumpseller
   private jumpsellerProduct(card: MappedMagicCard): JumpsellerProductRequest {
     const isfoil = (card.foil === true);
     const product = {
@@ -146,15 +146,16 @@ export class MagicCardsService {
     return product;
   }
 
-async createJumpsellerProducts(): Promise<JumpsellerProductRequest[]> { 
-  const cards = await this.magicCardModel.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
-
+  async createJumpsellerProducts(): Promise<JumpsellerProductRequest[]> { 
+    const cards = await this.magicCardModel.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
+    
+    //TODO: mover a servicio de jumpseller
   const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
   const login = process.env.JUMPSELLER_LOGIN
   const authtoken = process.env.JUMPSELLER_AUTHTOKEN
   const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
 
-  const mappedCards: MappedMagicCard[] = cards.map(card => this.mapCardData(card)); // Aseguramos que this se mantiene correcto
+  const mappedCards: MappedMagicCard[] = cards;
   const results: JumpsellerProductRequest[] = [];
 
   for (const mappedCard of mappedCards) {

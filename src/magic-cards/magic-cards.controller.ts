@@ -12,8 +12,8 @@ export class MagicCardsController {
   constructor(private readonly magicCardsService: MagicCardsService) {}
   
   @Post("get-and-create")
-  async create(@Body() createProductCardDto: CreateMagicCardDto) {
-    return this.magicCardsService.fetchAndCreateCards(createProductCardDto);
+  async create() {
+    return this.magicCardsService.fetchAndCreateCards();
   }
   
   @Post("create-magic-jumpseller")

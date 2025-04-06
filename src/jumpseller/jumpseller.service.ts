@@ -6,16 +6,20 @@ import { JumpsellerCreateVariantRequest } from './interfaces/jumpsellerVariants/
 import { JumpsellerCreateVariantResponse } from './interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface';
 import { JumpsellerCreateImageRequest } from './interfaces/jumpsellerImages/jumpsellerCreateImageRequest.interface';
 import { JumpsellerCreateImageResponse } from './interfaces/jumpsellerImages/jumpsellerCreateImageResponse.interface';
-import { JumpsellerCreateCustomFieldsRequest } from './interfaces/jumpselllerCustomFields/jumpsellerCreateCustomFieldsRequest.interface';
-import { JumpsellerCreateCustomFieldsResponse } from './interfaces/jumpselllerCustomFields/jumpsellerCreateCustomFieldsResponse.interface';
 import { JumpsellerUpdateProductRequest } from './interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
 import { JumpsellerUpdateProductResponse } from './interfaces/jumpsellerProducts/jumpsellerUpdateProductResponse.interface';
+import { CreateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
+import { createCustomFieldRequest } from './interfaces/jumpselllerCustomFields/createCustomfieldRequest.interface';
+import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductRequest.interface';
+import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductResponse.interface';
 
 @Injectable()
 export class JumpsellerService {  
   private readonly logger = new Logger(JumpsellerService.name);
    constructor(
     ) { }
+
+    //crear producto en jumpseller
     async createJumpsellerProducts(product:JumpsellerProductRequest): Promise<JumpsellerProductResponse> { 
       const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
       const login = process.env.JUMPSELLER_LOGIN
@@ -45,6 +49,7 @@ export class JumpsellerService {
       }
     }
 
+    //actualizar producto en jumpseller
     async updateJumpsellerProduct(productId: number, product:JumpsellerUpdateProductRequest): Promise<JumpsellerUpdateProductResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}.json`;
       const login = process.env.JUMPSELLER_LOGIN
@@ -74,6 +79,7 @@ export class JumpsellerService {
       }
     }
 
+    //crear variantes de producto en jumpseller
     async createJumpsellerVariants(productId: number, variants: JumpsellerCreateVariantRequest[]): Promise<JumpsellerCreateVariantResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/variants.json`;
       const login = process.env.JUMPSELLER_LOGIN
@@ -103,6 +109,7 @@ export class JumpsellerService {
       }
     }
 
+    //crear imagenes de producto en jumpseller
     async insertJumpsellerImages(productId: number, images: JumpsellerCreateImageRequest): Promise<JumpsellerCreateImageResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/images.json`;
       const login = process.env.JUMPSELLER_LOGIN
@@ -132,15 +139,16 @@ export class JumpsellerService {
       }
     }
 
-    async createJumpsellerCustomFields(productId: number, customFields: JumpsellerCreateCustomFieldsRequest): Promise<JumpsellerCreateCustomFieldsResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/fields.json`;
+    //crear campos personalizados en jumpseller
+    async createJumpsellerCustomFields(customFields: createCustomFieldRequest): Promise<CreateCustomFieldResponse> {
+      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/custom_fields.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
         this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(customFields)}`);
-        const {data}= await axios.post<JumpsellerCreateCustomFieldsResponse>(
+        const {data}= await axios.post<CreateCustomFieldResponse>(
           jumpsellerApiUrl,
           { customFields }, 
           { 
@@ -150,7 +158,37 @@ export class JumpsellerService {
             },
           }
         );
-        return data as JumpsellerCreateCustomFieldsResponse;
+        return data as CreateCustomFieldResponse;
+      } catch (error) {
+        this.logger.error(`❌ Error al crear campos personalizados en Jumpseller: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(`Código de estado: ${error.response.status}`);
+          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+        }
+      }
+    }
+
+    //agregar un campo personalizado existente a un producto en jumpseller
+    async addAnExistingCustomFieldToAProduct(productId: number, customFields: AddAnExistingCustomFieldToAProductRequest): Promise<AddAnExistingCustomFieldToAProductResponse> {
+      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/fields.json`;
+      const login = process.env.JUMPSELLER_LOGIN
+      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
+      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+      try {
+        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(customFields)}`);
+        const {data}= await axios.post<AddAnExistingCustomFieldToAProductResponse>(
+          jumpsellerApiUrl,
+          { customFields }, 
+          { 
+            headers: {
+              Authorization: `Basic ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        return data as AddAnExistingCustomFieldToAProductResponse;
       } catch (error) {
         this.logger.error(`❌ Error al crear campos personalizados en Jumpseller: ${error.message}`);
         if (error.response) {

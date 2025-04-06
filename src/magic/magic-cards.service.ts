@@ -12,8 +12,8 @@ import { JumpsellerOptionType, JumpsellerProductRequest } from 'src/jumpseller/i
 import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
 import { JumpsellerCreateImageRequest } from 'src/jumpseller/interfaces/jumpsellerImages/jumpsellerCreateImageRequest.interface';
 import { JumpsellerCreateVariantRequest } from 'src/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
-import { JumpsellerVariantOption } from 'src/jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface'; 
-import { JumpsellerCreateCustomFieldsRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/jumpsellerCreateCustomFieldsRequest.interface';
+import { AddAnExistingCustomFieldToAProductRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductRequest.interface';
+import { createCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/createCustomfieldRequest.interface';
 
 @Injectable()
 export class MagicCardsService {
@@ -42,6 +42,7 @@ export class MagicCardsService {
           const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
           if(response?.product?.id){
             await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
+            
             //TODO actualizar o crear tabla productos con el magic _id
              
           }
@@ -49,7 +50,7 @@ export class MagicCardsService {
         //segun respuesta que entrea jummppser guardar y actualizar producto
       }else{
         // crear funcion de actuzalizar jumppseleer
-        //response = await this.jumpsellerService.updateJumpsellerProducts(idjumpseller,product);
+        //response = await this.jumpsellerService.updateJupsellerProducts(idjumpseller,product);
         //await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
       }
       this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
@@ -86,66 +87,124 @@ export class MagicCardsService {
   }
 
   //mapeo de variantes de la db magic a jumpseller
-  //TODO: crear 4 mapeos diferentes para cada tipo de sku
-  private mappedVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
-    const variants: JumpsellerCreateVariantRequest[] = [];
-
-    if (card.foil) {
-      variants.push({
-        variant: {
-          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-F`,
-          options: [
-            { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
-            { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
-          ],
-        },
-      });
-
-      if (card.lang === "ES") {
+ //mapeo variante EN-F
+  private mappedENFVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+    try {
+      const variants: JumpsellerCreateVariantRequest[] = [];
+      if (!card) {
+        this.logger.error('Error en mappedENFVariantsToJumpseller: objeto card no definido');
+        return [];
+      }
+      
+      if (card.foil) {
         variants.push({
           variant: {
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-F`,
             options: [
-              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
             ],
           },
         });
       }
+      return variants;
+    } catch (error) {
+      this.logger.error(`Error en mappedENFVariantsToJumpseller: ${error.message}`);
+      return [];
     }
-    if (card.nonfoil) {
-      variants.push({
-        variant: {
-          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-NF`,
-          options: [
-            { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
-            { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
-          ],
-        },
-      });
+  }
 
-      if (card.lang === "ES") {
+  //mapeo variante ES-F
+  private mappedESFVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+    try {
+      const variants: JumpsellerCreateVariantRequest[] = [];
+      if (!card) {
+        this.logger.error('Error en mappedESFVariantsToJumpseller: objeto card no definido');
+        return [];
+      }
+      
+      if (card.foil) {
+        if (card.lang === "ES") {
+          variants.push({
+            variant: {
+              sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
+              options: [
+                { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+                { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
+              ],
+            },
+          });
+        }
+      }
+      return variants;
+    } catch (error) {
+      this.logger.error(`Error en mappedESFVariantsToJumpseller: ${error.message}`);
+      return [];
+    }
+  }
+
+  //mapeo variante EN-NF
+  private mappedENFNVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+    try {
+      const variants: JumpsellerCreateVariantRequest[] = [];
+      if (!card) {
+        this.logger.error('Error en mappedENFNVariantsToJumpseller: objeto card no definido');
+        return [];
+      }
+      
+      if (card.nonfoil) {
         variants.push({
           variant: {
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-NF`,
             options: [
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
-              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
             ],
           },
         });
       }
+      return variants;
+    } catch (error) {
+      this.logger.error(`Error en mappedENFNVariantsToJumpseller: ${error.message}`);
+      return [];
     }
+  }
 
-    return variants;
+  //mapeo variante ES-NF
+  private mappedESFNVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+    try {
+      const variants: JumpsellerCreateVariantRequest[] = [];
+      if (!card) {
+        this.logger.error('Error en mappedESFNVariantsToJumpseller: objeto card no definido');
+        return [];
+      }
+      
+      if (card.nonfoil) {
+        if (card.lang === "ES") {
+          variants.push({
+            variant: {
+              sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
+              options: [
+                { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
+                { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+              ],
+            },
+          });
+        }
+      }
+      return variants;
+    } catch (error) {
+      this.logger.error(`Error en mappedESFNVariantsToJumpseller: ${error.message}`);
+      return [];
+    }
   }
 
   
 
   //mapeo de custom fields de la db magic a jumpseller
   //cmc, type_line, color, color_identity, keywords, legalities (solo legales),  game_changer, rarity, artist
-  private mappedCustomFieldsToJumpseller(card: MappedMagicCard): JumpsellerCreateCustomFieldsRequest {
-    let customfieldsRequest: JumpsellerCreateCustomFieldsRequest = {
+  private mappedAddCustomFieldsToJumpseller(card: MappedMagicCard): AddAnExistingCustomFieldToAProductRequest {
+    let customfieldsRequest: AddAnExistingCustomFieldToAProductRequest = {
       field: {
         id: 0,
         value: "",
@@ -154,8 +213,17 @@ export class MagicCardsService {
      };
      return customfieldsRequest;
    }
-
-
+  private mappedCreateCustomFieldsToJumpseller(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "CMC",
+        type: "selection",
+        values: [card.cmc.toString()],
+        product_visibility: true,
+      },
+    };
+     return createCustomfieldsRequest;
+   }
 
   // mapear data de Scryfall para guadar en tabla  magic
   private mapCardData(card: Partial<ScryfallCard>): MappedMagicCard {

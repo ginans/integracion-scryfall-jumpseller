@@ -19,11 +19,17 @@ export interface JumpsellerCreateVariantResponse {
   };
 }
   
-interface JumpsellerVariantOption {
+export interface JumpsellerVariantOption {
   name: string;
-  option_type: string;
+  option_type: JumpsellerOptionType;
   value: string;
-  custom: string;
-  product_option_position: number;
-  product_value_position: number;
+  custom?: string;
+  product_option_position?: number;
+  product_value_position?: number;
+}
+
+export enum JumpsellerOptionType {
+  OPTION = "option", 
+  COLOR = "color",
+  DROPDOWN = "dropdown"
 }

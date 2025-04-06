@@ -13,13 +13,9 @@ import { JumpsellerUpdateProductResponse } from './interfaces/jumpsellerProducts
 
 @Injectable()
 export class JumpsellerService {  
-  
-
   private readonly logger = new Logger(JumpsellerService.name);
    constructor(
     ) { }
-
-
     async createJumpsellerProducts(product:JumpsellerProductRequest): Promise<JumpsellerProductResponse> { 
       const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
       const login = process.env.JUMPSELLER_LOGIN
@@ -96,7 +92,7 @@ export class JumpsellerService {
             },
           }
         );
-        return data;
+        return data as JumpsellerCreateVariantResponse;
       } catch (error) {
         this.logger.error(`❌ Error al crear variantes en Jumpseller: ${error.message}`);
         if (error.response) {

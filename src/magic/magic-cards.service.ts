@@ -8,8 +8,12 @@ import { IsetMagic, MappedMagicCard } from '../jumpseller/interfaces/mapped-magi
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IenumURLLang } from './scryfall/enums/lang.enum';
-import { JumpsellerProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
+import { JumpsellerOptionType, JumpsellerProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
 import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
+import { JumpsellerCreateImageRequest } from 'src/jumpseller/interfaces/jumpsellerImages/jumpsellerCreateImageRequest.interface';
+import { JumpsellerCreateVariantRequest } from 'src/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerVariantOption } from 'src/jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface'; 
+import { JumpsellerCreateCustomFieldsRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/jumpsellerCreateCustomFieldsRequest.interface';
 
 @Injectable()
 export class MagicCardsService {
@@ -34,7 +38,7 @@ export class MagicCardsService {
       if(!req?.idJumpSeller){
         //solo crear en jumpseller cuando es ingles
         if(lg == IenumURLLang.EN){
-          const requestJumpseller = this.scryfallToJumpseller(req);
+          const requestJumpseller = this.mappedDBProductToJumpseller(req);
           const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
           if(response?.product?.id){
             await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
@@ -53,10 +57,8 @@ export class MagicCardsService {
     }
 
   }
-
-
-
-  private scryfallToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
+    //mapeo de cartas completas de la db magic a jumpseller
+  private mappedDBProductToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
     const isfoil = (card.foil === true);
     let product = {
       name: card.name || '',
@@ -64,13 +66,96 @@ export class MagicCardsService {
       price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
       sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
       stock: 0,
+      weight: 2, //Peso en gramos
+      //width en in: 2,5, height en in: 3,5
+      width: 6.35 , //Ancho del producto en cm
+      height: 8.89, //Altura del producto en cm
       categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [], 
     };
-
-    console.log(`sku: ${product.sku}`);
-    console.log(`collector number: ${card.collectorNumber}`);
     return product;
   }
+
+  //mapeo de imagenes de la db magic a jumpseller
+  private mappedImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
+   let imageRequest: JumpsellerCreateImageRequest = {
+      image: {
+        url: card.imageUris.large || ""
+      }
+    };
+    return imageRequest;
+  }
+
+  //mapeo de variantes de la db magic a jumpseller
+  //TODO: crear 4 mapeos diferentes para cada tipo de sku
+  private mappedVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+    const variants: JumpsellerCreateVariantRequest[] = [];
+
+    if (card.foil) {
+      variants.push({
+        variant: {
+          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-F`,
+          options: [
+            { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
+            { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
+          ],
+        },
+      });
+
+      if (card.lang === "ES") {
+        variants.push({
+          variant: {
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
+            options: [
+              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+              { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
+            ],
+          },
+        });
+      }
+    }
+    if (card.nonfoil) {
+      variants.push({
+        variant: {
+          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-NF`,
+          options: [
+            { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
+            { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
+          ],
+        },
+      });
+
+      if (card.lang === "ES") {
+        variants.push({
+          variant: {
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
+            options: [
+              { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
+              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+            ],
+          },
+        });
+      }
+    }
+
+    return variants;
+  }
+
+  
+
+  //mapeo de custom fields de la db magic a jumpseller
+  //cmc, type_line, color, color_identity, keywords, legalities (solo legales),  game_changer, rarity, artist
+  private mappedCustomFieldsToJumpseller(card: MappedMagicCard): JumpsellerCreateCustomFieldsRequest {
+    let customfieldsRequest: JumpsellerCreateCustomFieldsRequest = {
+      field: {
+        id: 0,
+        value: "",
+        variants: [], //Array de identificadores únicos del Producto Variante
+       }
+     };
+     return customfieldsRequest;
+   }
+
+
 
   // mapear data de Scryfall para guadar en tabla  magic
   private mapCardData(card: Partial<ScryfallCard>): MappedMagicCard {

@@ -1,6 +1,6 @@
 export interface JumpsellerUpdateProductRequest {
     product: {
-        name: s;
+        name: string;
         price: number;
         description?: string;
         page_title?: string;

@@ -26,6 +26,7 @@ import { ScryfallModule } from './magic/scryfall/scryfall.module';
 import { MagicCardsModule } from './magic/magic-cards.module';
 import { JumpsellerModule } from './jumpseller/jumpseller.module';
 import { ProcessModule } from './process/process.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { ProcessModule } from './process/process.module';
     MagicCardsModule,
     JumpsellerModule,
     ProcessModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [

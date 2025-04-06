@@ -8,7 +8,7 @@ import { IsetMagic, MappedMagicCard } from '../jumpseller/interfaces/mapped-magi
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IenumURLLang } from './scryfall/enums/lang.enum';
-import { JumpsellerProductRequest } from 'src/jumpseller/interfaces/jumpsellerProductRequest.interface';
+import { JumpsellerProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
 import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
 
 @Injectable()

@@ -5,7 +5,7 @@ import { IenumURLLang } from './enums/lang.enum';
 
 @Injectable()
 export class ScryfallService {
-    async getScryfallCards(lang: IenumURLLang, onPageFetched: (cards: ScryfallCardResponse[]) => void): Promise<ScryfallCardResponse[]> {
+    async getScryfallCards(lang: IenumURLLang): Promise<ScryfallCardResponse[]> {
         const url = "https://api.scryfall.com/cards/search";
         let page = 1;
         let allCards: ScryfallCardResponse[] = [];
@@ -30,7 +30,7 @@ export class ScryfallService {
                 const { data } = await axios.get(`${url}?${queryString}`);
 
                  // Llamar al callback para procesar y guardar los datos por página
-                 onPageFetched(data.data);
+                 allCards =data.data;
                  hasMore = false 
 
                 // hasMore = data.has_more; //has_more es un booleano, se vuelve false en la ultima pagina
@@ -39,7 +39,7 @@ export class ScryfallService {
                 // retraso de 75ms
                 await this.delay(75);
             } catch (error) {
-                throw new Error(`Fallo al traer las cartas: ${error.message}`);
+                throw new Error(`Fallo al traer las cartas: ${JSON.stringify(error)}`);
             }
         }
 

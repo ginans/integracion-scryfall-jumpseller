@@ -29,43 +29,12 @@ export interface JumpsellerUpdateProductRequest {
         diameter?: number;
         permalink?: string;
         categories?: JumpsellerCategory[];
-        variants?: JumpsellerVariant[];
     }
 }
 
 export interface JumpsellerCategory {
-    id: number;
-    name: string;
-    parent_id: number;
-    permalink: string;
-}
-
-export interface JumpsellerVariant {
-    id: number;
-    price: number;
-    sku: string;
-    barcode: string;
-    stock: number;
-    stock_unlimited: boolean;
-    stock_threshold: number;
-    stock_notification: boolean;
-    cost_per_item: number;
-    compare_at_price: number;
-    options: JumpsellerOption[];
-    image: JumpsellerImage;
-}
-
-export interface JumpsellerOption {
-    name: string;
-    option_type: string;
-    value: string;
-    custom: string;
-    product_option_position: number;
-    product_value_position: number;
-}
-
-export interface JumpsellerImage {
-    id: number;
-    position: number;
-    url: string;
+    id?: number;
+    name?: string;
+    parent_id?: number;
+    permalink?: string;
 }

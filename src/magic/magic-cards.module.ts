@@ -5,10 +5,12 @@ import { MagicCardsController } from './magic-cards.controller';
 import { MagicCard, magicCardSchema } from './entities/magic-card.entity';
 import { ScryfallModule } from './scryfall/scryfall.module';
 import { JumpsellerModule } from 'src/jumpseller/jumpseller.module';
+import { ProductsModule } from 'src/products/products.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: MagicCard.name, schema: magicCardSchema }]),
+    ProductsModule,
     ScryfallModule,
     JumpsellerModule,
   ],

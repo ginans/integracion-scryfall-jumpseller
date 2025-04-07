@@ -1,24 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
+import { IdataProduct, IsetProduct } from './interface/product.interface';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  create(@Body() product: any) {
-    return this.productsService.createProducts(product);
+  create(@Body() product: IsetProduct) {
+    return this.productsService.createOrUpdateProduct(product);
   }
 
-  @Get()
-  findAll() {
-    return this.productsService.findAll();
-  }
+   @Get()
+    async findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponse<IdataProduct>> {
+      return this.productsService.findAllProducts(query); 
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.productsService.findOne(id);
+  // }
 
   @Patch(':id')
   update(@Param('id') id: string) {

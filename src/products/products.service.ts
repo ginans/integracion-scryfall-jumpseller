@@ -1,32 +1,158 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { JumpsellerProductResponse } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductResponse.interface';
-
+import { Product, ProductDocument } from './entities/product.entity';
+import { IdataProduct, IsetProduct } from './interface/product.interface';
+import { JumpsellerGetAllProductResponse } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { SortOrder } from 'src/common/enums/query.enum';
 
 @Injectable()
 export class ProductsService {
-    async createProducts(product: JumpsellerProductResponse ) {
-        // Mapeo de los datos por pagina
-      // const mappedCardData: MappedMagicCard[] = product.map(this.mapCardData);
-      // Verificar duplicados por ID y actualizar o insertar
-      // for (const x in mappedCardData) {
-        // const existingCard = await this.model.findOne({ id: mappedCardData[x].id });
-        // if (existingCard) {
-        //   await this.model.updateOne({ id: mappedCardData[x].id }, mappedCardData[x]);
-        // } else {
-        //   await this.model.create(mappedCardData[x]); // Insertar si no existe
-        // }
-      // }
-      // return  mappedCardData;
-    }
-
-    //todo mapear respuesta de jumpseller products y crear interface
-
-  findAll() {
-    return `This action returns all products`;
+  constructor(
+    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
+  ) {
+    this.logger = new Logger(ProductsService.name);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  private readonly logger: Logger;
+
+  //funcion para guardar en base d datos
+  async createOrUpdateProduct(response: IsetProduct) {
+    //recibar si existe elproducto por su id de jumpseller
+    const existingProduct = await this.productModel.findById(response.id);
+  //si existe el producto en la base de datos, se actualiza
+    if (existingProduct) {
+      await this.productModel.findByIdAndUpdate(response.id, response, { new: true });
+      this.logger.log("Producto actualizado en bd:", response);
+    } else {
+      //si no existe el producto en la base de datos, se crea
+      await this.productModel.create(response);
+      this.logger.log("Se creo product en base de datos:", response);
+    }
+
+    return response;
+  }
+
+  async updateProductById(id: string, updateData: JumpsellerGetAllProductResponse): Promise<IdataProduct> {
+    try {
+      const updatedProduct = await this.productModel.findOneAndUpdate(
+        { id },
+        updateData,
+        { new: true }
+      );
+      
+      if (!updatedProduct) {
+        this.logger.warn(`Product with ID ${id} not found for update`);
+        return null;
+      }
+      
+      this.logger.log(`Product with ID ${id} updated successfully`);
+      return updatedProduct as unknown as IdataProduct;
+    } catch (error) {
+      this.logger.error(`Error updating product with ID ${id}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async findAllProducts(query: PaginationQueryDto) {
+      const { limit, page, sortBy, sortOrder, to, from, search, status, lang } = query;
+  
+      const sort: { [key: string]: 1 | -1 } = {
+        [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
+      };
+  
+      const skip = (page - 1) * limit;
+      const filters: { $or?: any[], $and?: any[] } = {};
+  
+  
+      if (search && search.length > 0) {
+        const searchValue = search.trim();
+        filters.$or = [];
+        if (!isNaN(Number(searchValue))) {
+          filters.$or.push({ receptionNbr: Number(searchValue) });
+        }
+        filters.$or.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$sku" },
+              regex: searchValue,
+              options: "i"
+            }
+          }
+        });
+        filters.$or.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$printedName" },
+              regex: searchValue,
+              options: "i"
+            }
+          }
+        });
+        filters.$or.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$status" },
+              regex: searchValue,
+              options: "i"
+            }
+          }
+        });
+        filters.$or.push({
+          products: {
+            $elemMatch: {
+              sku: { $regex: searchValue, $options: "i" }
+            }
+          }
+        });
+      }
+  
+      if (from && to) {
+        filters.$and = [
+          {
+            createdAt: { //preguntar
+              $gte: new Date(`${from}T00:00:00.000Z`),
+              $lte: new Date(`${to}T23:59:59.999Z`)
+            }
+          },
+        ];
+      }
+  
+      if (status) {
+        const stateFilter = { status: { $regex: `^${status}$`, $options: "i" } };
+        filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
+      }
+  
+      if (lang) {
+        const langFilter = { lang: { $regex: `^${lang}$`, $options: "i" } };
+        filters.$and = filters.$and ? [...filters.$and, langFilter] : [langFilter];
+      }
+  
+      try {
+        const [productCards, total] = await Promise.all([
+          this.productModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+          this.productModel.countDocuments(filters).exec()
+        ]);
+        return {
+          items: productCards.map(user => user.toObject()),
+          meta: {
+            totalItems: total,
+            itemsPerPage: productCards.length,
+            totalPages: Math.ceil(total / limit),
+            currentPage: page,
+            hasNextPage: total > (page * limit),
+            hasPreviousPage: page > 1,
+          }
+        }
+      } catch (error) {
+        throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
+      }
+    }
+
+  async findById(id: number):Promise<IdataProduct[]> {
+    return await this.productModel.find({id}) as unknown as IdataProduct[];
   }
 
   update(id: string) {

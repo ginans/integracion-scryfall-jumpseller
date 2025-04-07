@@ -12,6 +12,7 @@ import { CreateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/
 import { createCustomFieldRequest } from './interfaces/jumpselllerCustomFields/createCustomfieldRequest.interface';
 import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductRequest.interface';
 import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductResponse.interface';
+import { JumpsellerGetAllProductResponse } from './interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 
 @Injectable()
 export class JumpsellerService {  
@@ -31,6 +32,32 @@ export class JumpsellerService {
         const {data}= await axios.post(
           jumpsellerApiUrl,
           { product }, 
+          { 
+            headers: {
+              Authorization: `Basic ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        return data as JumpsellerProductResponse;
+      } catch (error) {
+        this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(`Código de estado: ${error.response.status}`);
+          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+        }
+      }
+    }
+    async getAllJumpsellerProducts() : Promise<JumpsellerGetAllProductResponse> { 
+      const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
+      const login = process.env.JUMPSELLER_LOGIN
+      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
+      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+      try {
+        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        const {data}= await axios.post(
+          jumpsellerApiUrl,
           { 
             headers: {
               Authorization: `Basic ${authToken}`,

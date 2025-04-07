@@ -14,6 +14,9 @@ import { JumpsellerCreateImageRequest } from 'src/jumpseller/interfaces/jumpsell
 import { JumpsellerCreateVariantRequest } from 'src/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductRequest.interface';
 import { createCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/createCustomfieldRequest.interface';
+import { ProductsService } from 'src/products/products.service';
+import { Product, ProductDocument } from '../products/entities/product.entity';
+import { JumpsellerUpdateProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
 
 @Injectable()
 export class MagicCardsService {
@@ -22,8 +25,10 @@ export class MagicCardsService {
   constructor(
     private readonly scryfallService: ScryfallService,
     private readonly jumpsellerService: JumpsellerService,
+    private readonly productsService: ProductsService,
     @InjectModel(MagicCard.name)
-    private readonly model: Model<MagicCardEntity>
+    private readonly model: Model<MagicCardEntity>,
+    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>
   ) { }
 
 
@@ -41,17 +46,36 @@ export class MagicCardsService {
           const requestJumpseller = this.mappedDBProductToJumpseller(req);
           const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
           if(response?.product?.id){
-            await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
-            
-            //TODO actualizar o crear tabla productos con el magic _id
-             
+            // actualizar o crear tabla productos con el magic _id
+            await this.productsService.createOrUpdateProduct({oracleId:req.oracleId, ...response.product});
           }
         }
         //segun respuesta que entrea jummppser guardar y actualizar producto
       }else{
-        // crear funcion de actuzalizar jumppseleer
-        //response = await this.jumpsellerService.updateJupsellerProducts(idjumpseller,product);
-        //await this.updateByStatus(req.id,{idJumpSeller:response.product.id});
+        let re=null
+        // const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
+        // await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
+        if(lg == IenumURLLang.EN){
+        const mappedENFVariants = this.mappedENFVariantsToJumpseller(req);
+        await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFVariants);
+        const mappedENFNVariants = this.mappedENFNVariantsToJumpseller(req);
+        await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFNVariants); 
+        const mappedImage = this.mappedImageToJumpseller(req);
+        re =await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage); 
+
+        }
+        if(lg == IenumURLLang.ES){
+          const mappedESFVariants = this.mappedESFVariantsToJumpseller(req);
+          await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFVariants);
+          const mappedESFNVariants = this.mappedESFNVariantsToJumpseller(req);
+          re = await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);  
+          const mappedImage = this.mappedImageToJumpseller(req);
+          await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
+        }
+        const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
+        await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
+        // const jumpsellerProducts = await this.jumpsellerService.getAllJumpsellerProducts();
+        // await this.productsService.updateProductById(req.oracleId, { jumpsellerProducts });
       }
       this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -71,9 +95,27 @@ export class MagicCardsService {
       //width en in: 2,5, height en in: 3,5
       width: 6.35 , //Ancho del producto en cm
       height: 8.89, //Altura del producto en cm
+      brand: "Magic: the Gathering",
       categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [], 
     };
     return product;
+  }
+  private mappedDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
+    const isfoil = (card.foil === true);
+    let productDetails = {
+      name: card.name || '',
+      description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
+      price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
+      stock: 0,
+      weight: 2, //Peso en gramos
+      //width en in: 2,5, height en in: 3,5
+      width: 6.35 , //Ancho del producto en cm
+      height: 8.89, //Altura del producto en cm
+      brand: "Magic: the Gathering",
+      categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [], 
+    };
+    return { product: productDetails };
   }
 
   //mapeo de imagenes de la db magic a jumpseller

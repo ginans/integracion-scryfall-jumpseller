@@ -53,29 +53,39 @@ export class MagicCardsService {
         //segun respuesta que entrea jummppser guardar y actualizar producto
       }else{
         let re=null
-        // const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
-        // await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
+        const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
+        await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
+        this.logger.log(`✅ Producto actualizado en Jumpseller con ID: ${req.idJumpSeller}`);
         if(lg == IenumURLLang.EN){
+          this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Ingles`);
         const mappedENFVariants = this.mappedENFVariantsToJumpseller(req);
         await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFVariants);
         const mappedENFNVariants = this.mappedENFNVariantsToJumpseller(req);
         await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFNVariants); 
+        this.logger.log(`✅ Se comienza a crear imagenes en español Jumpseller`);
         const mappedImage = this.mappedImageToJumpseller(req);
         re =await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage); 
 
         }
+
         if(lg == IenumURLLang.ES){
+          this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Español`);
           const mappedESFVariants = this.mappedESFVariantsToJumpseller(req);
           await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFVariants);
           const mappedESFNVariants = this.mappedESFNVariantsToJumpseller(req);
-          re = await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);  
+          re = await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);
+          this.logger.log(`✅ Se comienza a crear imagenes en español Jumpseller`);
           const mappedImage = this.mappedImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
         }
-        const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
-        await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
-        // const jumpsellerProducts = await this.jumpsellerService.getAllJumpsellerProducts();
-        // await this.productsService.updateProductById(req.oracleId, { jumpsellerProducts });
+        this.logger.log(`✅ Se comienza a guardar la respuesta completa de Jumpseller en products`);
+        //retornar producto completo
+        const fullResponse = await this.jumpsellerService.getAllJumpsellerProducts();
+        //guardar respuesta en la base de datos
+        const product = fullResponse.product
+        await this.productsService.createOrUpdateProduct({oracleId:req.oracleId, ...product});
+
+
       }
       this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
       await new Promise(resolve => setTimeout(resolve, 300));

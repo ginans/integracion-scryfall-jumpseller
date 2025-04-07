@@ -33,7 +33,7 @@ export class ProcessService {
           //procesar cartas magic
           if(row.name=="magic"){
            await this.magicCardsService.procesarCardMagic(IenumURLLang.EN);
-           await this.magicCardsService.procesarCardMagic(IenumURLLang.ES);
+          //  await this.magicCardsService.procesarCardMagic(IenumURLLang.ES);
           }
         }
     }

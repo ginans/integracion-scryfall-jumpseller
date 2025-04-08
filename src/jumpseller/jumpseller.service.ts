@@ -10,8 +10,8 @@ import { JumpsellerUpdateProductRequest } from './interfaces/jumpsellerProducts/
 import { JumpsellerUpdateProductResponse } from './interfaces/jumpsellerProducts/jumpsellerUpdateProductResponse.interface';
 import { CreateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
 import { createCustomFieldRequest } from './interfaces/jumpselllerCustomFields/createCustomfieldRequest.interface';
-import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductRequest.interface';
-import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/AddAnExistingCustomFieldToAProductResponse.interface';
+import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
+import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductResponse.interface';
 import { JumpsellerGetAllProductResponse } from './interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 
 @Injectable()
@@ -49,8 +49,8 @@ export class JumpsellerService {
         }
       }
     }
-    async getAllJumpsellerProducts() : Promise<JumpsellerGetAllProductResponse> { 
-      const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
+    async getAllJumpsellerProducts(id:number) : Promise<JumpsellerGetAllProductResponse> { 
+      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${id}.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
@@ -107,17 +107,17 @@ export class JumpsellerService {
     }
 
     //crear variantes de producto en jumpseller
-    async createJumpsellerVariants(productId: number, variants: JumpsellerCreateVariantRequest): Promise<JumpsellerCreateVariantResponse> {
+    async createJumpsellerVariants(productId: number, variant: JumpsellerCreateVariantRequest): Promise<JumpsellerCreateVariantResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/variants.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(variants)}`);
+        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(variant)}`);
         const {data}= await axios.post<JumpsellerCreateVariantResponse>(
           jumpsellerApiUrl,
-          { variants }, 
+          variant, 
           { 
             headers: {
               Authorization: `Basic ${authToken}`,
@@ -147,7 +147,7 @@ export class JumpsellerService {
         this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(images)}`);
         const {data}= await axios.post<JumpsellerCreateImageResponse>(
           jumpsellerApiUrl,
-          { images }, 
+           images, 
           { 
             headers: {
               Authorization: `Basic ${authToken}`,

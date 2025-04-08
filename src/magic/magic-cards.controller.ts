@@ -13,6 +13,7 @@ export class MagicCardsController {
   @Post("create-magic-jumpseller")
   async createJumpsellerProduct(): Promise<string> {
     await this.magicCardsService.procesarCardMagic(IenumURLLang.EN);
+    await this.magicCardsService.procesarCardMagic(IenumURLLang.ES);
     return "ok"
   }
   

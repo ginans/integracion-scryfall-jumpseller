@@ -32,55 +32,96 @@ export class MagicCardsService {
   ) { }
 
 
-  async procesarCardMagic(lg:IenumURLLang):Promise<void>{
-    //obtener lista de getScryfallCards
+  async procesarCardMagic(lg: IenumURLLang): Promise<void> {
+    // Obtener lista de getScryfallCards
     const cards = await this.scryfallService.getScryfallCards(lg);
-    //guadar o actualizar
-    const requestsCards  = await this.fetchAndCreateCards(cards);
-    // jumpeller
-    for(let req of requestsCards){
-      //se de creaar un jumpseller
-      if(!req?.idJumpSeller){
-        //solo crear en jumpseller cuando es ingles
-        if(lg == IenumURLLang.EN){
+    // Guardar o actualizar
+    const requestsCards = await this.fetchAndCreateCards(cards);
+    
+    // Procesar cada carta
+    for (let req of requestsCards) {
+      // Para cartas en español, buscar su contraparte en inglés para obtener el idJumpSeller
+      if (lg === IenumURLLang.ES && !req?.idJumpSeller) {
+        // Buscar el producto existente por oracleId
+        const existingProduct = await this.productModel.findOne({ oracleId: req.oracleId });
+        
+        if (existingProduct?.id) {
+          req.idJumpSeller = existingProduct.id;
+          // Actualizar el ID en la entidad MagicCard
+          await this.updateByStatus(req.id, { idJumpSeller: req.idJumpSeller });
+          this.logger.log(`✅ Producto en español vinculado al ID de Jumpseller: ${req.idJumpSeller}`);
+        } else {
+          this.logger.log(`⚠️ No se encontró un producto en inglés para la carta en español: ${req.name}`);
+          continue; // Saltar al siguiente producto
+        }
+      }
+      
+      // Si no tiene ID de Jumpseller y es inglés, crear nuevo producto
+      if (!req?.idJumpSeller) {
+        // Solo crear en jumpseller cuando es inglés
+        if (lg === IenumURLLang.EN) {
           const requestJumpseller = this.mappedDBProductToJumpseller(req);
           const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
-          if(response?.product?.id){
-            // actualizar o crear tabla productos con el magic _id
-            await this.productsService.createOrUpdateProduct({oracleId:req.oracleId, ...response.product});
+          
+          if (response?.product?.id) {
+            await this.productsService.createOrUpdateProduct({oracleId: req.oracleId, ...response.product});
+            req.idJumpSeller = response.product.id;
+            await this.updateByStatus(req.id, { idJumpSeller: req.idJumpSeller });
           }
         }
-        //segun respuesta que entrea jummppser guardar y actualizar producto
-      }else{
-        let re=null
-        // const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
-        // await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
-        if(lg == IenumURLLang.EN){
-        const mappedENFVariants = this.mappedENFVariantsToJumpseller(req);
-        await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFVariants);
-        const mappedENFNVariants = this.mappedENFNVariantsToJumpseller(req);
-        await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFNVariants); 
-        const mappedImage = this.mappedImageToJumpseller(req);
-        re =await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage); 
-
+      } else {
+        let re = null;
+        
+        // Actualizar el producto existente (solo si es inglés)
+        if (lg === IenumURLLang.EN) {
+          const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
+          await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
+          this.logger.log(`✅ Producto actualizado en Jumpseller con ID: ${req.idJumpSeller}`);
         }
-        if(lg == IenumURLLang.ES){
+        
+        // Crear variantes según el idioma
+        if (lg === IenumURLLang.EN) {
+          this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Inglés`);
+          const mappedENFVariants = this.mappedENFVariantsToJumpseller(req);
+          await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFVariants);
+          this.logger.log(`mappedENFVariantsToJumpseller: ${JSON.stringify(mappedENFVariants)}`);
+          
+          const mappedENFNVariants = this.mappedENFNVariantsToJumpseller(req);
+          await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFNVariants);
+          this.logger.log(`mappedENFNVariantsToJumpseller: ${JSON.stringify(mappedENFNVariants)}`);
+          
+          this.logger.log(`✅ Se comienza a crear imágenes en Inglés en Jumpseller`);
+          const mappedImage = this.mappedImageToJumpseller(req);
+          re = await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
+          this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
+
+        } else if (lg === IenumURLLang.ES) {
+          this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Español`);
           const mappedESFVariants = this.mappedESFVariantsToJumpseller(req);
           await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFVariants);
+          this.logger.log(`mappedESFVariantsToJumpseller: ${JSON.stringify(mappedESFVariants)}`);
+          
           const mappedESFNVariants = this.mappedESFNVariantsToJumpseller(req);
-          re = await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);  
+          re = await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);
+          this.logger.log(`mappedESFNVariantsToJumpseller: ${JSON.stringify(mappedESFNVariants)}`);
+          
+          this.logger.log(`✅ Se comienza a crear imágenes en Español en Jumpseller`);
           const mappedImage = this.mappedImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
+          this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
         }
-        const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
-        await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
-        // const jumpsellerProducts = await this.jumpsellerService.getAllJumpsellerProducts();
-        // await this.productsService.updateProductById(req.oracleId, { jumpsellerProducts });
+        
+        // Guardar la respuesta completa de Jumpseller en products
+        this.logger.log(`✅ Se comienza a guardar la respuesta completa de Jumpseller en products`);
+        const fullResponse = await this.jumpsellerService.getAllJumpsellerProducts();
+        const product = fullResponse.product;
+        await this.productsService.createOrUpdateProduct({oracleId: req.oracleId, ...product});
       }
+      
       this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
+      await this.updateByStatus(req.id, { status: 'completed' });
       await new Promise(resolve => setTimeout(resolve, 300));
     }
-
   }
     //mapeo de cartas completas de la db magic a jumpseller
   private mappedDBProductToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
@@ -122,24 +163,24 @@ export class MagicCardsService {
   private mappedImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
    let imageRequest: JumpsellerCreateImageRequest = {
       image: {
-        url: card.imageUris.large || ""
+        url: card.imageUris.large || "",
+        position: 0,
       }
     };
     return imageRequest;
   }
 
   //mapeo de variantes de la db magic a jumpseller
- //mapeo variante EN-F
-  private mappedENFVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+  //mapeo variante EN-F
+  private mappedENFVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest {
     try {
-      const variants: JumpsellerCreateVariantRequest[] = [];
       if (!card) {
         this.logger.error('Error en mappedENFVariantsToJumpseller: objeto card no definido');
-        return [];
+        return { variant: { sku: '', options: [] } };
       }
       
       if (card.foil) {
-        variants.push({
+        return {
           variant: {
             sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-F`,
             options: [
@@ -147,55 +188,53 @@ export class MagicCardsService {
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
             ],
           },
-        });
+        };
       }
-      return variants;
+      
+      return { variant: { sku: '', options: [] } };
     } catch (error) {
       this.logger.error(`Error en mappedENFVariantsToJumpseller: ${error.message}`);
-      return [];
+      return { variant: { sku: '', options: [] } };
     }
   }
 
   //mapeo variante ES-F
-  private mappedESFVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+  private mappedESFVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest {
     try {
-      const variants: JumpsellerCreateVariantRequest[] = [];
       if (!card) {
         this.logger.error('Error en mappedESFVariantsToJumpseller: objeto card no definido');
-        return [];
+        return { variant: { sku: '', options: [] } };
       }
       
-      if (card.foil) {
-        if (card.lang === "ES") {
-          variants.push({
-            variant: {
-              sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
-              options: [
-                { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
-                { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
-              ],
-            },
-          });
-        }
+      if (card.foil && card.lang === "ES") {
+        return {
+          variant: {
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
+            options: [
+              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+              { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
+            ],
+          },
+        };
       }
-      return variants;
+      
+      return { variant: { sku: '', options: [] } };
     } catch (error) {
       this.logger.error(`Error en mappedESFVariantsToJumpseller: ${error.message}`);
-      return [];
+      return { variant: { sku: '', options: [] } };
     }
   }
 
   //mapeo variante EN-NF
-  private mappedENFNVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+  private mappedENFNVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest {
     try {
-      const variants: JumpsellerCreateVariantRequest[] = [];
       if (!card) {
         this.logger.error('Error en mappedENFNVariantsToJumpseller: objeto card no definido');
-        return [];
+        return { variant: { sku: '', options: [] } };
       }
       
       if (card.nonfoil) {
-        variants.push({
+        return {
           variant: {
             sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-NF`,
             options: [
@@ -203,41 +242,40 @@ export class MagicCardsService {
               { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
             ],
           },
-        });
+        };
       }
-      return variants;
+      
+      return { variant: { sku: '', options: [] } };
     } catch (error) {
       this.logger.error(`Error en mappedENFNVariantsToJumpseller: ${error.message}`);
-      return [];
+      return { variant: { sku: '', options: [] } };
     }
   }
 
   //mapeo variante ES-NF
-  private mappedESFNVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest[] {
+  private mappedESFNVariantsToJumpseller(card: MappedMagicCard): JumpsellerCreateVariantRequest {
     try {
-      const variants: JumpsellerCreateVariantRequest[] = [];
       if (!card) {
         this.logger.error('Error en mappedESFNVariantsToJumpseller: objeto card no definido');
-        return [];
+        return { variant: { sku: '', options: [] } };
       }
       
-      if (card.nonfoil) {
-        if (card.lang === "ES") {
-          variants.push({
-            variant: {
-              sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
-              options: [
-                { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
-                { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
-              ],
-            },
-          });
-        }
+      if (card.nonfoil && card.lang === "ES") {
+        return {
+          variant: {
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
+            options: [
+              { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
+              { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
+            ],
+          },
+        };
       }
-      return variants;
+      
+      return { variant: { sku: '', options: [] } };
     } catch (error) {
       this.logger.error(`Error en mappedESFNVariantsToJumpseller: ${error.message}`);
-      return [];
+      return { variant: { sku: '', options: [] } };
     }
   }
 

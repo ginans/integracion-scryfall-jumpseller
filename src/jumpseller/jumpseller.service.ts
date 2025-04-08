@@ -56,7 +56,7 @@ export class JumpsellerService {
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        const {data}= await axios.post(
+        const {data}= await axios.get(
           jumpsellerApiUrl,
           { 
             headers: {
@@ -107,7 +107,7 @@ export class JumpsellerService {
     }
 
     //crear variantes de producto en jumpseller
-    async createJumpsellerVariants(productId: number, variants: JumpsellerCreateVariantRequest[]): Promise<JumpsellerCreateVariantResponse> {
+    async createJumpsellerVariants(productId: number, variants: JumpsellerCreateVariantRequest): Promise<JumpsellerCreateVariantResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/variants.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN

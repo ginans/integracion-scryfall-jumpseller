@@ -20,19 +20,36 @@ export class ProductsService {
 
   //funcion para guardar en base d datos
   async createOrUpdateProduct(response: IsetProduct) {
-    //recibar si existe elproducto por su id de jumpseller
-    const existingProduct = await this.productModel.findById(response.id);
-  //si existe el producto en la base de datos, se actualiza
-    if (existingProduct) {
-      await this.productModel.findByIdAndUpdate(response.id, response, { new: true });
-      this.logger.log("Producto actualizado en bd:", response);
-    } else {
-      //si no existe el producto en la base de datos, se crea
-      await this.productModel.create(response);
-      this.logger.log("Se creo product en base de datos:", response);
-    }
+    try {
+      // Buscar producto por id o por oracleId
+      const existingProduct = await this.productModel.findOne({
+        $or: [
+          { id: response.id },
+          { oracleId: response.oracleId }
+        ]
+      });
 
-    return response;
+      // Si existe el producto, se actualiza
+      if (existingProduct) {
+        const updatedProduct = await this.productModel.findByIdAndUpdate(
+          existingProduct._id,
+          response,
+          { new: true }
+        );
+        this.logger.log(`Producto actualizado en bd, ID: ${existingProduct._id}`);
+        return updatedProduct;
+      } else {
+        // Si no existe, se crea
+        const newProduct = await this.productModel.create(response);
+        this.logger.log(`Se creó producto en base de datos, ID: ${newProduct._id}`);
+        return newProduct;
+      }
+    } catch (error) {
+      this.logger.error(`Error en createOrUpdateProduct: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error al crear/actualizar producto: ${error.message}`
+      );
+    }
   }
 
   async updateProductById(id: string, updateData: JumpsellerGetAllProductResponse): Promise<IdataProduct> {

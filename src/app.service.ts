@@ -14,9 +14,7 @@ export class AppService {
   //ejecutar tarea cada 5 minutos
   @Cron(CronExpression.EVERY_WEEK)
   async syncRefreshTokenApp() {
-    this.logger.log("ejecutar tarea");
-    await this.processService.initMAGIN()
-
+    this.logger.log(`Ejecutar colas cartas magic EVERY_WEEK`);
+    await this.processService.initCardMagic()
   }
-
 }

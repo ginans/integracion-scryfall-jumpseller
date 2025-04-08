@@ -1,4 +1,12 @@
 //toda la respuesta de scryfall
+export interface IresponseSryfall {
+    "object": string,
+    "total_cards": number,
+    "has_more": boolean,
+    data: ScryfallCardResponse[]
+}
+
+
 export interface ScryfallCardResponse {
     object?: string;
     id?: string;
@@ -59,7 +67,7 @@ export interface ScryfallCardResponse {
     games?: string[];
     reserved?: boolean;
     game_changer?: boolean;
-    foil?: boolean; 
+    foil?: boolean;
     nonfoil?: boolean;
     finishes?: string[];
     oversized?: boolean;
@@ -134,7 +142,7 @@ export interface ScryfallCard {
     colors?: string[];
     color_identity?: string[];
     keywords?: string[];
-    foil?: boolean; 
+    foil?: boolean;
     nonfoil?: boolean;
     finishes?: string[];
     card_faces?: CardFace[];
@@ -185,17 +193,17 @@ interface CardFace {
     oracle_text?: string;
     printed_text?: string;
     colors?: string[];
-    power?: string; 
-    toughness?: string; 
+    power?: string;
+    toughness?: string;
     artist?: string;
     artist_id?: string;
     illustration_id?: string;
     image_uris?: {
-      small?: string;
-      normal?: string;
-      large?: string;
-      png?: string;
-      art_crop?: string;
-      border_crop?: string;
+        small?: string;
+        normal?: string;
+        large?: string;
+        png?: string;
+        art_crop?: string;
+        border_crop?: string;
     };
 }

@@ -1,6 +1,6 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Product, ProductDocument } from './entities/product.entity';
 import { IdataProduct, IsetProduct } from './interface/product.interface';
 import { JumpsellerGetAllProductResponse } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
@@ -175,9 +175,14 @@ export class ProductsService {
     }
 
 
-  async findById(id: number):Promise<IdataProduct[]> {
-    return await this.productModel.find({id}) as unknown as IdataProduct[];
-  }
+    async findProductById(_id: string): Promise<IdataProduct> {
+       if (!Types.ObjectId.isValid(_id))
+            throw new BadRequestException('Formato de ID inválido');
+          const product = await this.productModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
+          if (!product) throw new NotFoundException('Producto no encontrado');
+          const productResponse= product as unknown as IdataProduct;
+          return productResponse;
+    }
 
   update(id: string) {
     return `This action updates a #${id} product`;

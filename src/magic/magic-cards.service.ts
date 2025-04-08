@@ -481,6 +481,13 @@ export class MagicCardsService {
       throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
     }
   }
+  async findAllCardsWithoutFilters(): Promise<MagicCard[]> { 
+    const cardsMagic = await this.model.find({}).exec();  
+    const cardsMagicResponse= cardsMagic as unknown as MagicCard[];
+    return cardsMagicResponse;
+  }
+
+
   //buscar paginar magic card por ID
   async findOneCard(_id: string): Promise<MagicCard | null> {
     if (!Types.ObjectId.isValid(_id))

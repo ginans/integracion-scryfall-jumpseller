@@ -167,6 +167,14 @@ export class ProductsService {
       }
     }
 
+
+    async findAllProductsWithoutFilters(): Promise<IdataProduct[]> {
+    const products = await this.productModel.find({}).exec();  
+        const productResponse= products as unknown as IdataProduct[];
+        return productResponse;
+    }
+
+
   async findById(id: number):Promise<IdataProduct[]> {
     return await this.productModel.find({id}) as unknown as IdataProduct[];
   }

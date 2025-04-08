@@ -18,6 +18,11 @@ export class ProductsController {
       return this.productsService.findAllProducts(query); 
     }
 
+    @Get('findAllProductsWithoutFilters')
+      async findAllCardsWithoutFilters(): Promise<IdataProduct[]> {
+        return this.productsService.findAllProductsWithoutFilters();
+      }
+
   // @Get(':id')
   // findOne(@Param('id') id: string) {
   //   return this.productsService.findOne(id);

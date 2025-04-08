@@ -15,6 +15,11 @@ export class MagicCardsController {
     return this.magicCardsService.findAllCards(query); 
   }
   
+  @Get('findAllCardsWithoutFilters')
+  async findAllCardsWithoutFilters(): Promise<MagicCard[]> {
+    return this.magicCardsService.findAllCardsWithoutFilters();
+  }
+
   @Get('by-id/:id')
   async findOne(@Param('id') _id: string): Promise<MagicCard | null> {
     return this.magicCardsService.findOneCard(_id);

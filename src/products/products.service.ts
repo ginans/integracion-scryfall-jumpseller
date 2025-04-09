@@ -6,7 +6,7 @@ import { IdataProduct, IsetProduct } from './interface/product.interface';
 import { JumpsellerGetAllProductResponse } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
-import { JumpsellerWebhookSaleResponse, JumpsellerWebhookSellResponse, Order } from 'src/jumpseller/interfaces/webhook/saleData.interface';
+import { JumpsellerWebhookSaleResponse } from 'src/jumpseller/interfaces/webhook/saleData.interface';
 import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
 
 @Injectable()

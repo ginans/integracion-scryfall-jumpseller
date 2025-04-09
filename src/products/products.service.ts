@@ -198,7 +198,7 @@ export class ProductsService {
 
       if (!existingId || existingId.length === 0) {
         throw new NotFoundException('No se encontró el producto en la base de datos');
-            }else{
+      } else {
         // iterar sobre todos los productos del webhook
         for (const webhookProduct of dataResponse.Body.products) {
           const productToUpdate = existingId.find(product => product.id === webhookProduct.id);
@@ -207,25 +207,48 @@ export class ProductsService {
             // carcular el nuevo stock general (stock en bd - cantidad vendida)
             const newStock = Math.max(0, productToUpdate.stock - webhookProduct.qty);
             
-            // actualizar el stock del producto en bd
+            // Crear registro de historial de stock
+            const stockHistoryEntry = {
+              quantityDiscounted: webhookProduct.qty,
+              date: new Date(),
+              orderId: dataResponse.Body.id || 'unknown',
+              previousStock: productToUpdate.stock,
+              newStock: newStock
+            };
+
+            // actualizar el stock del producto en bd y agregar historial
             await this.productModel.updateOne(
               { id: webhookProduct.id },
-              { $set: { stock: newStock } }
+              { 
+                $set: { stock: newStock },
+                $push: { stockHistory: stockHistoryEntry }  // Agregar al historial
+              }
             );
             
             this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}`);
             
             // actualizar el stock de la variante si existe
             if (webhookProduct.variant_id && productToUpdate.variants && productToUpdate.variants.length > 0) {
+              // Encontrar el stock anterior de la variante
+              const variant = productToUpdate.variants.find(v => v.id === webhookProduct.variant_id);
+              const previousVariantStock = variant ? variant.stock : 0;
+              
               await this.productModel.updateOne(
                 { 
-                  id: webhookProduct.id,       // buscar el producto por su ID
-                  "variants.id": webhookProduct.variant_id  // y la variante específica dentro del array de variantes
+                  id: webhookProduct.id,
+                  "variants.id": webhookProduct.variant_id
                 },
                 { 
-                  $inc: { "variants.$.stock": -webhookProduct.qty }  // disminuir el stock de esa variante específica
-                  // El operador $ selecciona el elemento del array que cumplió con la condición del filtro
-                  // El operador $inc con valor negativo resta la cantidad vendida al stock actual
+                  $inc: { "variants.$.stock": -webhookProduct.qty },
+                  $push: { 
+                    "variants.$.stockHistory": {
+                      quantityDiscounted: webhookProduct.qty,
+                      date: new Date(),
+                      orderId: dataResponse.Body.id || 'unknown',
+                      previousStock: previousVariantStock,
+                      newStock: Math.max(0, previousVariantStock - webhookProduct.qty)
+                    }
+                  }
                 }
               );
               
@@ -237,10 +260,6 @@ export class ProductsService {
 
         return { success: true, message: 'Stock actualizado correctamente' };
       }
-
-
-
-
     }
 
   update(id: string) {

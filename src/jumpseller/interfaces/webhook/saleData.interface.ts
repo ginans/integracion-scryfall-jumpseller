@@ -1,11 +1,32 @@
-export interface SaleData {
-    order: Order;
+export interface Product {
+    id: number;
+    variant_id: number;
+    sku: string;
+    name: string;
+    qty: number;
+    price: number;
+    tax: number | null;
+    discount: number;
+    weight: number;
+    image: string;
+    type: string;
+    taxes: any[];
+    stock_locations: any[];
+    files: any[];
+}
+
+export interface AdditionalField {
+    value: string | null;
+    label: string;
+    id: number;
+    area: string;
 }
 
 export interface Order {
     id: number;
+    source: string | null;
     created_at: string;
-    status: string;
+    completed_at: string;
     currency: string;
     subtotal: number;
     tax: number;
@@ -15,123 +36,48 @@ export interface Order {
     total: number;
     discount: number;
     shipping_discount: number;
-    fulfillment_status: string | null;
-    shipping_method_id: number;
-    shipping_service_id: null;
-    shipping_method_name: string;
-    payment_method_name: string;
-    payment_method_type: string;
-    payment_information: string;
-    additional_information: string;
+    gift_cards_discount: number;
+    fulfillment_status: string;
+    shipping_method_id: number | null;
+    shipping_service_id: number | null;
+    shipping_method_name: string | null;
+    payment_method_name: string | null;
+    payment_method_type: string | null;
+    payment_information: string | null;
+    additional_information: string | null;
     duplicate_url: string;
     recovery_url: string | null;
+    review_url: string | null;
     checkout_url: string;
-    coupons: null;
+    coupons: any | null;
     promotions: any[];
-    customer: Customer;
-    shipping_address: ShippingAddress;
-    billing_address: BillingAddress;
+    customer: any | null;
+    shipping_branch: any | null;
+    shipping_address: any | null;
+    billing_address: any | null;
+    pickup_address: any | null;
     products: Product[];
     additional_fields: AdditionalField[];
-    shipping_taxes: shipingTaxes[];
-    source: Source;
+    shipping_taxes: any[];
+    status: string;
+    status_name: string;
+    status_enum: string;
     tracking_url: string | null;
     tracking_company: string | null;
     tracking_number: string | null;
-    shipping_option: string;
+    shipping_option: string | null;
+    same_day_delivery: boolean;
     shipment_status: string;
+    shipment_status_enum: string;
+    recovered_from: string | null;
     external_shipping_rate_id: string | null;
     external_shipping_rate_description: string | null;
+    billing_information: string | null;
 }
 
-export interface shipingTaxes {
-    id: number,
-    name: string,
-    country: string,
-    region: string,
-    rate: number,
-    fixed: boolean,
-    tax_on_shipping_price: boolean
+export interface Headers {
+    [key: string]: string;
 }
-
-export interface Customer {
-    id: string;
-    email: string;
-    phone: string;
-    ip: string;
-}
-
-export interface ShippingAddress {
-    name: string;
-    surname: string;
-    address: string;
-    city: string;
-    postal: string;
-    region: string;
-    country: string;
-    country_code: string;
-    region_code: string;
-    street_number: string | null;
-    latitude: number;
-    longitude: number;
-}
-
-export interface BillingAddress {
-    name: string;
-    surname: string;
-    taxid: string | null;
-    address: string;
-    city: string;
-    postal: string;
-    region: string;
-    country: string;
-    country_code: string;
-    region_code: string;
-    street_number: string | null;
-}
-
-export interface Product {
-    id: number;
-    variant_id: number;
-    sku: string;
-    name: string;
-    qty: number;
-    price: number;
-    tax: number;
-    discount: number;
-    weight: number;
-    image: string;
-    files: any[];
-    taxes: ProductTaxes[];
-}
-
-export interface ProductTaxes{
-    id: number,
-    name: string,
-    rate: number,
-    fixed: boolean,
-    tax_on_product_price: boolean
-}
-
-export interface AdditionalField {
-    label: string;
-    value: string;
-    id: number;
-    area: string;
-}
-
-export interface Source {
-    source_name: string | null;
-    medium: string | null;
-    campaign: string | null;
-    referral_url: string | null;
-    referral_code: string | null;
-    user_agent: string;
-    first_page_visited: string;
-    first_page_visited_at: string;
-    referral_source: string;
-}
-
 
 export interface JumpsellerWebhookSaleResponse {
     success: boolean;

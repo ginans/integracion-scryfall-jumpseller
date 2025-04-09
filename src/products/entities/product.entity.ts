@@ -2,18 +2,38 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { IdataProduct } from '../interface/product.interface';
 
+// Schema para el historial de stock
+@Schema({ _id: false })
+export class StockHistory {
+  @Prop({ required: true })
+  quantityDiscounted: number;
+
+  @Prop({ required: true })
+  date: Date;
+
+  @Prop({ required: true })
+  orderId: string;
+
+  @Prop({ required: true })
+  previousStock: number;
+
+  @Prop({ required: true })
+  newStock: number;
+}
+
+const StockHistorySchema = SchemaFactory.createForClass(StockHistory);
+
 @Schema({ timestamps: true })
 export class Product implements IdataProduct {
- @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
- _id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
+  _id: Types.ObjectId;
 
-    @Prop({ type: String, unique: true })
-    oracleId?: string;
-    
+  @Prop({ type: String, unique: true })
+  oracleId?: string;
 
- @Prop({ required: true, unique: true })   
+  @Prop({ required: true, unique: true })
   id: number;
-    
+
   @Prop({ required: true })
   name: string;
 
@@ -46,6 +66,9 @@ export class Product implements IdataProduct {
 
   @Prop({ default: 100 })
   stock: number;
+
+  @Prop({ type: [StockHistorySchema], default: [] })
+  stockHistory: StockHistory[];
 
   @Prop({ default: true })
   stock_unlimited: boolean;
@@ -140,7 +163,8 @@ export class Product implements IdataProduct {
         price: Number,
         sku: String,
         barcode: String,
-        stock: Number,
+        stock: { type: Number, default: 0 },
+        stockHistory: { type: [StockHistorySchema], default: [] },
         stock_unlimited: Boolean,
         stock_threshold: Number,
         stock_notification: Boolean,
@@ -170,6 +194,7 @@ export class Product implements IdataProduct {
     sku: string;
     barcode: string;
     stock: number;
+    stockHistory: StockHistory[];
     stock_unlimited: boolean;
     stock_threshold: number;
     stock_notification: boolean;

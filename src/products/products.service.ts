@@ -187,10 +187,9 @@ export class ProductsService {
           return productResponse;
     }
 
-    
-
     //funcion para manejar descuento de stock
     async updateStock(webhookSaleData: JumpsellerWebhookSaleResponse) {
+      console.log("cualquier cosa")
       const dataResponse = await this.jumpsellerService.jumpsellerWebhookSale(webhookSaleData.Body);
       
       const idProductFromWebhook= dataResponse.Body.products.map((product) => product.id);
@@ -217,11 +216,11 @@ export class ProductsService {
             };
 
             // actualizar el stock del producto en bd y agregar historial
-            await this.productModel.updateOne(
+            await this.productModel.findOneAndUpdate(
               { id: webhookProduct.id },
               { 
-                $set: { stock: newStock },
-                $push: { stockHistory: stockHistoryEntry }  // Agregar al historial
+                $set: { stock: newStock, stockHistory: stockHistoryEntry},  // Actualizar stock y agregar al historial
+                // $push: { stockHistory: stockHistoryEntry }  // Agregar al historial
               }
             );
             
@@ -258,7 +257,7 @@ export class ProductsService {
           }
         }
 
-        return { success: true, message: 'Stock actualizado correctamente' };
+        return { success: true, message: 'Stock actualizado correctamente', data: dataResponse };
       }
     }
 

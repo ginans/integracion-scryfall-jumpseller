@@ -1,27 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { IdataProduct } from '../interface/product.interface';
-
-// Schema para el historial de stock
-@Schema({ _id: false })
-export class StockHistory {
-  @Prop({ required: true })
-  quantityDiscounted: number;
-
-  @Prop({ required: true })
-  date: Date;
-
-  @Prop({ required: true })
-  orderId: string;
-
-  @Prop({ required: true })
-  previousStock: number;
-
-  @Prop({ required: true })
-  newStock: number;
-}
-
-const StockHistorySchema = SchemaFactory.createForClass(StockHistory);
+import { StockHistoryEntry } from '../interface/stock-history.interface';
 
 @Schema({ timestamps: true })
 export class Product implements IdataProduct {
@@ -67,8 +47,8 @@ export class Product implements IdataProduct {
   @Prop({ default: 100 })
   stock: number;
 
-  @Prop({ type: [StockHistorySchema], default: [] })
-  stockHistory: StockHistory[];
+  @Prop({ default: [] })
+  stockHistory: StockHistoryEntry[]
 
   @Prop({ default: true })
   stock_unlimited: boolean;
@@ -164,7 +144,7 @@ export class Product implements IdataProduct {
         sku: String,
         barcode: String,
         stock: { type: Number, default: 0 },
-        stockHistory: { type: [StockHistorySchema], default: [] },
+        stockHistory: {default: [] },
         stock_unlimited: Boolean,
         stock_threshold: Number,
         stock_notification: Boolean,
@@ -194,7 +174,7 @@ export class Product implements IdataProduct {
     sku: string;
     barcode: string;
     stock: number;
-    stockHistory: StockHistory[];
+    stockHistory: StockHistoryEntry[];
     stock_unlimited: boolean;
     stock_threshold: number;
     stock_notification: boolean;

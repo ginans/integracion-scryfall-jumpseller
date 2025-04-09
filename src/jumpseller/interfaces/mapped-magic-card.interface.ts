@@ -61,4 +61,3 @@ interface CardFace {
       large?: string;
     };
 }
-

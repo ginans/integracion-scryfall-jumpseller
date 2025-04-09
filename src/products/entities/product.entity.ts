@@ -1,19 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { IdataProduct } from '../interface/product.interface';
+import { StockHistoryEntry } from '../interface/stock-history.interface';
 
 @Schema({ timestamps: true })
 export class Product implements IdataProduct {
- @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
- _id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
+  _id: Types.ObjectId;
 
-    @Prop({ type: String, unique: true })
-    oracleId?: string;
-    
+  @Prop({ type: String, unique: true })
+  oracleId?: string;
 
- @Prop({ required: true, unique: true })   
+  @Prop({ required: true, unique: true })
   id: number;
-    
+
   @Prop({ required: true })
   name: string;
 
@@ -46,6 +46,9 @@ export class Product implements IdataProduct {
 
   @Prop({ default: 100 })
   stock: number;
+
+  @Prop({ default: [] })
+  stockHistory: StockHistoryEntry[]
 
   @Prop({ default: true })
   stock_unlimited: boolean;
@@ -140,7 +143,8 @@ export class Product implements IdataProduct {
         price: Number,
         sku: String,
         barcode: String,
-        stock: Number,
+        stock: { type: Number, default: 0 },
+        stockHistory: {default: [] },
         stock_unlimited: Boolean,
         stock_threshold: Number,
         stock_notification: Boolean,
@@ -170,6 +174,7 @@ export class Product implements IdataProduct {
     sku: string;
     barcode: string;
     stock: number;
+    stockHistory: StockHistoryEntry[];
     stock_unlimited: boolean;
     stock_threshold: number;
     stock_notification: boolean;

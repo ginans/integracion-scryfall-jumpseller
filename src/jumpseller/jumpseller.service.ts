@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Body, Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { JumpsellerProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from './interfaces/jumpsellerProducts/jumpsellerCreateProductResponse.interface';
@@ -13,6 +13,7 @@ import { createCustomFieldRequest } from './interfaces/jumpselllerCustomFields/c
 import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
 import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductResponse.interface';
 import { JumpsellerGetAllProductResponse } from './interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
+import { Order } from './interfaces/webhook/saleData.interface';
 
 @Injectable()
 export class JumpsellerService {  
@@ -49,6 +50,8 @@ export class JumpsellerService {
         }
       }
     }
+
+    //obtener todos los productos de jumpseller
     async getAllJumpsellerProducts(id:number) : Promise<JumpsellerGetAllProductResponse> { 
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${id}.json`;
       const login = process.env.JUMPSELLER_LOGIN
@@ -223,6 +226,29 @@ export class JumpsellerService {
           this.logger.error(`Código de estado: ${error.response.status}`);
           this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
         }
+      }
+    }
+
+    //webhook para recibir notificaciones de ventas jumpseller
+    async jumpsellerWebhookSale(jumpsellerWebhookSaleData: Order) {
+      try {
+        this.logger.debug(`Recibiendo notificación de venta de Jumpseller`);
+        this.logger.debug(`Datos recibidos: ${JSON.stringify(jumpsellerWebhookSaleData)}`);
+        return {
+          success: true,
+          message: 'Webhook de venta procesado exitosamente',
+          receivedAt: new Date().toISOString(),
+          Headers,
+          Body: jumpsellerWebhookSaleData
+        };
+      } catch (error) {
+        this.logger.error(`❌ Error al procesar webhook de venta de Jumpseller: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(`Código de estado: ${error.response.status}`);
+          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+        }
+        throw error;
       }
     }
 }

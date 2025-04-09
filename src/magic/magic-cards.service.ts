@@ -17,6 +17,7 @@ import { createCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerC
 import { ProductsService } from 'src/products/products.service';
 import { Product, ProductDocument } from '../products/entities/product.entity';
 import { JumpsellerUpdateProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
+import axios from 'axios';
 
 @Injectable()
 export class MagicCardsService {
@@ -65,7 +66,7 @@ export class MagicCardsService {
     // Actualizar el producto existente (solo si es inglés)
     if (req?.idJumpSeller) {
       if (lg === IenumURLLang.EN) {
-        const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
+        const mappedUpdateToJumpseller = await this.mappedDBUpdateProductToJumpseller(req);
         await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
         this.logger.log(`✅ Producto actualizado en Jumpseller con ID: ${req.idJumpSeller}`);
       }
@@ -112,6 +113,8 @@ export class MagicCardsService {
     await this.updateByStatus(req.id, { status: 'completed' });
     await new Promise(resolve => setTimeout(resolve, 300));
   }
+
+  
   //mapeo de cartas completas de la db magic a jumpseller
   private mappedDBProductToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
     const isfoil = (card.foil === true);
@@ -119,7 +122,9 @@ export class MagicCardsService {
       name: card.name || '',
       description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
       price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
-      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
+      //numeros siempre con 4 digitos
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+        (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) : ''}`,
       stock: 0,
       weight: 2, //Peso en gramos
       //width en in: 2,5, height en in: 3,5
@@ -130,13 +135,42 @@ export class MagicCardsService {
     };
     return product;
   }
-  private mappedDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
+
+  private async mappedDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
     const isfoil = (card.foil === true);
+
+    // // Precios mínimos por rareza:
+    // const basePricesBy = {
+    //   "comunC-NF": 200,
+    //   "comunC-F": 400,
+    //   "uncommonU-NF": 300,
+    //   "uncommonU-F": 500,
+    //   "rareR-NF": 500,
+    //   "rareR-F": 1000,
+    //   "mythicM-NF": 1000,
+    //   "mythicM-F": 2000
+    // };
+    
     let productDetails = {
       name: card.name || '',
-      description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
+      description: `
+      Nombre en Ingles: ${card.name}. 
+      Nombre en español: ${card.printedName? card.printedName : ''}.
+      Tipo: ${card.typeLine}.
+      Texto: ${card.oracleText}.
+      Edición: ${card.setName}.
+      Color: ${card.colors?.join(', ') || ''}.
+      Rareza: ${card.rarity}.
+      Artista: ${card.artist}.
+      Habilidades: ${card.keywords?.join(', ') || ''}.
+      Legal: ${Object.entries(card.legalities || {})
+        .filter(([_, value]) => value === 'legal')
+        .map(([format]) => format)
+        .join(', ') || 'No legal'}.
+      `,
       price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
-      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}`,
+      sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+        (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) : ''}`,
       stock: 0,
       weight: 2, //Peso en gramos
       //width en in: 2,5, height en in: 3,5

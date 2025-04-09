@@ -6,11 +6,14 @@ import { IdataProduct, IsetProduct } from './interface/product.interface';
 import { JumpsellerGetAllProductResponse } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
+import { JumpsellerWebhookSaleResponse, JumpsellerWebhookSellResponse, Order } from 'src/jumpseller/interfaces/webhook/saleData.interface';
+import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
+    private readonly jumpsellerService: JumpsellerService,
   ) {
     this.logger = new Logger(ProductsService.name);
   }
@@ -182,6 +185,62 @@ export class ProductsService {
           if (!product) throw new NotFoundException('Producto no encontrado');
           const productResponse= product as unknown as IdataProduct;
           return productResponse;
+    }
+
+    
+
+    //funcion para manejar descuento de stock
+    async updateStock(webhookSaleData: JumpsellerWebhookSaleResponse) {
+      const dataResponse = await this.jumpsellerService.jumpsellerWebhookSale(webhookSaleData.Body);
+      
+      const idProductFromWebhook= dataResponse.Body.products.map((product) => product.id);
+      const existingId = await this.productModel.find({ id: { $in: idProductFromWebhook } }).exec();
+
+      if (!existingId || existingId.length === 0) {
+        throw new NotFoundException('No se encontró el producto en la base de datos');
+            }else{
+        // iterar sobre todos los productos del webhook
+        for (const webhookProduct of dataResponse.Body.products) {
+          const productToUpdate = existingId.find(product => product.id === webhookProduct.id);
+          
+          if (productToUpdate) {
+            // carcular el nuevo stock general (stock en bd - cantidad vendida)
+            const newStock = Math.max(0, productToUpdate.stock - webhookProduct.qty);
+            
+            // actualizar el stock del producto en bd
+            await this.productModel.updateOne(
+              { id: webhookProduct.id },
+              { $set: { stock: newStock } }
+            );
+            
+            this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}`);
+            
+            // actualizar el stock de la variante si existe
+            if (webhookProduct.variant_id && productToUpdate.variants && productToUpdate.variants.length > 0) {
+              await this.productModel.updateOne(
+                { 
+                  id: webhookProduct.id,       // buscar el producto por su ID
+                  "variants.id": webhookProduct.variant_id  // y la variante específica dentro del array de variantes
+                },
+                { 
+                  $inc: { "variants.$.stock": -webhookProduct.qty }  // disminuir el stock de esa variante específica
+                  // El operador $ selecciona el elemento del array que cumplió con la condición del filtro
+                  // El operador $inc con valor negativo resta la cantidad vendida al stock actual
+                }
+              );
+              
+              this.logger.log(`sotck de variante actualizado para el producto con id 
+                ${webhookProduct.id}, id de variante ${webhookProduct.variant_id}`);
+            }
+          }
+        }
+
+        return { success: true, message: 'Stock actualizado correctamente' };
+      }
+
+
+
+
     }
 
   update(id: string) {

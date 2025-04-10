@@ -17,6 +17,7 @@ import { createCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerC
 import { ProductsService } from 'src/products/products.service';
 import { Product, ProductDocument } from '../products/entities/product.entity';
 import { JumpsellerUpdateProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
+import { CreateCustomFieldResponse } from 'src/jumpseller/interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
 import { ScryfallService } from './scryfall/scryfall.service';
 
 @Injectable()
@@ -118,7 +119,21 @@ export class MagicCardsService {
     const isfoil = (card.foil === true);
     let product = {
       name: card.name || '',
-      description: `${card.oracleText}; Costo de maná:${card.manaCost}; Costo de maná convertido:${card.cmc}` || '',
+      description: `
+        Nombre en Ingles: ${card.name}. 
+        Nombre en español: ${card.printedName? card.printedName : ''}.
+        Tipo: ${card.typeLine}.
+        Texto: ${card.oracleText}.
+        Edición: ${card.setName}.
+        Color: ${card.colors?.join(', ') || ''}.
+        Rareza: ${card.rarity}.
+        Artista: ${card.artist}.
+        Habilidades: ${card.keywords?.join(', ') || ''}.
+        Legal en: ${Object.entries(card.legalities || {})
+          .filter(([_, value]) => value === 'legal')
+          .map(([format]) => format)
+          .join(', ') || 'No legal'}.
+        `,
       price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
       //numeros siempre con 4 digitos
       sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
@@ -152,20 +167,20 @@ export class MagicCardsService {
     let productDetails = {
       name: card.name || '',
       description: `
-      Nombre en Ingles: ${card.name}. 
-      Nombre en español: ${card.printedName? card.printedName : ''}.
-      Tipo: ${card.typeLine}.
-      Texto: ${card.oracleText}.
-      Edición: ${card.setName}.
-      Color: ${card.colors?.join(', ') || ''}.
-      Rareza: ${card.rarity}.
-      Artista: ${card.artist}.
-      Habilidades: ${card.keywords?.join(', ') || ''}.
-      Legal: ${Object.entries(card.legalities || {})
-        .filter(([_, value]) => value === 'legal')
-        .map(([format]) => format)
-        .join(', ') || 'No legal'}.
-      `,
+        Nombre en Ingles: ${card.name}. 
+        Nombre en español: ${card.printedName? card.printedName : ''}.
+        Tipo: ${card.typeLine}.
+        Texto: ${card.oracleText}.
+        Edición: ${card.setName}.
+        Color: ${card.colors?.join(', ') || ''}.
+        Rareza: ${card.rarity}.
+        Artista: ${card.artist}.
+        Habilidades: ${card.keywords?.join(', ') || ''}.
+        Legal en: ${Object.entries(card.legalities || {})
+          .filter(([_, value]) => value === 'legal')
+          .map(([format]) => format)
+          .join(', ') || 'No legal'}.
+        `,
       price: parseFloat(isfoil ? card.prices?.usdFoil || '0.00' : card.prices?.usd || '0.00'),
       sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
         (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) : ''}`,
@@ -303,17 +318,9 @@ export class MagicCardsService {
 
   //mapeo de custom fields de la db magic a jumpseller
   //cmc, type_line, color, color_identity, keywords, legalities (solo legales),  game_changer, rarity, artist
-  private mappedAddCustomFieldsToJumpseller(card: MappedMagicCard): AddAnExistingCustomFieldToAProductRequest {
-    let customfieldsRequest: AddAnExistingCustomFieldToAProductRequest = {
-      field: {
-        id: 0,
-        value: "",
-        variants: [], //Array de identificadores únicos del Producto Variante
-      }
-    };
-    return customfieldsRequest;
-  }
-  private mappedCreateCustomFieldsToJumpseller(card: MappedMagicCard): createCustomFieldRequest {
+  //mapeo de custom field CMC
+  //TODO: MAPEAR DATOS PREVIAMENTE A LA CREACION DE CUSTOMFIELDS Y ENTREGAR A LOS VALUES VALORES CONOCIDOS
+  private mappedCMCcustomfield(card: MappedMagicCard): createCustomFieldRequest {
     let createCustomfieldsRequest: createCustomFieldRequest = {
       custom_field: {
         label: "CMC",
@@ -323,6 +330,131 @@ export class MagicCardsService {
       },
     };
     return createCustomfieldsRequest;
+  }
+  //mapeo de custom field type_line
+  private mappedTypeLineCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Tipo",
+        type: "selection",
+        values: [card.typeLine],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field color
+  private mappedColorCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Color",
+        type: "selection",
+        values: [card.colors.join(', ')],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field color_identity
+  private mappedColorIdentityCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Color Identity",
+        type: "selection",
+        values: [card.colorIdentity.join(', ')],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field keywords
+  private mappedKeywordsCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Habilidades",
+        type: "selection",
+        values: [card.keywords.join(', ')], 
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field legalities
+  private mappedLegalitiesCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let legalities = Object.entries(card.legalities || {})
+      .filter(([_, value]) => value === 'legal')
+      .map(([format]) => format)
+      .join(', ');
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Legalidades",
+        type: "selection",
+        values: [legalities],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field game_changer
+  private mappedGameChangerCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Game Changer",
+        type: "selection",
+        values: [card.gameChanger ? "Si" : "No"],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field rarity
+  private mappedRarityCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Rareza",
+        type: "selection",
+        values: [card.rarity],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+  //mapeo de custom field artist
+  private mappedArtistCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Artista",
+        type: "selection",
+        values: [card.artist],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+
+  //mapeo custom field por estado
+  private mappedStateCustomField(card: MappedMagicCard): createCustomFieldRequest {
+    let createCustomfieldsRequest: createCustomFieldRequest = {
+      custom_field: {
+        label: "Estado",
+        type: "selection",
+        values: ["NM"],
+        product_visibility: true,
+      },
+    };
+    return createCustomfieldsRequest;
+  }
+
+  //TODO: mapear por cada custom field y agregar posibles id de variantes
+  private mappedAddCustomFieldsToJumpseller(card: MappedMagicCard): AddAnExistingCustomFieldToAProductRequest {
+    let customfieldsRequest: AddAnExistingCustomFieldToAProductRequest = {
+      field: {
+        id: 0,
+        value: "",
+        variants: [], //Array de id de variantes
+      }
+    };
+    return customfieldsRequest;
   }
 
   // mapear data de Scryfall para guadar en tabla  magic
@@ -544,6 +676,3 @@ export class MagicCardsService {
     );
   }
 }
-
-
-

@@ -253,7 +253,8 @@ export class MagicCardsService {
       if (card.foil) {
         return {
           variant: {
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-F`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+              (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) + '-EN-F' : ''}`,
             options: [
               { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
@@ -280,7 +281,8 @@ export class MagicCardsService {
       if (card.foil && card.lang === "es") {
         return {
           variant: {
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+              (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) + '-ES-F' : ''}`,
             options: [
               { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Foil" },
@@ -307,7 +309,8 @@ export class MagicCardsService {
       if (card.nonfoil) {
         return {
           variant: {
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-EN-NF`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+              (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) + '-EN-NF' : ''}`,
             options: [
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
               { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "EN" },
@@ -334,7 +337,8 @@ export class MagicCardsService {
       if (card.nonfoil && card.lang === "es") {
         return {
           variant: {
-            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
+            sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+              (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) + '-ES-NF' : ''}`,
             options: [
               { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: "Non-Foil" },
               { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: "ES" },

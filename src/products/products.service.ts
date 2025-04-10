@@ -24,12 +24,7 @@ export class ProductsService {
   async createOrUpdateProduct(response: IsetProduct) {
     try {
       // Buscar producto por id o por oracleId
-      const existingProduct = await this.productModel.findOne({
-        $or: [
-          { id: response.id },
-          { oracleId: response.oracleId }
-        ]
-      });
+      const existingProduct = await this.productModel.findOne({oracleId: response.oracleId });
 
       // Si existe el producto, se actualiza
       if (existingProduct) {

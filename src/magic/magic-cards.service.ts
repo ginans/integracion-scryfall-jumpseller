@@ -637,6 +637,24 @@ export class MagicCardsService {
         }
       });
       filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$set" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$setName" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
         products: {
           $elemMatch: {
             sku: { $regex: searchValue, $options: "i" }

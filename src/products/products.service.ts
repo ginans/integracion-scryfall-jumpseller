@@ -114,6 +114,31 @@ export class ProductsService {
         }
       });
       filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$name" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$page_title" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        categories: {
+          $elemMatch: {
+        name: { $regex: searchValue, $options: "i" }
+          }
+        }
+      });
+      filters.$or.push({
         products: {
           $elemMatch: {
             sku: { $regex: searchValue, $options: "i" }

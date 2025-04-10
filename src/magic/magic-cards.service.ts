@@ -79,10 +79,10 @@ export class MagicCardsService {
         await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
         //verificar si tiene cardfaces y enviar
         if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
-          const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
-          await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
           const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace2Image);
+          const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
+          await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
         }
         this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
 
@@ -105,10 +105,10 @@ export class MagicCardsService {
             await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
             //verificar si tiene cardfaces y enviar
             if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
-              const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
-              await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
               const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
               await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace2Image);
+              const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
+              await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
             }
             this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
           }

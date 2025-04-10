@@ -22,6 +22,10 @@ export interface AdditionalField {
     area: string;
 }
 
+export interface IreqWebhookSalesProduct{
+    order:Order;
+}
+
 export interface Order {
     id: number;
     source: string | null;

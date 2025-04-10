@@ -86,8 +86,8 @@ export class JumpsellerService {
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
+        //this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        //this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
         const {data}= await axios.put<JumpsellerUpdateProductResponse>(
           jumpsellerApiUrl,
           { product }, 
@@ -102,9 +102,9 @@ export class JumpsellerService {
       } catch (error) {
         this.logger.error(`❌ Error al actualizar producto en Jumpseller: ${error.message}`);
         if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+          //this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          //this.logger.error(`Código de estado: ${error.response.status}`);
+          //this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
         }
       }
     }
@@ -116,8 +116,8 @@ export class JumpsellerService {
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(variant)}`);
+        //this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        //this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(variant)}`);
         const {data}= await axios.post<JumpsellerCreateVariantResponse>(
           jumpsellerApiUrl,
           variant, 
@@ -128,13 +128,13 @@ export class JumpsellerService {
             },
           }
         );
-        return data as JumpsellerCreateVariantResponse;
+        return data;
       } catch (error) {
         this.logger.error(`❌ Error al crear variantes en Jumpseller: ${error.message}`);
         if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+          //this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          //this.logger.error(`Código de estado: ${error.response.status}`);
+          //this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
         }
       }
     }
@@ -146,8 +146,8 @@ export class JumpsellerService {
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(images)}`);
+        //this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        //this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(images)}`);
         const {data}= await axios.post<JumpsellerCreateImageResponse>(
           jumpsellerApiUrl,
            images, 
@@ -158,13 +158,13 @@ export class JumpsellerService {
             },
           }
         );
-        return data as JumpsellerCreateImageResponse;
+        return data;
       } catch (error) {
         this.logger.error(`❌ Error al insertar imágenes en Jumpseller: ${error.message}`);
         if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+          //this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          //this.logger.error(`Código de estado: ${error.response.status}`);
+          //this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
         }
       }
     }
@@ -226,29 +226,6 @@ export class JumpsellerService {
           this.logger.error(`Código de estado: ${error.response.status}`);
           this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
         }
-      }
-    }
-
-    //webhook para recibir notificaciones de ventas jumpseller
-    async jumpsellerWebhookSale(jumpsellerWebhookSaleData: Order) {
-      try {
-        this.logger.debug(`Recibiendo notificación de venta de Jumpseller`);
-        this.logger.debug(`Datos recibidos: ${JSON.stringify(jumpsellerWebhookSaleData)}`);
-        return {
-          success: true,
-          message: 'Webhook de venta procesado exitosamente',
-          receivedAt: new Date().toISOString(),
-          Headers,
-          Body: jumpsellerWebhookSaleData
-        };
-      } catch (error) {
-        this.logger.error(`❌ Error al procesar webhook de venta de Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
-        throw error;
       }
     }
 }

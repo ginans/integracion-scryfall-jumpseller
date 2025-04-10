@@ -3,6 +3,7 @@ import { ProductsService } from './products.service';
 import { IdataProduct, IsetProduct } from './interface/product.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { IreqWebhookSalesProduct } from 'src/jumpseller/interfaces/webhook/saleData.interface';
 
 @Controller('products')
 export class ProductsController {
@@ -38,8 +39,8 @@ export class ProductsController {
     return this.productsService.update(id);
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.productsService.remove(+id);
-  // }
+  @Post("webhook/sale")
+  async jumpsellerWebhookSale(@Body() body: IreqWebhookSalesProduct){
+      return this.productsService.updateStock(body.order); 
+  }
 }

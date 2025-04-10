@@ -77,6 +77,13 @@ export class MagicCardsService {
         this.logger.log(`✅ Se comienza a crear imágenes en Inglés en Jumpseller`);
         const mappedImage = this.mappedImageToJumpseller(req);
         await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
+        //verificar si tiene cardfaces y enviar
+        if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
+          const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
+          await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
+          const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
+          await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace2Image);
+        }
         this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
 
         //buscar variable de espapañol para actualizar
@@ -96,6 +103,13 @@ export class MagicCardsService {
             this.logger.log(`✅ Se comienza a crear imágenes en Español en Jumpseller`);
             const mappedImage = this.mappedImageToJumpseller(reqES);
             await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
+            //verificar si tiene cardfaces y enviar
+            if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
+              const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
+              await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
+              const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
+              await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace2Image);
+            }
             this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
           }
           // Guardar la respuesta completa de Jumpseller en products
@@ -117,15 +131,17 @@ export class MagicCardsService {
   //mapeo de cartas completas de la db magic a jumpseller
   private mappedDBProductToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
     const isfoil = (card.foil === true);
+    const cardFacesColors = card.cardFaces?.map((face) => face.colors).flat() || [];
+    const cardFaceOracleText = card.oracleText || card.cardFaces?.map((face) => face.oracleText).join('. ') || '';
     let product = {
       name: card.name || '',
       description: `
         Nombre en Ingles: ${card.name}. 
         Nombre en español: ${card.printedName? card.printedName : ''}.
         Tipo: ${card.typeLine}.
-        Texto: ${card.oracleText}.
+        Texto: ${card.oracleText || cardFaceOracleText}.
         Edición: ${card.setName}.
-        Color: ${card.colors?.join(', ') || ''}.
+        Color: ${card.colors?.join(', ') || cardFacesColors }.
         Rareza: ${card.rarity}.
         Artista: ${card.artist}.
         Habilidades: ${card.keywords?.join(', ') || ''}.
@@ -151,7 +167,7 @@ export class MagicCardsService {
 
   private mappedDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
     const isfoil = (card.foil === true);
-
+    const cardFacesColors = card.cardFaces?.map((face) => face.colors).flat() || [];
     // // Precios mínimos por rareza:
     // const basePricesBy = {
     //   "comunC-NF": 200,
@@ -172,7 +188,7 @@ export class MagicCardsService {
         Tipo: ${card.typeLine}.
         Texto: ${card.oracleText}.
         Edición: ${card.setName}.
-        Color: ${card.colors?.join(', ') || ''}.
+        Color: ${card.colors?.join(', ') || cardFacesColors}.
         Rareza: ${card.rarity}.
         Artista: ${card.artist}.
         Habilidades: ${card.keywords?.join(', ') || ''}.
@@ -199,6 +215,26 @@ export class MagicCardsService {
     let imageRequest: JumpsellerCreateImageRequest = {
       image: {
         url: card.imageUris.large || "",
+        position: 0,
+      }
+    };
+    return imageRequest;
+  }
+  //mapeo de imagenes en caso de cardfaces 1
+  private mappedCardFace1ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
+    let imageRequest: JumpsellerCreateImageRequest = {
+      image: {
+        url: card.cardFaces[0].imageUris.large || "",
+        position: 0,
+      }
+    };
+    return imageRequest;
+  }
+  //mapeo de imagenes en caso de cardfaces 1
+  private mappedCardFace2ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
+    let imageRequest: JumpsellerCreateImageRequest = {
+      image: {
+        url: card.cardFaces[1].imageUris.large || "",
         position: 0,
       }
     };

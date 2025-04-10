@@ -77,15 +77,12 @@ export class MagicCardsService {
         this.logger.log(`✅ Se comienza a crear imágenes en Inglés en Jumpseller`);
         const mappedImage = this.mappedImageToJumpseller(req);
         await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
-        //verificar si tiene cardfaces y enviar
         if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
           const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace2Image);
           const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
         }
-        this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
-
         //buscar variable de espapañol para actualizar
         if (req?.oracleId) {
           const versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, req.oracleId);

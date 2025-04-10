@@ -75,17 +75,14 @@ export class MagicCardsService {
         this.logger.log(`mappedENFNVariantsToJumpseller: ${JSON.stringify(mappedENFNVariants)}`);
 
         this.logger.log(`✅ Se comienza a crear imágenes en Inglés en Jumpseller`);
+        const mappedImage = this.mappedImageToJumpseller(req);
+        await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
         if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
           const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace2Image);
           const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
           await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
         }
-        const mappedImage = this.mappedImageToJumpseller(req);
-        await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
-        //verificar si tiene cardfaces y enviar
-        this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
-
         //buscar variable de espapañol para actualizar
         if (req?.oracleId) {
           const versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, req.oracleId);
@@ -102,6 +99,7 @@ export class MagicCardsService {
 
             this.logger.log(`✅ Se comienza a crear imágenes en Español en Jumpseller`);
             const mappedImage = this.mappedImageToJumpseller(reqES);
+            await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
             //verificar si tiene cardfaces y enviar
             if (req.cardFaces && req.cardFaces.length >= 2 && req.cardFaces[0].imageUris && req.cardFaces[1].imageUris) {
               const mappedCardFace2Image = this.mappedCardFace2ImageToJumpseller(req);
@@ -109,7 +107,6 @@ export class MagicCardsService {
               const mappedCardFace1Image = this.mappedCardFace1ImageToJumpseller(req);
               await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedCardFace1Image);
             }
-            await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
             this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
           }
           // Guardar la respuesta completa de Jumpseller en products

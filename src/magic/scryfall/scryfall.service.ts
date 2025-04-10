@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { IresponseSryfall } from './interfaces/scryfall.interface';
 import { IenumURLLang } from './enums/lang.enum';
 
 @Injectable()
 export class ScryfallService {
+   private readonly logger = new Logger(ScryfallService.name);
   async getScryfallCards(lang: IenumURLLang, page: number,oracle_id?:string ): Promise<IresponseSryfall> {
     const url = "https://api.scryfall.com/cards/search";
     try {
@@ -26,7 +27,7 @@ export class ScryfallService {
       return data;
       // retraso de 75ms
     } catch (error) {
-      throw new Error(`Fallo al traer las cartas`);
+      this.logger.error(`❌ Fallo al traer las cartas ${oracle_id} no encontrada variante espanol`);
     }
   }
 }

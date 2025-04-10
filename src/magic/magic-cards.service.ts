@@ -39,27 +39,11 @@ export class MagicCardsService {
     try {
       //crear o actualizar cartas magic
       const req = await this.fetchAndCreateCards(cards);
-      // // Para cartas en español, buscar su contraparte en inglés para obtener el idJumpSeller
-      // if (lg != IenumURLLang.EN && !req?.idJumpSeller) {
-      //   // Buscar el producto existente por oracleId
-      //   const existingProduct = await this.productModel.findOne({ oracleId: req.oracleId });
-      //   if (existingProduct?.id) {
-      //     req.idJumpSeller = existingProduct.id;
-      //     // Actualizar el ID en la entidad MagicCard
-      //     await this.updateByStatus(req.id, { idJumpSeller: req.idJumpSeller });
-      //     this.logger.log(`✅ Producto en español vinculado al ID de Jumpseller: ${req.idJumpSeller}`);
-      //   } else {
-      //     this.logger.log(`⚠️ No se encontró un producto en inglés para la carta en español: ${req.name}`);
-      //   }
-      // }
-
       // Si no tiene ID crear nuevo producto
       if (!req?.idJumpSeller) {
         const requestJumpseller = this.mappedDBProductToJumpseller(req);
         const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
-
         if (response?.product?.id) {
-
           req.idJumpSeller = response.product.id;
           await this.updateByStatus(req.id, { idJumpSeller: req.idJumpSeller });
           await this.productsService.createOrUpdateProduct({ oracleId: req.oracleId, ...response.product });
@@ -150,7 +134,7 @@ export class MagicCardsService {
     return product;
   }
 
-  private async mappedDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
+  private mappedDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
     const isfoil = (card.foil === true);
 
     // // Precios mínimos por rareza:

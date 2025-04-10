@@ -6,9 +6,8 @@ import { IdataProduct, IsetProduct } from './interface/product.interface';
 import { JumpsellerGetAllProductResponse } from 'src/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
-import { JumpsellerWebhookSaleResponse } from 'src/jumpseller/interfaces/webhook/saleData.interface';
 import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
-
+import { Order } from 'src/jumpseller/interfaces/webhook/saleData.interface';
 @Injectable()
 export class ProductsService {
   constructor(
@@ -24,7 +23,7 @@ export class ProductsService {
   async createOrUpdateProduct(response: IsetProduct) {
     try {
       // Buscar producto por id o por oracleId
-      const existingProduct = await this.productModel.findOne({oracleId: response.oracleId });
+      const existingProduct = await this.productModel.findOne({ oracleId: response.oracleId });
 
       // Si existe el producto, se actualiza
       if (existingProduct) {
@@ -56,12 +55,12 @@ export class ProductsService {
         updateData,
         { new: true }
       );
-      
+
       if (!updatedProduct) {
         this.logger.warn(`Product with ID ${id} not found for update`);
         return null;
       }
-      
+
       this.logger.log(`Product with ID ${id} updated successfully`);
       return updatedProduct as unknown as IdataProduct;
     } catch (error) {
@@ -71,190 +70,181 @@ export class ProductsService {
   }
 
   async findAllProducts(query: PaginationQueryDto) {
-      const { limit, page, sortBy, sortOrder, to, from, search, status, lang } = query;
-  
-      const sort: { [key: string]: 1 | -1 } = {
-        [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
-      };
-  
-      const skip = (page - 1) * limit;
-      const filters: { $or?: any[], $and?: any[] } = {};
-  
-  
-      if (search && search.length > 0) {
-        const searchValue = search.trim();
-        filters.$or = [];
-        if (!isNaN(Number(searchValue))) {
-          filters.$or.push({ receptionNbr: Number(searchValue) });
-        }
-        filters.$or.push({
-          $expr: {
-            $regexMatch: {
-              input: { $toString: "$sku" },
-              regex: searchValue,
-              options: "i"
-            }
-          }
-        });
-        filters.$or.push({
-          $expr: {
-            $regexMatch: {
-              input: { $toString: "$printedName" },
-              regex: searchValue,
-              options: "i"
-            }
-          }
-        });
-        filters.$or.push({
-          $expr: {
-            $regexMatch: {
-              input: { $toString: "$status" },
-              regex: searchValue,
-              options: "i"
-            }
-          }
-        });
-        filters.$or.push({
-          products: {
-            $elemMatch: {
-              sku: { $regex: searchValue, $options: "i" }
-            }
-          }
-        });
+    const { limit, page, sortBy, sortOrder, to, from, search, status, lang } = query;
+
+    const sort: { [key: string]: 1 | -1 } = {
+      [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
+    };
+
+    const skip = (page - 1) * limit;
+    const filters: { $or?: any[], $and?: any[] } = {};
+
+
+    if (search && search.length > 0) {
+      const searchValue = search.trim();
+      filters.$or = [];
+      if (!isNaN(Number(searchValue))) {
+        filters.$or.push({ receptionNbr: Number(searchValue) });
       }
-  
-      if (from && to) {
-        filters.$and = [
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$sku" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$printedName" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$status" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      });
+      filters.$or.push({
+        products: {
+          $elemMatch: {
+            sku: { $regex: searchValue, $options: "i" }
+          }
+        }
+      });
+    }
+
+    if (from && to) {
+      filters.$and = [
+        {
+          createdAt: { //preguntar
+            $gte: new Date(`${from}T00:00:00.000Z`),
+            $lte: new Date(`${to}T23:59:59.999Z`)
+          }
+        },
+      ];
+    }
+
+    if (status) {
+      const stateFilter = { status: { $regex: `^${status}$`, $options: "i" } };
+      filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
+    }
+
+    if (lang) {
+      const langFilter = { lang: { $regex: `^${lang}$`, $options: "i" } };
+      filters.$and = filters.$and ? [...filters.$and, langFilter] : [langFilter];
+    }
+
+    try {
+      const [productCards, total] = await Promise.all([
+        this.productModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
+        this.productModel.countDocuments(filters).exec()
+      ]);
+      return {
+        items: productCards.map(user => user.toObject()),
+        meta: {
+          totalItems: total,
+          itemsPerPage: productCards.length,
+          totalPages: Math.ceil(total / limit),
+          currentPage: page,
+          hasNextPage: total > (page * limit),
+          hasPreviousPage: page > 1,
+        }
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
+    }
+  }
+
+
+  async findAllProductsWithoutFilters(): Promise<IdataProduct[]> {
+    const products = await this.productModel.find({}).exec();
+    const productResponse = products as unknown as IdataProduct[];
+    return productResponse;
+  }
+
+
+  async findProductById(_id: string): Promise<IdataProduct> {
+    if (!Types.ObjectId.isValid(_id))
+      throw new BadRequestException('Formato de ID inválido');
+    const product = await this.productModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    const productResponse = product as unknown as IdataProduct;
+    return productResponse;
+  }
+
+  //funcion para manejar descuento de stock
+  async updateStock(order: Order) {
+    // iterar sobre todos los productos del webhook
+    for (const webhookProduct of order.products) {
+      const productToUpdate = await this.productModel.findOne({ id: webhookProduct.id });
+      if (productToUpdate) {
+        // carcular el nuevo stock general (stock en bd - cantidad vendida)
+        const newStock = Math.max(0, productToUpdate.stock - webhookProduct.qty);
+
+        // Crear registro de historial de stock
+        const stockHistoryEntry = {
+          quantityDiscounted: webhookProduct.qty,
+          date: new Date(order.completed_at),//asignar fecha de junpseller
+          orderId: order.id || 'unknown',
+          previousStock: productToUpdate.stock,
+          newStock: newStock
+        };
+
+        // actualizar el stock del producto en bd y agregar historial
+        await this.productModel.findOneAndUpdate(
+          { id: webhookProduct.id },
           {
-            createdAt: { //preguntar
-              $gte: new Date(`${from}T00:00:00.000Z`),
-              $lte: new Date(`${to}T23:59:59.999Z`)
-            }
-          },
-        ];
-      }
-  
-      if (status) {
-        const stateFilter = { status: { $regex: `^${status}$`, $options: "i" } };
-        filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
-      }
-  
-      if (lang) {
-        const langFilter = { lang: { $regex: `^${lang}$`, $options: "i" } };
-        filters.$and = filters.$and ? [...filters.$and, langFilter] : [langFilter];
-      }
-  
-      try {
-        const [productCards, total] = await Promise.all([
-          this.productModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
-          this.productModel.countDocuments(filters).exec()
-        ]);
-        return {
-          items: productCards.map(user => user.toObject()),
-          meta: {
-            totalItems: total,
-            itemsPerPage: productCards.length,
-            totalPages: Math.ceil(total / limit),
-            currentPage: page,
-            hasNextPage: total > (page * limit),
-            hasPreviousPage: page > 1,
+            $set: { stock: newStock}, 
+            $push: { stockHistory: stockHistoryEntry },  // Actualizar stock y agregar al historial
+            // $push: { stockHistory: stockHistoryEntry }  // Agregar al historial
           }
-        }
-      } catch (error) {
-        throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
-      }
-    }
+        );
 
+        this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}`);
 
-    async findAllProductsWithoutFilters(): Promise<IdataProduct[]> {
-    const products = await this.productModel.find({}).exec();  
-        const productResponse= products as unknown as IdataProduct[];
-        return productResponse;
-    }
+        // actualizar el stock de la variante si existe
+        if (webhookProduct.variant_id && productToUpdate.variants && productToUpdate.variants.length > 0) {
+          // Encontrar el stock anterior de la variante
+          const variant = productToUpdate.variants.find(v => v.id === webhookProduct.variant_id);
+          const previousVariantStock = variant ? variant.stock : 0;
 
-
-    async findProductById(_id: string): Promise<IdataProduct> {
-       if (!Types.ObjectId.isValid(_id))
-            throw new BadRequestException('Formato de ID inválido');
-          const product = await this.productModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
-          if (!product) throw new NotFoundException('Producto no encontrado');
-          const productResponse= product as unknown as IdataProduct;
-          return productResponse;
-    }
-
-    //funcion para manejar descuento de stock
-    async updateStock(webhookSaleData: JumpsellerWebhookSaleResponse) {
-      console.log("cualquier cosa")
-      const dataResponse = await this.jumpsellerService.jumpsellerWebhookSale(webhookSaleData.Body);
-      
-      const idProductFromWebhook= dataResponse.Body.products.map((product) => product.id);
-      const existingId = await this.productModel.find({ id: { $in: idProductFromWebhook } }).exec();
-
-      if (!existingId || existingId.length === 0) {
-        throw new NotFoundException('No se encontró el producto en la base de datos');
-      } else {
-        // iterar sobre todos los productos del webhook
-        for (const webhookProduct of dataResponse.Body.products) {
-          const productToUpdate = existingId.find(product => product.id === webhookProduct.id);
-          
-          if (productToUpdate) {
-            // carcular el nuevo stock general (stock en bd - cantidad vendida)
-            const newStock = Math.max(0, productToUpdate.stock - webhookProduct.qty);
-            
-            // Crear registro de historial de stock
-            const stockHistoryEntry = {
-              quantityDiscounted: webhookProduct.qty,
-              date: new Date(),
-              orderId: dataResponse.Body.id || 'unknown',
-              previousStock: productToUpdate.stock,
-              newStock: newStock
-            };
-
-            // actualizar el stock del producto en bd y agregar historial
-            await this.productModel.findOneAndUpdate(
-              { id: webhookProduct.id },
-              { 
-                $set: { stock: newStock, stockHistory: stockHistoryEntry},  // Actualizar stock y agregar al historial
-                // $push: { stockHistory: stockHistoryEntry }  // Agregar al historial
-              }
-            );
-            
-            this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}`);
-            
-            // actualizar el stock de la variante si existe
-            if (webhookProduct.variant_id && productToUpdate.variants && productToUpdate.variants.length > 0) {
-              // Encontrar el stock anterior de la variante
-              const variant = productToUpdate.variants.find(v => v.id === webhookProduct.variant_id);
-              const previousVariantStock = variant ? variant.stock : 0;
-              
-              await this.productModel.updateOne(
-                { 
-                  id: webhookProduct.id,
-                  "variants.id": webhookProduct.variant_id
-                },
-                { 
-                  $inc: { "variants.$.stock": -webhookProduct.qty },
-                  $push: { 
-                    "variants.$.stockHistory": {
-                      quantityDiscounted: webhookProduct.qty,
-                      date: new Date(),
-                      orderId: dataResponse.Body.id || 'unknown',
-                      previousStock: previousVariantStock,
-                      newStock: Math.max(0, previousVariantStock - webhookProduct.qty)
-                    }
-                  }
+          await this.productModel.updateOne(
+            {
+              id: webhookProduct.id,
+              "variants.id": webhookProduct.variant_id
+            },
+            {
+              $inc: { "variants.$.stock": -webhookProduct.qty },
+              $push: {
+                "variants.$.stockHistory": {
+                  quantityDiscounted: webhookProduct.qty,
+                  date: new Date(),
+                  orderId: order.id || 'unknown',
+                  previousStock: previousVariantStock,
+                  newStock: Math.max(0, previousVariantStock - webhookProduct.qty)
                 }
-              );
-              
-              this.logger.log(`sotck de variante actualizado para el producto con id 
-                ${webhookProduct.id}, id de variante ${webhookProduct.variant_id}`);
+              }
             }
-          }
-        }
+          );
 
-        return { success: true, message: 'Stock actualizado correctamente', data: dataResponse };
+          this.logger.log(`stock de variante actualizado para el producto con id 
+                ${webhookProduct.id}, id de variante ${webhookProduct.variant_id}`);
+        }
+      } else {
+        this.logger.warn(`id producto no encontrado ${webhookProduct.id}`);
       }
+      return { success: true, message: 'Stock actualizado correctamente' };
     }
+  }
 
   update(id: string) {
     return `This action updates a #${id} product`;

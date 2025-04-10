@@ -37,20 +37,19 @@ export class ProcessService {
     let process = true; // Controla la ejecución del bucle
     do {
       // Obtener lista de getScryfallCards
-      const { data, has_more } = 
-        await this
-        .scryfallService
-        .getScryfallCards(lg, page);
+      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page);
       // agregar colas con data obtenidad 
+      console.log(data.length);
+      
       for(let row of data){
-        await this
-        .queuesMagic
-        .add(lg,row);
+        await this.queuesMagic.add(lg,row);
+       
       }
-      //detener proceso si has_more es false
-      //process = has_more; //descomentar en produccion
       this.logger.warn(`procesando pagina queues-magic ${page}`);
-      if(page>1){
+      //detener proceso si has_more es false
+      //let process = has_more;
+      //comentar esto en produccion
+      if(page==1){
         process = false;
       }
       page++;

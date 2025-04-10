@@ -22,7 +22,7 @@ export class QueuesMagic extends WorkerHost {
       const lg  = job.name as IenumURLLang
       await job.updateProgress(25);
       this.logger.log(`process ${data.name}`)
-      await this.magicCardsService.procesarCardMagic(data,lg);
+      await this.magicCardsService.procesarCardMagic(data);
       await job.updateProgress(100);
       return 'done';
     } catch (error) {

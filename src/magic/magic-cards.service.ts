@@ -17,8 +17,8 @@ import { createCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerC
 import { ProductsService } from 'src/products/products.service';
 import { Product, ProductDocument } from '../products/entities/product.entity';
 import { JumpsellerUpdateProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
-import axios from 'axios';
 import { CreateCustomFieldResponse } from 'src/jumpseller/interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
+import { ScryfallService } from './scryfall/scryfall.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -30,50 +30,41 @@ export class MagicCardsService {
     private readonly productsService: ProductsService,
     @InjectModel(MagicCard.name)
     private readonly model: Model<MagicCardEntity>,
-    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>
+    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
+    private readonly scryfallService: ScryfallService,
   ) { }
 
 
   //procesar  cada carta magic
-  async procesarCardMagic(cards: ScryfallCardResponse, lg: IenumURLLang): Promise<void> {
-    //crear o actualizar cartas magic
-    const req = await this.fetchAndCreateCards(cards);
-    // Para cartas en español, buscar su contraparte en inglés para obtener el idJumpSeller
-    if (lg === IenumURLLang.ES && !req?.idJumpSeller) {
-      // Buscar el producto existente por oracleId
-      const existingProduct = await this.productModel.findOne({ oracleId: req.oracleId });
-      if (existingProduct?.id) {
-        req.idJumpSeller = existingProduct.id;
-        // Actualizar el ID en la entidad MagicCard
-        await this.updateByStatus(req.id, { idJumpSeller: req.idJumpSeller });
-        this.logger.log(`✅ Producto en español vinculado al ID de Jumpseller: ${req.idJumpSeller}`);
-      } else {
-        this.logger.log(`⚠️ No se encontró un producto en inglés para la carta en español: ${req.name}`);
-      }
-    }
-    // Si no tiene ID de Jumpseller y es inglés, crear nuevo producto
-    if (!req?.idJumpSeller && lg === IenumURLLang.EN) {
-      // Solo crear en jumpseller cuando es inglés
+  async procesarCardMagic(cards: ScryfallCardResponse): Promise<void> {
+    try {
+      //crear o actualizar cartas magic
+      const req = await this.fetchAndCreateCards(cards);
+      // Si no tiene ID crear nuevo producto
+      if (!req?.idJumpSeller) {
         const requestJumpseller = this.mappedDBProductToJumpseller(req);
         const response = await this.jumpsellerService.createJumpsellerProducts(requestJumpseller);
-
         if (response?.product?.id) {
-          await this.productsService.createOrUpdateProduct({ oracleId: req.oracleId, ...response.product });
           req.idJumpSeller = response.product.id;
           await this.updateByStatus(req.id, { idJumpSeller: req.idJumpSeller });
+          await this.productsService.createOrUpdateProduct({ oracleId: req.oracleId, ...response.product });
+          //crear version de español
+          let versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, req.oracleId);
+          if (versionES?.data?.length) {
+            //grabar version españo
+            const producversion = await this.fetchAndCreateCards(versionES.data[0]);
+            await this.updateByStatus(producversion.id, { idJumpSeller: req.idJumpSeller });
+            // const mapperCardES = this.mappedDBProductToJumpseller(cardES);
+            // const productEs = await this.jumpsellerService.createJumpsellerProducts(mapperCardES);
+          }
         }
-    } 
-    
-    // Actualizar el producto existente (solo si es inglés)
-    if (req?.idJumpSeller) {
-      if (lg === IenumURLLang.EN) {
-        const mappedUpdateToJumpseller = await this.mappedDBUpdateProductToJumpseller(req);
+      }
+      // Actualizar el producto existente
+      if (req?.idJumpSeller) {
+        const mappedUpdateToJumpseller = this.mappedDBUpdateProductToJumpseller(req);
         await this.jumpsellerService.updateJumpsellerProduct(req.idJumpSeller, mappedUpdateToJumpseller);
         this.logger.log(`✅ Producto actualizado en Jumpseller con ID: ${req.idJumpSeller}`);
-      }
-
-      // Crear variantes según el idioma
-      if (lg === IenumURLLang.EN) {
+        // Crear variantes según el idioma
         this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Inglés`);
         const mappedENFVariants = this.mappedENFVariantsToJumpseller(req);
         await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedENFVariants);
@@ -87,31 +78,38 @@ export class MagicCardsService {
         const mappedImage = this.mappedImageToJumpseller(req);
         await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
         this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
-      } 
-      if (lg === IenumURLLang.ES) {
-        this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Español`);
-        const mappedESFVariants = this.mappedESFVariantsToJumpseller(req);
-        await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFVariants);
-        this.logger.log(`mappedESFVariantsToJumpseller: ${JSON.stringify(mappedESFVariants)}`);
 
-        const mappedESFNVariants = this.mappedESFNVariantsToJumpseller(req);
-        await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);
-        this.logger.log(`mappedESFNVariantsToJumpseller: ${JSON.stringify(mappedESFNVariants)}`);
+        //buscar variable de espapañol para actualizar
+        if (req?.oracleId) {
+          const versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, req.oracleId);
+          if (versionES?.data?.length) {
+            const reqES: MappedMagicCard = this.mapCardData(versionES.data[0]);
+            this.logger.log(`✅ Se comienza a crear variantes en Jumpseller en Español`);
+            const mappedESFVariants = this.mappedESFVariantsToJumpseller(reqES);
+            this.logger.log(`mappedESFVariantsToJumpseller: ${JSON.stringify(mappedESFVariants)}`);
+            await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFVariants);
 
-        this.logger.log(`✅ Se comienza a crear imágenes en Español en Jumpseller`);
-        const mappedImage = this.mappedImageToJumpseller(req);
-        await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
-        this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
+            const mappedESFNVariants = this.mappedESFNVariantsToJumpseller(reqES);
+            await this.jumpsellerService.createJumpsellerVariants(req.idJumpSeller, mappedESFNVariants);
+            this.logger.log(`mappedESFNVariantsToJumpseller: ${JSON.stringify(mappedESFNVariants)}`);
+
+            this.logger.log(`✅ Se comienza a crear imágenes en Español en Jumpseller`);
+            const mappedImage = this.mappedImageToJumpseller(reqES);
+            await this.jumpsellerService.insertJumpsellerImages(req.idJumpSeller, mappedImage);
+            this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
+          }
+          // Guardar la respuesta completa de Jumpseller en products
+          this.logger.log(`✅ Se comienza a guardar la respuesta completa de Jumpseller en products`);
+          const fullResponse = await this.jumpsellerService.getAllJumpsellerProducts(req.idJumpSeller);
+          const product = fullResponse.product;
+          const checkProduct = await this.productsService.createOrUpdateProduct({ oracleId: req.oracleId, ...product });
+          this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
+          await this.updateByStatus(req.id, { status: 'completed' });
+        }
       }
-
-      // Guardar la respuesta completa de Jumpseller en products
-      this.logger.log(`✅ Se comienza a guardar la respuesta completa de Jumpseller en products`);
-      const fullResponse = await this.jumpsellerService.getAllJumpsellerProducts(req.idJumpSeller);
-      const product = fullResponse.product;
-      await this.productsService.createOrUpdateProduct({ oracleId: req.oracleId, ...product });
+    } catch (error) {
+      this.logger.error(error)
     }
-    this.logger.log(`✅ Estado actualizado para el producto a 'completed'`);
-    await this.updateByStatus(req.id, { status: 'completed' });
     await new Promise(resolve => setTimeout(resolve, 300));
   }
 
@@ -151,7 +149,7 @@ export class MagicCardsService {
     return product;
   }
 
-  private async mappedDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
+  private mappedDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
     const isfoil = (card.foil === true);
 
     // // Precios mínimos por rareza:
@@ -196,7 +194,6 @@ export class MagicCardsService {
     };
     return { product: productDetails };
   }
-
   //mapeo de imagenes de la db magic a jumpseller
   private mappedImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
     let imageRequest: JumpsellerCreateImageRequest = {
@@ -244,7 +241,7 @@ export class MagicCardsService {
         return { variant: { sku: '', options: [] } };
       }
 
-      if (card.foil && card.lang === "ES") {
+      if (card.foil && card.lang === "es") {
         return {
           variant: {
             sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-F`,
@@ -298,7 +295,7 @@ export class MagicCardsService {
         return { variant: { sku: '', options: [] } };
       }
 
-      if (card.nonfoil && card.lang === "ES") {
+      if (card.nonfoil && card.lang === "es") {
         return {
           variant: {
             sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber}-ES-NF`,
@@ -542,15 +539,20 @@ export class MagicCardsService {
   //buscar actuzalizar o crear magic card
   async fetchAndCreateCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
     // Mapeo de los datos por pagina
+    let idJumpSeller = null
     const mappedCardData: MappedMagicCard = this.mapCardData(cards);
     // Verificar duplicados por ID y actualizar o insertar
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
-      await this.model.updateOne({ id: mappedCardData.id }, mappedCardData);
+      idJumpSeller = existingCard?.idJumpSeller;
+      this.logger.log(`actualizar id ${mappedCardData.id}`)
+      const data = await this.model.updateOne({ id: mappedCardData.id });
+      //idJumpSeller = data.idJumpSeller;
     } else {
-      await this.model.create(mappedCardData); // Insertar si no existe
+      this.logger.log(`crear card magic ${mappedCardData.id}`)
+      await this.model.create({...mappedCardData}); // Insertar si no existe
     }
-    return mappedCardData;
+    return {...mappedCardData , idJumpSeller};
   }
   //buscar paginar magic card
   async findAllCards(query: PaginationQueryDto) {
@@ -647,9 +649,9 @@ export class MagicCardsService {
       throw new InternalServerErrorException(`Error fetching Transfers: ${error.message}`);
     }
   }
-  async findAllCardsWithoutFilters(): Promise<MagicCard[]> { 
-    const cardsMagic = await this.model.find({}).exec();  
-    const cardsMagicResponse= cardsMagic as unknown as MagicCard[];
+  async findAllCardsWithoutFilters(): Promise<MagicCard[]> {
+    const cardsMagic = await this.model.find({}).exec();
+    const cardsMagicResponse = cardsMagic as unknown as MagicCard[];
     return cardsMagicResponse;
   }
 

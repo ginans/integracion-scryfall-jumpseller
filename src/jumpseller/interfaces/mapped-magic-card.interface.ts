@@ -1,9 +1,17 @@
+export interface IsetMagic{
+    idJumpSeller?:number;
+    status?:string
+}
+
 //info mapeada
-export interface MappedProductCard {
+export interface MappedMagicCard {
+    idJumpSeller?:number //variable para identifcar si campos se debe actualizar con crear en jumpeller
     id?: string;
     oracleId?: string;
     name?: string;
     printedName?: string;
+    oracleText?: string;
+    printedText?: string;
     lang?: string;
     uri?: string;
     layout?: string;
@@ -18,6 +26,9 @@ export interface MappedProductCard {
     colors?: string[];
     colorIdentity?: string[];
     keywords?: string[];
+    finishes?: string[];
+    foil?: boolean;
+    nonfoil?: boolean;
     cardFaces?: CardFace[];
     legalities?: Record<string, string>;
     gameChanger?: boolean;
@@ -32,7 +43,6 @@ export interface MappedProductCard {
     setId?: string;
     set?: string;
     setName?: string;
-    sku?: string;
 }
 
 interface CardFace {

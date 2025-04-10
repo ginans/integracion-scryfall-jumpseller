@@ -8,7 +8,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { SortOrder } from '../enums/sortOrder.enum';
+import { EnumLang, SortOrder, StateCards } from '../enums/query.enum';
 export class PaginationQueryDto {
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()
@@ -53,5 +53,13 @@ export class PaginationQueryDto {
   @IsOptional()
   @IsString()
   to?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: StateCards | null;
+
+  @IsOptional()
+  @IsString()
+  lang?: EnumLang | null;
   
 }

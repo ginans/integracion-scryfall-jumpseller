@@ -1,4 +1,4 @@
-export interface UpdateCustomFieldResponse {
+export interface CustomFieldResponse {
     custom_field: {
         id: number;
         label: string;
@@ -7,3 +7,5 @@ export interface UpdateCustomFieldResponse {
         product_visibility: boolean;
     }
 }
+
+export type GetAllCustomFieldResponse = CustomFieldResponse[];

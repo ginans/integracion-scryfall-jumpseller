@@ -241,25 +241,33 @@ export class ProductsService {
           // Encontrar el stock anterior de la variante
           const variant = productToUpdate.variants.find(v => v.id === webhookProduct.variant_id);
           const previousVariantStock = variant ? variant.stock : 0;
+          
+          // Calcular el nuevo stock asegurando que no sea negativo
+          const newVariantStock = Math.max(0, previousVariantStock - webhookProduct.qty);
+          
+          // Preparar el nuevo registro de historial
+          const newStockHistoryEntry = {
+            quantityDiscounted: webhookProduct.qty,
+            date: new Date(),
+            orderId: order.id || 'unknown',
+            previousStock: previousVariantStock,
+            newStock: newVariantStock
+          };
 
-          await this.productModel.updateOne(
-            {
-              id: webhookProduct.id,
-              "variants.id": webhookProduct.variant_id
-            },
-            {
-              $inc: { "variants.$.stock": -webhookProduct.qty },
-              $push: {
-                "variants.$.stockHistory": {
-                  quantityDiscounted: webhookProduct.qty,
-                  date: new Date(),
-                  orderId: order.id || 'unknown',
-                  previousStock: previousVariantStock,
-                  newStock: Math.max(0, previousVariantStock - webhookProduct.qty)
+            await this.productModel.findOneAndUpdate(
+              {
+                id: webhookProduct.id,
+                "variants.id": webhookProduct.variant_id
+              },
+              {
+                $set: { 
+                  "variants.$.stock": newVariantStock,
+                },
+                $push: { 
+                  "variants.$.stockHistory": newStockHistoryEntry 
                 }
               }
-            }
-          );
+            );
 
           this.logger.log(`stock de variante actualizado para el producto con id 
                 ${webhookProduct.id}, id de variante ${webhookProduct.variant_id}`);

@@ -21,6 +21,7 @@ import { CreateCustomFieldResponse } from 'src/jumpseller/interfaces/jumpselller
 import { ScryfallService } from './scryfall/scryfall.service';
 import { UpdateCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
 import { CreateMagicCardDto } from './dto/create-magic-card.dto';
+import { Language } from './enums/lang.enum';
 
 @Injectable()
 export class MagicCardsService {
@@ -357,6 +358,33 @@ export class MagicCardsService {
       return { variant: { sku: '', options: [] } };
     }
   }
+  // mapeo para crear variante con idioma dinamico
+  private mappedDynamicLanguageVariantToJumpseller(card: MappedMagicCard, lang: Language): JumpsellerCreateVariantRequest {
+    try {
+      if (!card) {
+        this.logger.error('Error en mappedDynamicLanguageVariantToJumpseller: objeto card no definido');
+        return { variant: { sku: '', options: [] } };
+      }
+
+      return {
+        variant: {
+          sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber ? 
+            (card.collectorNumber.length <= 4 ? card.collectorNumber.padStart(4, '0') : card.collectorNumber) + `-${lang.toUpperCase()}` : ''}`,
+          options: [
+            { name: "Finish", option_type: JumpsellerOptionType.OPTION, value: card.foil ? "Foil" : "Non-Foil" },
+            { name: "Lenguaje", option_type: JumpsellerOptionType.OPTION, value: lang },
+          ],
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error en mappedDynamicLanguageVariantToJumpseller: ${error.message}`);
+      return { variant: { sku: '', options: [] } };
+    }
+  }
+
+
+
+
   //crear funcion que me traiga los custom field existentes, tome el id y se lo pase a la funcion de actualizacion se custom fields en jumpseller
 
   private async getAndUpdateCustomFields(card: MappedMagicCard): Promise<void> {

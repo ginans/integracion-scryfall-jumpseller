@@ -144,7 +144,7 @@ export class Product implements IdataProduct {
         sku: String,
         barcode: String,
         stock: { type: Number, default: 0 },
-        stockHistory: {default: [] },
+        stockHistory: { type: [] },
         stock_unlimited: Boolean,
         stock_threshold: Number,
         stock_notification: Boolean,

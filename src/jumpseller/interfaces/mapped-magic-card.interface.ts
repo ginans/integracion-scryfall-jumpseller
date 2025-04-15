@@ -43,6 +43,7 @@ export interface MappedMagicCard {
     setId?: string;
     set?: string;
     setName?: string;
+    games?: string[];
 }
 
 interface CardFace {

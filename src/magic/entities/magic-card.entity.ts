@@ -145,6 +145,9 @@ export class MagicCard implements MappedMagicCard{
   @Prop()
   setName?: string;
 
+  @Prop({ type: [String]})
+  games: string[];
+
   @Prop({
     default: "pending",
   })

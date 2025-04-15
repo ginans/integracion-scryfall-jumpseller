@@ -19,6 +19,7 @@ import { Product, ProductDocument } from '../products/entities/product.entity';
 import { JumpsellerUpdateProductRequest } from 'src/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
 import { CreateCustomFieldResponse } from 'src/jumpseller/interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
 import { ScryfallService } from './scryfall/scryfall.service';
+import { UpdateCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
 
 @Injectable()
 export class MagicCardsService {
@@ -109,6 +110,11 @@ export class MagicCardsService {
             }
             this.logger.log(`mappedImageToJumpseller: ${JSON.stringify(mappedImage)}`);
           }
+          
+          // Procesar los campos personalizados para el producto
+          this.logger.log(`✅ Se comienza a procesar campos personalizados para el producto`);
+          await this.getAndUpdateCustomFields(req);
+          
           // Guardar la respuesta completa de Jumpseller en products
           this.logger.log(`✅ Se comienza a guardar la respuesta completa de Jumpseller en products`);
           const fullResponse = await this.jumpsellerService.getAllJumpsellerProducts(req.idJumpSeller);
@@ -350,15 +356,143 @@ export class MagicCardsService {
       return { variant: { sku: '', options: [] } };
     }
   }
+  //crear funcion que me traiga los custom field existentes, tome el id y se lo pase a la funcion de actualizacion se custom fields en jumpseller
 
+  private async getAndUpdateCustomFields(card: MappedMagicCard): Promise<void> {
+    try {
+      // Obtener los custom fields existentes de Jumpseller
+      const customFields = await this.jumpsellerService.getAllJumpsellerCustomFields();
+      
+      if (!customFields || !Array.isArray(customFields)) {
+        this.logger.error('No se pudieron obtener los campos personalizados de Jumpseller');
+        return;
+      }
 
+      // Definir los mapeos que vamos a procesar usando las funciones existentes
+      const customFieldMappings = [
+        { 
+          label: "CMC", 
+          requestFunction: this.mappedCMCcustomfield.bind(this),
+        },
+        { 
+          label: "Tipo", 
+          requestFunction: this.mappedTypeLineCustomField.bind(this),
+        },
+        { 
+          label: "Color", 
+          requestFunction: this.mappedColorCustomField.bind(this),
+        },
+        { 
+          label: "Color Identity", 
+          requestFunction: this.mappedColorIdentityCustomField.bind(this),
+        },
+        { 
+          label: "Habilidades", 
+          requestFunction: this.mappedKeywordsCustomField.bind(this),
+        },
+        { 
+          label: "Legalidades", 
+          requestFunction: this.mappedLegalitiesCustomField.bind(this),
+        },
+        { 
+          label: "Game Changer", 
+          requestFunction: this.mappedGameChangerCustomField.bind(this),
+        },
+        { 
+          label: "Rareza", 
+          requestFunction: this.mappedRarityCustomField.bind(this),
+        },
+        { 
+          label: "Artista", 
+          requestFunction: this.mappedArtistCustomField.bind(this),
+        },
+        // { 
+        //   label: "Estado", 
+        //   requestFunction: this.mappedStateCustomField.bind(this),
+        // }
+      ];
+
+      // Procesar cada campo personalizado
+      for (const mapping of customFieldMappings) {
+        // Usar la función de mapeo existente para obtener la petición
+        const updateRequest = mapping.requestFunction(card);
+        const fieldValue = updateRequest.custom_field.values[0];
+        
+        // Buscar si el campo ya existe en Jumpseller
+        const existingField = customFields.find(cf => 
+          cf.custom_field?.label === mapping.label
+        );
+
+        if (existingField) {
+          // El campo existe, verificar si el valor ya está en la lista
+          const existingValues = existingField.custom_field.values || [];
+          
+          if (!existingValues.includes(fieldValue)) {
+            // Actualizar con todos los valores existentes más el nuevo
+            updateRequest.custom_field.values = [...existingValues, fieldValue];
+            
+            await this.jumpsellerService.updateJumpsellerCustomFields(
+              existingField.custom_field.id, 
+              updateRequest
+            );
+            this.logger.log(`Campo personalizado "${mapping.label}" actualizado con valor: ${fieldValue}`);
+          }
+          
+          // Si el producto tiene ID, asociar el campo personalizado
+          if (card.idJumpSeller) {
+            const addFieldRequest: AddAnExistingCustomFieldToAProductRequest = {
+              field: {
+                id: existingField.custom_field.id,
+                value: fieldValue,
+                variants: []
+              }
+            };
+            
+            await this.jumpsellerService.addAnExistingCustomFieldToAProduct(
+              card.idJumpSeller,
+              addFieldRequest
+            );
+            this.logger.log(`Campo "${mapping.label}" asociado al producto ID: ${card.idJumpSeller}`);
+          }
+        } else {
+          // El campo no existe, crearlo
+          const createResponse = await this.jumpsellerService.createJumpsellerCustomFields({
+            custom_field: updateRequest.custom_field
+          });
+          
+          this.logger.log(`Campo personalizado "${mapping.label}" creado con valor: ${fieldValue}`);
+          
+          // Si se creó y el producto tiene ID, asociarlo
+          if (createResponse?.custom_field?.id && card.idJumpSeller) {
+            const addFieldRequest: AddAnExistingCustomFieldToAProductRequest = {
+              field: {
+                id: createResponse.custom_field.id,
+                value: fieldValue,
+                variants: []
+              }
+            };
+            
+            await this.jumpsellerService.addAnExistingCustomFieldToAProduct(
+              card.idJumpSeller,
+              addFieldRequest
+            );
+            this.logger.log(`Campo nuevo "${mapping.label}" asociado al producto ID: ${card.idJumpSeller}`);
+          }
+        }
+      }
+      
+      this.logger.log(`✅ Campos personalizados procesados correctamente para: ${card.name}`);
+    } catch (error) {
+      this.logger.error(`❌ Error al procesar campos personalizados: ${error.message}`);
+    }
+  }
 
   //mapeo de custom fields de la db magic a jumpseller
   //cmc, type_line, color, color_identity, keywords, legalities (solo legales),  game_changer, rarity, artist
   //mapeo de custom field CMC
   //TODO: MAPEAR DATOS PREVIAMENTE A LA CREACION DE CUSTOMFIELDS Y ENTREGAR A LOS VALUES VALORES CONOCIDOS
-  private mappedCMCcustomfield(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedCMCcustomfield(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "CMC",
         type: "selection",
@@ -366,11 +500,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field type_line
-  private mappedTypeLineCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedTypeLineCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Tipo",
         type: "selection",
@@ -378,11 +512,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field color
-  private mappedColorCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedColorCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Color",
         type: "selection",
@@ -390,11 +524,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field color_identity
-  private mappedColorIdentityCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedColorIdentityCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Color Identity",
         type: "selection",
@@ -402,11 +536,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field keywords
-  private mappedKeywordsCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedKeywordsCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Habilidades",
         type: "selection",
@@ -414,15 +548,15 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field legalities
-  private mappedLegalitiesCustomField(card: MappedMagicCard): createCustomFieldRequest {
+  private mappedLegalitiesCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
     let legalities = Object.entries(card.legalities || {})
       .filter(([_, value]) => value === 'legal')
       .map(([format]) => format)
       .join(', ');
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Legalidades",
         type: "selection",
@@ -430,11 +564,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field game_changer
-  private mappedGameChangerCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedGameChangerCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Game Changer",
         type: "selection",
@@ -442,11 +576,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field rarity
-  private mappedRarityCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedRarityCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Rareza",
         type: "selection",
@@ -454,11 +588,11 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
   //mapeo de custom field artist
-  private mappedArtistCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedArtistCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Artista",
         type: "selection",
@@ -466,12 +600,12 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
 
   //mapeo custom field por estado
-  private mappedStateCustomField(card: MappedMagicCard): createCustomFieldRequest {
-    let createCustomfieldsRequest: createCustomFieldRequest = {
+  private mappedStateCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+    let updateCustomFieldRequest: UpdateCustomFieldRequest = {
       custom_field: {
         label: "Estado",
         type: "selection",
@@ -479,7 +613,7 @@ export class MagicCardsService {
         product_visibility: true,
       },
     };
-    return createCustomfieldsRequest;
+    return updateCustomFieldRequest;
   }
 
   //TODO: mapear por cada custom field y agregar posibles id de variantes

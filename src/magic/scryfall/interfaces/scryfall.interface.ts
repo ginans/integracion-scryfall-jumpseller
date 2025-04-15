@@ -182,6 +182,7 @@ export interface ScryfallCard {
     set_id?: string;
     set?: string;
     set_name?: string;
+    games?: string[];
 }
 interface CardFace {
     object?: string;

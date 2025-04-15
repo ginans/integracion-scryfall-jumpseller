@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 
 import { ScryfallCard, ScryfallCardResponse } from './scryfall/interfaces/scryfall.interface';
-import { MagicCard, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
+import { MagicCard, magicCardDocument, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { IsetMagic, MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
@@ -20,6 +20,7 @@ import { JumpsellerUpdateProductRequest } from 'src/jumpseller/interfaces/jumpse
 import { CreateCustomFieldResponse } from 'src/jumpseller/interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
 import { ScryfallService } from './scryfall/scryfall.service';
 import { UpdateCustomFieldRequest } from 'src/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
+import { CreateMagicCardDto } from './dto/create-magic-card.dto';
 
 @Injectable()
 export class MagicCardsService {
@@ -705,6 +706,7 @@ export class MagicCardsService {
       setId: card.set_id || '',
       set: card.set || '',
       setName: card.set_name || '',
+      games: card.games || [],
     };
   }
   //buscar actuzalizar o crear magic card
@@ -863,5 +865,64 @@ export class MagicCardsService {
       { id },
       { ...set }
     );
+  }
+
+  //agregar nueva carta a la db magic
+  async addCard(card: CreateMagicCardDto): Promise<MappedMagicCard> {
+    try {
+
+      //que siempre lo que se ingrese quede en minusculas
+      const lang = card.lenguaje.toLowerCase();
+      const oracle_id = card.oracle_id.toLowerCase();
+      
+      this.logger.log(`Buscando carta con oracle_id: ${card.oracle_id} en idioma: ${lang}`);
+      
+      //llamar api y pasarle los parametros oracle_id y lang
+      const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
+        oracle_id,
+        lang
+      );
+      
+      //verificar en la api que sea el mismo oracle_id y lang
+      const exactMatch = scryfallResponse.data.find(card => 
+        card.oracle_id === card.oracle_id && 
+        card.lang.toLowerCase() === lang
+      );
+      
+      if (!exactMatch) {
+        throw new NotFoundException(`No se encontró una coincidencia exacta para oracle_id: ${card.oracle_id} y lenguaje: ${lang}`);
+      }
+      
+      // usar la carta que coincide exactamente
+      const cardData = exactMatch;
+      
+      //mapear los datos de la carta
+      const mappedCardData: MappedMagicCard = this.mapCardData(cardData);
+      
+      //verificar si la carta ya existe en la base de datos
+      const existingCard = await this.model.findOne({ 
+        oracleId: mappedCardData.oracleId,
+        lang: mappedCardData.lang
+      });
+      
+      if (existingCard) {
+        this.logger.log(`La carta con ID ${mappedCardData.id} ya existe, actualizando`);
+
+        //si la carta existe actualizarla
+        await this.model.updateOne({ 
+          oracleId: mappedCardData.oracleId,
+        lang: mappedCardData.lang }, 
+        { ...mappedCardData });
+        return { ...mappedCardData, idJumpSeller: existingCard.idJumpSeller };
+
+      } else {
+        this.logger.log(`Creando nueva carta Magic con ID ${mappedCardData.id}`);
+        const newCard = await this.model.create(mappedCardData);
+        return newCard as unknown as MappedMagicCard;
+      }
+    } catch (error) {
+      this.logger.error(`Error al agregar carta: ${error.message}`);
+      throw new InternalServerErrorException(`Error al agregar carta: ${error.message}`);
+    }
   }
 }

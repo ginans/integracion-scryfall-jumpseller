@@ -20,7 +20,7 @@ export class ProductsPriceService {
 //   private readonly logger: Logger;
 
   //funcion para guardar en base d datos
-  async upsertPriceProduct(game: Game, price: IsetProduct) {
+  async upsertPriceProduct(game: Game, USDprice: IsetProduct) {
         // buscare productos
         await this.findProducto()
         // update stock

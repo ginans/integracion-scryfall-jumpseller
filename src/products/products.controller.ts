@@ -21,8 +21,8 @@ export class ProductsController {
     return this.productsService.createOrUpdateProduct(product);
   }
   @Post("prices")
-  createPrice(@Body() game: Game, price: IsetProduct) {
-    return this.productsPriceService.upsertPriceProduct(game, price);
+  createPrice(@Body() game: Game, USDprice: IsetProduct) {
+    return this.productsPriceService.upsertPriceProduct(game, USDprice);
   } 
 
   @Get()

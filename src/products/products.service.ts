@@ -214,12 +214,15 @@ export class ProductsService {
       if (productToUpdate) {
         // carcular el nuevo stock general (stock en bd - cantidad vendida)
         const newStock = Math.max(0, productToUpdate.stock - webhookProduct.qty);
+        
+        // Calcular el nuevo historySales (historial de ventas + cantidad vendida)
+        const newHistorySales = (productToUpdate.historySales || 0) + webhookProduct.qty;
 
         // Crear registro de historial de stock
         const stockHistoryEntry = {
           quantityDiscounted: webhookProduct.qty,
           date: new Date(order.completed_at),//asignar fecha de junpseller
-          orderId: order.id || 'unknown',
+          orderId: order.id,
           previousStock: productToUpdate.stock,
           newStock: newStock
         };
@@ -228,49 +231,58 @@ export class ProductsService {
         await this.productModel.findOneAndUpdate(
           { id: webhookProduct.id },
           {
-            $set: { stock: newStock}, 
+            $set: { 
+              stock: newStock,
+              historySales: newHistorySales //ventas historicas generales
+            }, 
             $push: { stockHistory: stockHistoryEntry },  // Actualizar stock y agregar al historial
-            // $push: { stockHistory: stockHistoryEntry }  // Agregar al historial
           }
         );
 
-        this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}`);
+        this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}, historySales: ${newHistorySales}`);
 
         // actualizar el stock de la variante si existe
         if (webhookProduct.variant_id && productToUpdate.variants && productToUpdate.variants.length > 0) {
           // Encontrar el stock anterior de la variante
           const variant = productToUpdate.variants.find(v => v.id === webhookProduct.variant_id);
           const previousVariantStock = variant ? variant.stock : 0;
+          const previousVariantHistorySales = variant ? (variant.historySales || 0) : 0;
           
           // Calcular el nuevo stock asegurando que no sea negativo
           const newVariantStock = Math.max(0, previousVariantStock - webhookProduct.qty);
           
+          // calcular el nuevo historySales de la variante ventas historicas = ventas anteriores + cantidad vendida
+          const newVariantHistorySales = previousVariantHistorySales + webhookProduct.qty;
+          
           // Preparar el nuevo registro de historial
           const newStockHistoryEntry = {
             quantityDiscounted: webhookProduct.qty,
-            date: new Date(),
-            orderId: order.id || 'unknown',
+            date: new Date(order.completed_at),
+            orderId: order.id,
             previousStock: previousVariantStock,
             newStock: newVariantStock
           };
 
-            await this.productModel.findOneAndUpdate(
-              {
-                id: webhookProduct.id,
-                "variants.id": webhookProduct.variant_id
+          //encontrar y actualizar el stock de la variante y las ventas historicas
+          await this.productModel.findOneAndUpdate(
+            {
+              id: webhookProduct.id,
+              "variants.id": webhookProduct.variant_id
+            },
+            {
+              $set: { 
+                "variants.$.stock": newVariantStock, //nuevo stock de variante
+                "variants.$.historySales": newVariantHistorySales//ventas historicas por variante
               },
-              {
-                $set: { 
-                  "variants.$.stock": newVariantStock,
-                },
-                $push: { 
-                  "variants.$.stockHistory": newStockHistoryEntry 
-                }
+              $push: { 
+                "variants.$.stockHistory": newStockHistoryEntry 
               }
-            );
+            }
+          );
 
           this.logger.log(`stock de variante actualizado para el producto con id 
-                ${webhookProduct.id}, id de variante ${webhookProduct.variant_id}`);
+                ${webhookProduct.id}, id de variante ${webhookProduct.variant_id}, 
+                nuevo stock: ${newVariantStock}, historySales: ${newVariantHistorySales}`);
         }
       } else {
         this.logger.warn(`id producto no encontrado ${webhookProduct.id}`);

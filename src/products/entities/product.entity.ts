@@ -47,6 +47,9 @@ export class Product implements IdataProduct {
   @Prop({ default: 100 })
   stock: number;
 
+  @Prop({ default: 0 })
+  historySales: number;
+
   @Prop({ default: [] })
   stockHistory: StockHistoryEntry[]
 
@@ -144,6 +147,7 @@ export class Product implements IdataProduct {
         sku: String,
         barcode: String,
         stock: { type: Number, default: 0 },
+        historySales: Number,
         stockHistory: { type: [] },
         stock_unlimited: Boolean,
         stock_threshold: Number,
@@ -174,6 +178,7 @@ export class Product implements IdataProduct {
     sku: string;
     barcode: string;
     stock: number;
+    historySales: number;
     stockHistory: StockHistoryEntry[];
     stock_unlimited: boolean;
     stock_threshold: number;

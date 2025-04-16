@@ -31,6 +31,10 @@ export class MagicCardsController {
   async findOne(@Param('id') _id: string): Promise<MagicCard | null> {
     return this.magicCardsService.findOneCard(_id);
   }
+  @Get('by-oracle-id/:id')
+  async findCardByOracleId(@Param('id') oracleId: string) {
+    return this.magicCardsService.findCardByOracleId(oracleId);
+  }
     
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateProductCardDto: UpdateProductCardDto) {

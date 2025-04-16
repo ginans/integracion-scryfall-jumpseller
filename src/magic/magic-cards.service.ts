@@ -865,6 +865,13 @@ export class MagicCardsService {
     if (!card) throw new NotFoundException('Card no encontrada');
     return card;
   }
+
+  async findCardByOracleId(oracleId: string): Promise<MappedMagicCard> {
+    const card = await this.model.findOne({ oracleId }).exec();
+    if (!card) throw new NotFoundException('Card no encontrada');
+    return card as unknown as MappedMagicCard;
+  }
+
   async findCardPending(): Promise<MappedMagicCard[]> {
     const response = await this.model.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
     return response as unknown as MappedMagicCard[];

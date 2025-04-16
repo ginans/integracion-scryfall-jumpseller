@@ -122,6 +122,9 @@ export class MagicCard implements MappedMagicCard{
     usd: string | null;
     usdFoil: string | null;
     usdEtched: string | null;
+    valorDolarSeleccionado: string | null,
+    valorPesoChilenoCalculado: string | null,
+    valorPesoChilenoCalculadoFoil: string | null,
   };
 
   @Prop()

@@ -172,19 +172,7 @@ export class MagicCardsService {
 
   private mappedDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
     const isfoil = (card.foil === true);
-    const cardFacesColors = card.cardFaces?.map((face) => face.colors).flat() || [];
-    // // Precios mínimos por rareza:
-    // const basePricesBy = {
-    //   "comunC-NF": 200,
-    //   "comunC-F": 400,
-    //   "uncommonU-NF": 300,
-    //   "uncommonU-F": 500,
-    //   "rareR-NF": 500,
-    //   "rareR-F": 1000,
-    //   "mythicM-NF": 1000,
-    //   "mythicM-F": 2000
-    // };
-    
+    const cardFacesColors = card.cardFaces?.map((face) => face.colors).flat() || [];    
     let productDetails = {
       name: card.name || '',
       description: `
@@ -725,10 +713,16 @@ export class MagicCardsService {
       gameChanger: card.game_changer || false,
       rarity: card.rarity || '',
       artist: card.artist || '',
+      //agregar campo vacio para valor del dolar seleccionado desde el front
+      //agregar campos de precio en usd x valor del dolar
       prices: {
         usd: card.prices?.usd || null,
         usdFoil: card.prices?.usd_foil || null,
         usdEtched: card.prices?.usd_etched || null,
+        valorDolarSeleccionado: null,
+        valorPesoChilenoCalculado: null,
+        valorPesoChilenoCalculadoFoil: null,
+
       },
       collectorNumber: card.collector_number || '',
       setId: card.set_id || '',
@@ -942,4 +936,5 @@ export class MagicCardsService {
       throw new InternalServerErrorException(`Error al agregar carta: ${error.message}`);
     }
   }
+
 }

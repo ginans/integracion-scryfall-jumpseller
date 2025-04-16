@@ -38,6 +38,9 @@ export interface MappedMagicCard {
         usd?: string | null;
         usdFoil?: string | null;
         usdEtched?: string | null;
+        valorDolarSeleccionado?: string | null;
+        valorPesoChilenoCalculado?: string | null;
+        valorPesoChilenoCalculadoFoil?: string| null,
     };
     collectorNumber?: string;
     setId?: string;

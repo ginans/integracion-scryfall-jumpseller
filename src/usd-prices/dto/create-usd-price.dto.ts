@@ -1,6 +1,6 @@
 import { IsEmpty, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
-export class CreatePriceDto {
+export class CreateUsdPriceDto {
   gameID: string;
 
   @IsString()

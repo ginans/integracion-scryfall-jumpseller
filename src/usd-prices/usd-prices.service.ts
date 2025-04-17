@@ -1,25 +1,24 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { CreatePriceDto } from './dto/create-price.dto';
-import { UpdatePriceDto } from './dto/update-price.dto';
+import { CreateUsdPriceDto } from './dto/create-usd-price.dto';
+import { UpdatePriceDto } from './dto/update-usd-price.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Price } from './entities/price.entity';
-import { EnumGame } from './enums/games.enum';
+import { UsdPrice } from './entities/usd-price.entity';
 
 @Injectable()
-export class PricesService {
+export class UsdPricesService {
   constructor(
-    @InjectModel(Price.name) private priceModel: Model<Price>,
+    @InjectModel(UsdPrice.name) private usdPriceModel: Model<UsdPrice>,
   ) {}
   
   //funcion para guardar en base d datos
-  async createPrice(createPriceDto: CreatePriceDto) {
+  async createPrice(createUsdPriceDto: CreateUsdPriceDto) {
     try{
-      const existingPriceGame = await this.priceModel.findOne({ gameID: createPriceDto.gameID });
-      if(existingPriceGame){
+      const existingUsdPriceGame = await this.usdPriceModel.findOne({ gameID: createUsdPriceDto.gameID });
+      if(existingUsdPriceGame){
         throw new Error('Este juego ya se registro');
       }else{
-        return await this.priceModel.create(createPriceDto);
+        return await this.usdPriceModel.create(createUsdPriceDto);
       }
     }catch(error) {
       return error;
@@ -28,7 +27,7 @@ export class PricesService {
 
   findAllPrices() {
     try{
-      return this.priceModel.find({}).exec();
+      return this.usdPriceModel.find({}).exec();
     }catch(error) {
       return error;
     }
@@ -38,9 +37,9 @@ export class PricesService {
     return `This action returns a #${id} price`;
   }
 
-  async updatePriceByGame(gameID: string, usdPrice: number) {
+  async updateUsdPriceByGame(gameID: string, usdPrice: number) {
     try {
-      const updatedPrice = await this.priceModel.findOneAndUpdate(
+      const updatedPrice = await this.usdPriceModel.findOneAndUpdate(
         { gameID },
         { usdPrice },
         { new: true }

@@ -27,7 +27,8 @@ import { MagicCardsModule } from './magic/magic-cards.module';
 import { JumpsellerModule } from './jumpseller/jumpseller.module';
 import { ProcessModule } from './process/process.module';
 import { ProductsModule } from './products/products.module';
-import { PricesModule } from './prices/prices.module';
+import { BasePricesModule } from './base-prices/base-prices.module';
+import { UsdPricesModule } from './usd-prices/usd-prices.module';
 
 @Module({
   imports: [
@@ -64,7 +65,8 @@ import { PricesModule } from './prices/prices.module';
     JumpsellerModule,
     ProcessModule,
     ProductsModule,
-    PricesModule,
+    UsdPricesModule,
+    BasePricesModule,
   ],
   controllers: [AppController],
   providers: [

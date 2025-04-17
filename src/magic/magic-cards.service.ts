@@ -719,7 +719,6 @@ export class MagicCardsService {
         usd: card.prices?.usd || null,
         usdFoil: card.prices?.usd_foil || null,
         usdEtched: card.prices?.usd_etched || null,
-        valorDolarSeleccionado: null,
         valorPesoChilenoCalculado: null,
         valorPesoChilenoCalculadoFoil: null,
 
@@ -955,4 +954,50 @@ export class MagicCardsService {
     }
   }
 
+  //agregar historial de actualizaciones de precio
+
+  //agregar funcion para agregar valor del dolar desde el front
+//   async addDollarValueToCard(oracleId: string, value: string, isFoil?: boolean): Promise<MappedMagicCard> {
+//     try {
+//       //verificar que la carta existe en bd
+//       const card = await this.model.findOne({ oracleId });
+//       if (!card) throw new NotFoundException('Card no encontrada');
+
+//       //cargar valor del dolar en la carta
+//       const dollarValue = parseFloat(value);//pasar a formato dolar numero
+//       if (isNaN(dollarValue)) throw new BadRequestException('Valor del dolar inválido');
+
+//       //actualizar el valor del dolar en la carta
+//       card.prices.valorDolarSeleccionado = dollarValue.toString();//pasar a string
+
+//       //carcular el valor en peso chileno para foil y no foil pero solo si existe foil
+//       if (card.foil === isFoil){
+//         const usdFoilPrice = card.prices.usdFoil ? parseFloat(card.prices.usdFoil) : 0;// deberia ser 1 para que tome otro valor?
+//         const valorFoilCalculado=  card.prices.valorPesoChilenoCalculadoFoil = (usdFoilPrice * dollarValue).toFixed(0);
+//         const foilCalculadoToString = valorFoilCalculado.toString();
+//         //guardar el valor en la carta
+//       }
+//       if (card.nonfoil !== isFoil){
+//         const usdPrice = card.prices.usd ? parseFloat(card.prices.usd) : 0;
+//         const valorCalculado=  card.prices.valorPesoChilenoCalculado = (usdPrice * dollarValue).toFixed(0);
+//         const calculadoToString = valorCalculado.toString();
+//         //guardar el valor en la carta
+//       }
+      
+
+
+//       return await card.save(); // Guardar los cambios en la base de datos
+      
+//     } catch (error) {
+//       this.logger.error(`Error al agregar valor del dolar: ${error.message}`);
+//       throw new InternalServerErrorException(`Error al agregar valor del dolar: ${error.message}`);
+//     }
+// }
+
+//Dentro del modulo productos agregar tabla de nombre ProductConfig con los campos tipo de juego (magic , pokmone ) y valor en peso chileno
+// eentregar un endpoint que permita agregar o actualizar dichos campos
+// una ves actualizados o creados se debe gatillar funcion que calcula el precio de la carta con el valor ingresar en la tabla productConfig
+
 }
+
+

@@ -5,25 +5,16 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { IreqWebhookSalesProduct } from 'src/jumpseller/interfaces/webhook/saleData.interface';
 import { MappedMagicCard } from 'src/jumpseller/interfaces/mapped-magic-card.interface';
-import { ProductsPriceService } from './products.price.service';
-import { Game } from './enums/games.enum';
-
 @Controller('products')
 export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
-    private readonly productsPriceService: ProductsPriceService
-
   ) {}
 
   @Post()
   create(@Body() product: IsetProduct) {
     return this.productsService.createOrUpdateProduct(product);
   }
-  @Post("prices")
-  createPrice(@Body() game: Game, USDprice: IsetProduct) {
-    return this.productsPriceService.upsertPriceProduct(game, USDprice);
-  } 
 
   @Get()
   async findAll(@Query() query: PaginationQueryDto): Promise<PaginatedResponse<IdataProduct>> {

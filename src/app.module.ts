@@ -27,6 +27,7 @@ import { MagicCardsModule } from './magic/magic-cards.module';
 import { JumpsellerModule } from './jumpseller/jumpseller.module';
 import { ProcessModule } from './process/process.module';
 import { ProductsModule } from './products/products.module';
+import { PricesModule } from './prices/prices.module';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { ProductsModule } from './products/products.module';
     JumpsellerModule,
     ProcessModule,
     ProductsModule,
+    PricesModule,
   ],
   controllers: [AppController],
   providers: [

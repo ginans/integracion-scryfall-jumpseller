@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
-import { BasePrice } from "../interfaces/prices.interface";
+import { BasePrice } from "../interfaces/usd-prices.interface";
 import { EnumGame } from "../enums/games.enum";
 
 @Schema({ timestamps: true })
-export class Price implements BasePrice {
+export class UsdPrice implements BasePrice {
 @Prop({ 
     default: function() {
         if (this.game === EnumGame.POKEMON) {
@@ -28,5 +28,5 @@ gameID: string;
 
 }
 
-export type PriceDocument = HydratedDocument<Price>;
-export const PriceSchema = SchemaFactory.createForClass(Price);
+export type UsdPriceDocument = HydratedDocument<UsdPrice>;
+export const UsdPriceSchema = SchemaFactory.createForClass(UsdPrice);

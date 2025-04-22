@@ -4,6 +4,9 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/magic/scryfall/scryfall.service';
 import { IenumURLLang } from 'src/magic/scryfall/enums/lang.enum';
+import { MagicCard, magicCardDocument } from 'src/magic/entities/magic-card.entity';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 
 interface Ilist {
@@ -22,7 +25,15 @@ export class ProcessService {
   constructor(
     private readonly scryfallService: ScryfallService,
     @InjectQueue('queues-magic') private readonly queuesMagic: Queue,
+    @InjectQueue('queues-stock') private readonly queuesStock: Queue,
   ) { }
+
+  async updateStockQueue(products){
+    for(const product of products){
+      await this.queuesStock.add('update-stock', product
+    )}
+    
+  }
 
 
   async initCardMagic(): Promise<void> {

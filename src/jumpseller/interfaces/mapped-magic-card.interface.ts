@@ -41,6 +41,13 @@ export interface MappedMagicCard {
         valorPesoChilenoCalculado?: string | null;
         valorPesoChilenoCalculadoFoil?: string| null,
     };
+    stock?: {
+        stock?: number | null;
+        product_id?: number | null;
+        variant_id?: number | null;
+        location_id?: number | null;
+        stock_unlimited?: boolean | null;
+    }[]
     collectorNumber?: string;
     setId?: string;
     set?: string;

@@ -17,6 +17,7 @@ import { Order } from './interfaces/webhook/saleData.interface';
 import { UpdateCustomFieldRequest } from './interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
 import { UpdateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/updateCustomFieldResponse.interface';
 import { CustomFieldResponse, GetAllCustomFieldResponse } from './interfaces/jumpselllerCustomFields/getAllCustomFieldResponse.interface';
+import { StockJumpsellerRequest } from './interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 
 @Injectable()
 export class JumpsellerService {  
@@ -288,6 +289,36 @@ export class JumpsellerService {
           this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
         }
       }
+    }
+
+    async addStocktoJumpseller( product: StockJumpsellerRequest) {
+      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products_locations`;
+      const login = process.env.JUMPSELLER_LOGIN
+      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
+      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+      try {
+        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify({ product })}`);
+        const {data}= await axios.put(
+          jumpsellerApiUrl,
+          { product }, 
+          { 
+            headers: {
+              Authorization: `Basic ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        return data 
+      } catch (error) {
+        this.logger.error(`❌ Error actualizar stock en Jumpseller: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(`Código de estado: ${error.response.status}`);
+          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+        }
+      }
+
     }
 
 

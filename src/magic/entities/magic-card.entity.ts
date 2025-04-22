@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { MappedMagicCard } from '../../jumpseller/interfaces/mapped-magic-card.interface';
+import { EnumCondition } from '../enums/condition.enum';
+import { EnumStatus } from '../enums/status.enum';
 
 @Schema({ timestamps: true })
 export class MagicCard implements MappedMagicCard{
@@ -125,6 +127,14 @@ export class MagicCard implements MappedMagicCard{
     valorPesoChilenoCalculado: string | null,
     valorPesoChilenoCalculadoFoil: string | null,
   };
+  @Prop({ type: Array })
+  stock: {
+    product_id?: number;
+    variant_id?: number;
+    stock?: number;
+    location_id?: number;
+    stock_unlimited?: boolean;
+  }[];
 
   @Prop()
   gameChanger: boolean;
@@ -151,9 +161,12 @@ export class MagicCard implements MappedMagicCard{
   games: string[];
 
   @Prop({
-    default: "pending",
+    default: EnumStatus.PENDING,
   })
-  status: string;
+  status: EnumStatus;
+
+  @Prop({ default: EnumCondition.NearMint })
+  condition: EnumCondition;
 
 }
 

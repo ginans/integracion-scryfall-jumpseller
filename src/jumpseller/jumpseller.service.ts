@@ -269,7 +269,7 @@ export class JumpsellerService {
       try {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
         this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify({ product })}`);
-        const {data}= await axios.put(
+        const data = await axios.put(
           jumpsellerApiUrl,
           product, 
           { 
@@ -279,7 +279,7 @@ export class JumpsellerService {
             },
           }
         );
-        return data 
+        return data.data
       } catch (error) {
         this.logger.error(`❌ Error actualizar stock en Jumpseller: ${error.message}`);
         if (error.response) {

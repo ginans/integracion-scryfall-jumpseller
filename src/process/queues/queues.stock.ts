@@ -80,9 +80,14 @@ export class QueuesStock extends WorkerHost {
           console.log(`🤡cuerpo de stock con ULTTRA typado: ${mapStockItemToJumpsellerRequest(stockItem) as StockMappingResult}`);
           
           const stockRequest = mapStockItemToJumpsellerRequest(stockItem);
-          // [Nest] 484  - 24-04-2025, 2:01:18 a. m.   DEBUG [JumpsellerService] Cuerpo de la solicitud: {"stock":10,"product_id":0,"variant_id":0,"location_id":46801,"stock_unlimited":false}
           this.logger.log(` 🦍 body de stock enviado a jumpseller ${JSON.stringify(stockRequest)}`);
-          await this.jumpsellerService.addStocktoJumpseller(stockRequest); 
+          try{
+            const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);  
+            this.logger.log(` 🦍 respuesta stock ${JSON.stringify(response)}`);
+          }catch (error) {
+            this.logger.error(`Error al enviar stock a Jumpseller: ${error}`);
+            throw new Error(`Error al enviar stock a Jumpseller: ${error}`);
+          }
         }
     }
     

@@ -1,6 +1,16 @@
 export interface IsetMagic{
     idJumpSeller?:number;
-    status?:string
+    status?:string,
+    stock?: [{
+        name?: string,
+        another_lang_name?: string,
+        sku?: string,
+        product_id?: number,
+        stock?: number,
+        variant_id?: number,
+        location_id?: number,
+        stock_unlimited?: boolean,
+      }]
 }
 
 //info mapeada
@@ -20,28 +30,37 @@ export interface MappedMagicCard {
         small?: string;
     };
     manaCost?: string;
-    cmc?: number;
-    typeLine?: string;
+    cmc: number;
+    typeLine: string;
     printedTypeLine?: string;
-    colors?: string[];
-    colorIdentity?: string[];
-    keywords?: string[];
+    colors: string[];
+    borderColor: string;
+    colorIdentity: string[];
+    keywords: string[];
     finishes?: string[];
     foil?: boolean;
     nonfoil?: boolean;
     cardFaces?: CardFace[];
-    legalities?: Record<string, string>;
-    gameChanger?: boolean;
-    rarity?: string;
-    artist?: string;
+    legalities: Record<string, string>;
+    gameChanger: boolean;
+    rarity: string;
+    artist: string;
+    fullArt: boolean;
+    textless: boolean;
+    power: string;
+    toughness: string;
     prices?: {
         usd?: string | null;
         usdFoil?: string | null;
         usdEtched?: string | null;
         valorPesoChilenoCalculado?: string | null;
         valorPesoChilenoCalculadoFoil?: string| null,
+        valorPesoChilenoCalculadoEtched?: string | null;
     };
     stock?: {
+        name?: string;
+        another_lang_name?: string;
+        sku?: string;
         stock?: number | null;
         product_id?: number | null;
         variant_id?: number | null;
@@ -51,7 +70,8 @@ export interface MappedMagicCard {
     collectorNumber?: string;
     setId?: string;
     set?: string;
-    setName?: string;
+    setType: string;
+    setName: string;
     games?: string[];
 }
 
@@ -59,15 +79,23 @@ interface CardFace {
     object?: string;
     name?: string;
     printedName?: string;
-    manaCost?: string;
-    typeLine?: string;
-    printedTypeLine?: string;
-    oracleText?: string;
-    printedText?: string;
-    colors?: string[];
-    artist?: string;
+    manaCost: string;
+    typeLine: string;
+    printedTypeLine: string;
+    oracleText: string;
+    printedText: string;
+    colors: string[];
+    power: string;
+    toughness: string;
+    artist: string;
+    artistId?: string;
+    illustrationId?: string;
     imageUris?: {
-      small?: string;
-      large?: string;
+        small: string;
+        normal?: string;
+        large: string;
+        png?: string;
+        artCrop?: string;
+        borderCrop?: string;
     };
 }

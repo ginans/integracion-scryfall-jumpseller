@@ -3,70 +3,89 @@ import { HydratedDocument, Types } from 'mongoose';
 import { MappedMagicCard } from '../../jumpseller/interfaces/mapped-magic-card.interface';
 import { EnumCondition } from '../enums/condition.enum';
 import { EnumStatus } from '../enums/status.enum';
+import { Stock } from 'src/process/interface/stock.interface';
 
 @Schema({ timestamps: true })
 export class MagicCard implements MappedMagicCard{
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
-
-
+  
+  
   @Prop({ default: null })
   idJumpSeller: number;
-
+  
   @Prop({ required: true })
   id: string;
-
+  
   @Prop()
   oracleId: string;
-
+  
   @Prop()
   name: string;
-
+  
   @Prop()
   printedName: string;
-
+  
   @Prop()
   oracleText: string;
-
+  
   @Prop()
   printedText: string;
-
+  
   @Prop()
   lang: string;
-
+  
   @Prop()
   uri: string;
-
+  
   @Prop()
   layout: string;
-
+  
   @Prop({ type: Object })
   imageUris: {
     small: string;
     large: string;
   };
-
+  
   @Prop()
   manaCost: string;
-
+  
   @Prop()
   cmc: number;
-
+  
   @Prop()
   typeLine: string;
-
+  
   @Prop()
   printedTypeLine: string;
-
+  
   @Prop({ type: [String]})
   colors: string[];
-
+  
   @Prop({ type: [String] })
   colorIdentity: string[];
 
+  @Prop()
+  borderColor: string;
+
+  @Prop()
+  fullArt: boolean;
+
+  @Prop()
+  textless: boolean;
+
+  @Prop()
+  power: string;
+
+  @Prop()
+  toughness: string;
+
+  @Prop({ type: [String]})
+  setType: string;
+  
   @Prop({ type: [String]})
   keywords: string[];
-
+  
   @Prop({ type: [String]})
   finishes: string[];
 
@@ -85,6 +104,8 @@ export class MagicCard implements MappedMagicCard{
     printedTypeLine: string;
     oracleText: string;
     printedText: string;
+    power: string;
+    toughness: string;
     colors: string[];
     artist: string;
     imageUris: {
@@ -126,15 +147,10 @@ export class MagicCard implements MappedMagicCard{
     usdEtched: string | null;
     valorPesoChilenoCalculado: string | null,
     valorPesoChilenoCalculadoFoil: string | null,
+    valorPesoChilenoCalculadoEtched: string | null;
   };
   @Prop({ type: Array })
-  stock: {
-    product_id?: number;
-    variant_id?: number;
-    stock?: number;
-    location_id?: number;
-    stock_unlimited?: boolean;
-  }[];
+  stock: Stock[];
 
   @Prop()
   gameChanger: boolean;
@@ -155,7 +171,7 @@ export class MagicCard implements MappedMagicCard{
   set: string;
 
   @Prop()
-  setName?: string;
+  setName: string;
 
   @Prop({ type: [String]})
   games: string[];

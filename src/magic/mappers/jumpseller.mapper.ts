@@ -22,6 +22,7 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
     case 'uncommon': rarity = 'Infrecuente'; break;
     case 'common': rarity = 'Común'; break;
   }
+  const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
     description: `
@@ -46,10 +47,10 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
         : card.finishes?.includes('etched')
           ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
           : 0,
-    sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber
-      ? (card.collectorNumber.length <= 4
-        ? card.collectorNumber.padStart(4, '0')
-        : card.collectorNumber)
+    sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
+      ? (collectorNumberToUpperCase.length <= 4
+        ? collectorNumberToUpperCase.padStart(4, '0')
+        : collectorNumberToUpperCase)
       : ''}`,
     stock: 0,
     weight: 2,
@@ -70,6 +71,7 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     case 'uncommon': rarity = 'Infrecuente'; break;
     case 'common': rarity = 'Común'; break;
   }
+  const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
     description: `
@@ -94,10 +96,10 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
         : card.finishes?.includes('etched')
           ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
           : 0,
-    sku: `M-${card.set?.toUpperCase() || ''}${card.collectorNumber
-      ? (card.collectorNumber.length <= 4
-        ? card.collectorNumber.padStart(4, '0')
-        : card.collectorNumber)
+    sku: `M-${card.set?.toUpperCase() || ''}${ collectorNumberToUpperCase
+      ? (collectorNumberToUpperCase.length <= 4
+        ? collectorNumberToUpperCase.padStart(4, '0')
+        : collectorNumberToUpperCase)
       : ''}`,
     stock: 0,
     weight: 2,
@@ -121,10 +123,19 @@ export function mapCardFace2ImageToJumpseller(card: MappedMagicCard): Jumpseller
   return { image: { url: card.cardFaces[1]?.imageUris.large || '', position: 0 } };
 }
 
+
 export function mapVariantsToJumpseller(
     card: MappedMagicCard,
     languages: Language[]
 ): JumpsellerCreateVariantRequest[] {
+
+  const priceCondition = card.nonfoil
+                ? parseInt(card.prices?.valorPesoChilenoCalculado) || 0
+                : card.foil
+                    ? parseInt(card.prices?.valorPesoChilenoCalculadoFoil) || 0
+                    : card.finishes?.includes('etched')
+                        ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
+                        : 0;
     const finishes = [
         { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
         { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
@@ -135,23 +146,17 @@ export function mapVariantsToJumpseller(
     for (const lang of languages) {
         for (const finish of finishes) {
             if (!finish.available) continue;
-            const base = card.collectorNumber
-                ? (card.collectorNumber.length <= 4
-                    ? card.collectorNumber.padStart(4, '0')
-                    : card.collectorNumber)
+            const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
+            const base = collectorNumberToUpperCase
+                ? (collectorNumberToUpperCase.length <= 4
+                    ? collectorNumberToUpperCase.padStart(4, '0')
+                    : collectorNumberToUpperCase)
                 : '';
             const sku = `M-${card.set?.toUpperCase() || ''}${base ? base + `-${lang.code.toUpperCase()}-${finish.suffix}` : ''}`;
-
             variants.push({
                 variant: {
                     sku,
-                    price: card.nonfoil
-                    ? parseInt(card.prices?.valorPesoChilenoCalculado) || 0
-                    : card.foil
-                        ? parseInt(card.prices?.valorPesoChilenoCalculadoFoil) || 0
-                        : card.finishes?.includes('etched')
-                        ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
-                        : 0,
+                    price: priceCondition,
                     options: [
                       { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
                       { name: 'Finish',  option_type: JumpsellerOptionType.OPTION, value: finish.name },

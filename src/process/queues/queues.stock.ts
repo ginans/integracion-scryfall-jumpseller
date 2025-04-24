@@ -34,12 +34,14 @@ export class QueuesStock extends WorkerHost {
     await this.magicCardModel.updateOne(
       { 
         idJumpSeller: product.product_id, 
-        "stock.variantId": product.variant_id,
-        "stock.productId": product.product_id,
+        "stock.variant_id": product.variant_id,
+        "stock.product_id": product.product_id,
       },
       {
         $set: {
-          "stock.$.stock": product.stock
+          "stock.$.stock": product.stock,
+          "stock.$.location_id": product.location_id,
+          "stock.$.stock_unlimited": product.stock_unlimited,
         }
       }
     );
@@ -47,8 +49,8 @@ export class QueuesStock extends WorkerHost {
     //traer la data de base de datos
     const magicCard = await this.magicCardModel.findOne(
       {
-        "stock.productId": product.product_id, 
-        "stock.variantId": product.variant_id
+        "stock.product_id": product.product_id, 
+        "stock.variant_id": product.variant_id
       }
     );
    

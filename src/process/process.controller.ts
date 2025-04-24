@@ -1,9 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { MagicCard, magicCardDocument } from 'src/magic/entities/magic-card.entity';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
-
 
 @Controller('process')
 export class ProcessController {

@@ -38,7 +38,7 @@ export class ScryfallService {
       return data;
       
     } catch (error) {
-      this.logger.error(`❌ Fallo al traer las cartas ${oracle_id} no encontrada variante espanol: ${error.message}`);
+      this.logger.error(`❌ Fallo al traer las cartas ${oracle_id} desde scryfall no encontrada carta en idioma ${lang} : ${error.message}`);
     }
   }
 

@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { IdataProduct } from '../interface/product.interface';
-import { StockHistoryEntry } from '../interface/stock-history.interface';
 
 @Schema({ timestamps: true })
 export class Product implements IdataProduct {
@@ -50,8 +49,14 @@ export class Product implements IdataProduct {
   @Prop({ default: 0 })
   historySales: number;
 
-  @Prop({ default: [] })
-  stockHistory: StockHistoryEntry[]
+  @Prop({ type: [] })
+  stockHistory: Array<{
+    quantityDiscounted: number;
+    date: Date;
+    orderId: string;
+    previousStock: number;
+    newStock: number;
+  }>;
 
   @Prop({ default: true })
   stock_unlimited: boolean;
@@ -179,7 +184,13 @@ export class Product implements IdataProduct {
     barcode: string;
     stock: number;
     historySales: number;
-    stockHistory: StockHistoryEntry[];
+    stockHistory: Array<{
+      quantityDiscounted: number;
+      date: Date;
+      orderId: string;
+      previousStock: number;
+      newStock: number;
+    }>;
     stock_unlimited: boolean;
     stock_threshold: number;
     stock_notification: boolean;

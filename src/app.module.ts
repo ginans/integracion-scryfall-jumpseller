@@ -29,6 +29,7 @@ import { ProcessModule } from './process/process.module';
 import { ProductsModule } from './products/products.module';
 import { BasePricesModule } from './base-prices/base-prices.module';
 import { UsdPricesModule } from './usd-prices/usd-prices.module';
+import { StockModule } from './stock/stock.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { UsdPricesModule } from './usd-prices/usd-prices.module';
     ProductsModule,
     UsdPricesModule,
     BasePricesModule,
+    StockModule,
   ],
   controllers: [AppController],
   providers: [

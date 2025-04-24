@@ -137,8 +137,8 @@ export function mapVariantsToJumpseller(
                         ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
                         : 0;
     const finishes = [
-        { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
         { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
+        { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
         { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
     ];
     const variants: JumpsellerCreateVariantRequest[] = [];
@@ -158,8 +158,8 @@ export function mapVariantsToJumpseller(
                     sku,
                     price: priceCondition,
                     options: [
-                      { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
                       { name: 'Finish',  option_type: JumpsellerOptionType.OPTION, value: finish.name },
+                      { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
                     ],
                 },
             });

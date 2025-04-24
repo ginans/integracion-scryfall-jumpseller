@@ -145,15 +145,6 @@ export class MagicCardsService {
         }
       }
 
-      // 5. sincronizar stock
-      // if (enCard.idJumpSeller) {
-      //   const cardDoc = await this.model.findOne({ idJumpSeller: enCard.idJumpSeller }).exec();
-      //   for (const stk of cardDoc?.stock || []) {
-      //     await this.jumpsellerService.addStocktoJumpseller(stk);
-      //     await this.delay(300);
-      //   }
-      // }
-
       // 6. insertar imágenes
       if (enCard.idJumpSeller) {
         const imgReq = mapImageToJumpseller(enCard);
@@ -171,7 +162,7 @@ export class MagicCardsService {
 
       // 7. obtener respuesta final y guardar en products
       if (enCard.idJumpSeller) {
-        const finalRes = await this.jumpsellerService.getAllJumpsellerProducts(enCard.idJumpSeller);
+        const finalRes = await this.jumpsellerService.getJumpsellerProductById(enCard.idJumpSeller);
         await this.productsService.createOrUpdateProduct({ oracleId: enCard.oracleId, ...finalRes.product });
         await this.delay(300);
       }

@@ -110,36 +110,49 @@ export class MagicCardsService {
             variantReq
           );
           await this.delay(300);
-          // guardar stock nuevo
-          await this.model.updateOne(
-            { id: enCard.id },
-            {
-              $push: {
-                stock: {
-                  card_name: enCard.name? enCard.name : "",
-                  another_lang_name: enCard.printedName? enCard.printedName : "",
-                  sku: varRes.variant.sku,
-                  product_id: enCard.idJumpSeller,
-                  variant_id: varRes.variant.id,
-                  location_id: 46801,        // CAMBIAR, TEMPORAL
-                  stock_unlimited: false,   // CAMBIAR, TEMPORAL
-                  stock: 10                 // CAMBIAR, TEMPORAL
+          
+          //verificar si esta variante ya existe en el stock antes de agregarla
+          const cardWithStock = await this.model.findOne({
+            id: enCard.id,
+            "stock.variant_id": varRes.variant.id,
+            "stock.product_id": enCard.idJumpSeller
+          });
+          
+          if (!cardWithStock) {
+            //solo agregar al stock si no existe
+            this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
+            await this.model.updateOne(
+              { id: enCard.id },
+              {
+                $push: {
+                  stock: {
+                    card_name: enCard.name? enCard.name : "",
+                    another_lang_name: enCard.printedName? enCard.printedName : "",
+                    sku: varRes.variant.sku,
+                    product_id: enCard.idJumpSeller,
+                    variant_id: varRes.variant.id,
+                    location_id: null,       
+                    stock_unlimited: null,   
+                    stock: null             
+                  }
                 }
               }
-            }
-          );
+            );
+          } else {
+            this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
+          }
           await this.delay(300);
         }
       }
 
       // 5. sincronizar stock
-      if (enCard.idJumpSeller) {
-        const cardDoc = await this.model.findOne({ idJumpSeller: enCard.idJumpSeller }).exec();
-        for (const stk of cardDoc?.stock || []) {
-          await this.jumpsellerService.addStocktoJumpseller(stk);
-          await this.delay(300);
-        }
-      }
+      // if (enCard.idJumpSeller) {
+      //   const cardDoc = await this.model.findOne({ idJumpSeller: enCard.idJumpSeller }).exec();
+      //   for (const stk of cardDoc?.stock || []) {
+      //     await this.jumpsellerService.addStocktoJumpseller(stk);
+      //     await this.delay(300);
+      //   }
+      // }
 
       // 6. insertar imágenes
       if (enCard.idJumpSeller) {

@@ -4,15 +4,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Job } from 'bullmq';
 import { Model } from 'mongoose';
 import { MagicCard, magicCardDocument } from 'src/magic/entities/magic-card.entity';
-import { MagicCardsService } from 'src/magic/magic-cards.service';
-import { IenumURLLang } from 'src/magic/scryfall/enums/lang.enum';
-import { ScryfallCardResponse } from 'src/magic/scryfall/interfaces/scryfall.interface';
 import { Stock } from '../interface/stock.interface';
-import { Jumpseller } from 'src/jumpseller/entities/jumpseller.entity';
 import { JumpsellerService } from 'src/jumpseller/jumpseller.service';
 import { StockJumpsellerRequest } from 'src/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
-import { MappedMagicCard } from 'src/jumpseller/interfaces/mapped-magic-card.interface';
-import { mapDBProductToJumpseller } from 'src/magic/mappers/jumpseller.mapper';
 
 @Processor('queues-stock')
 export class QueuesStock extends WorkerHost {

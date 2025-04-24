@@ -55,8 +55,8 @@ export class JumpsellerService {
     }
 
     //obtener todos los productos de jumpseller
-    async getAllJumpsellerProducts(id:number) : Promise<JumpsellerGetAllProductResponse> { 
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${id}.json`;
+    async getAllJumpsellerProducts() : Promise<JumpsellerGetAllProductResponse> { 
+      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
@@ -73,7 +73,35 @@ export class JumpsellerService {
         );
         return data as JumpsellerProductResponse;
       } catch (error) {
-        this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
+        this.logger.error(`❌ Error al traer todos los productos de Jumpseller: ${error.message}`);
+        if (error.response) {
+          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+          this.logger.error(`Código de estado: ${error.response.status}`);
+          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+        }
+      }
+    }
+
+    //obtener un producto por id de jumpseller
+    async getJumpsellerProductById(productId: number): Promise<JumpsellerGetAllProductResponse> {
+      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}.json`;
+      const login = process.env.JUMPSELLER_LOGIN
+      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
+      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+      try {
+        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
+        const {data}= await axios.get(
+          jumpsellerApiUrl,
+          { 
+            headers: {
+              Authorization: `Basic ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        return data as JumpsellerProductResponse;
+      } catch (error) {
+        this.logger.error(`❌ Error al traer el producto ${productId} de Jumpseller: ${error.message}`);
         if (error.response) {
           this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
           this.logger.error(`Código de estado: ${error.response.status}`);

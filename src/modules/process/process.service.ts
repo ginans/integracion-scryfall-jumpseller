@@ -26,6 +26,7 @@ export class ProcessService {
     private readonly scryfallService: ScryfallService,
     @InjectQueue('queues-magic') private readonly queuesMagic: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
+    @InjectQueue('queues-prices') private readonly queuesPrices: Queue,
   ) { }
 
   async updateStockQueue(products){
@@ -33,10 +34,11 @@ export class ProcessService {
       await this.queuesStock.add('update-stock', product
     )}
   }
+  
   async updatePricesQueue(products){
-    // for(const product of products){
-    //   await this.queuesStock.add('update-stock', product
-    // )}
+    for(const product of products){
+      await this.queuesPrices.add('update-prices', product
+    )}
   }
 
 

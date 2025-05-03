@@ -10,11 +10,11 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Payload } from './interface/payload.interface';
 import * as argon2 from 'argon2';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from 'src/modules/users/users.service';
 import { ReplacePassDto } from './dto/replace-pass.dto';
-import { MailService } from '../mail/mail.service';
+import { MailService } from '../modules/mail/mail.service';
 import { RecoverPassDto } from './dto/recover.dto';
-import { User } from '../users/entities/user.entity';
+import { User } from '../modules/users/entities/user.entity';
 import { last } from 'rxjs';
 
 @Injectable()

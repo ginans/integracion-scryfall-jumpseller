@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { ProcessService } from "./process/process.service";
+import { ProcessService } from "./modules/process/process.service";
 
 @Injectable()
 export class AppService {

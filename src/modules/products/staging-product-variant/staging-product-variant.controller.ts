@@ -20,9 +20,28 @@ export class StagingProductVariantController {
     return this.stagingProductVariantService.findOne(_id);
   }
 
-   @Get('sincronizar-precios-scryfall')
+  @Get('sincronizar-precios-scryfall')
   async calculatePricesForAllCards() {
     return this.stagingProductVariantService.calculatePricesForAllCards();
   }
+
+  @Patch('update-price-updateable/:variantId/:productId')
+  async updateIsPriceUpdateable(
+    @Param('variantId') variantId: number, 
+    @Param('productId') productId: number, 
+    @Body('isPriceUpdateable') isPriceUpdateable: boolean
+  ) {
+    return this.stagingProductVariantService.updateIsPriceUpdateable(variantId, productId, isPriceUpdateable);
+  }
+
+  //actualzarlos todos
+  @Patch('update-all-price-updateable')
+  async updateAllIsPriceUpdateable(
+    @Body('isPriceUpdateable') isPriceUpdateable: boolean
+  ) {
+    return this.stagingProductVariantService.updateAllIsPriceUpdateable(isPriceUpdateable);
+  }
+
+  
 
 }

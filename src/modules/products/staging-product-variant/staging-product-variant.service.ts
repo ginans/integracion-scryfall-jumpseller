@@ -141,9 +141,12 @@ export class StagingProductVariantService {
     }
   } 
 
+  //revisar
   async findOne(_id: ObjectId) {
-    const variantById = this.stagingProductVariantModel.findById(
-      {_id})
+    const variantById = await this.stagingProductVariantModel.findById(_id).exec();
+    if (!variantById) {
+      throw new NotFoundException(`Variant with id ${_id} not found.`);
+    }
     return variantById;
   }
 //----------------------------------------------------------------------------------------------------
@@ -583,5 +586,39 @@ export class StagingProductVariantService {
     );
   }
 
+  //funcion para actualizar isUpdateable a true o false de a uno
+  async updateIsPriceUpdateable(variantId: number, productId: number, isPriceUpdateable: boolean) {
+    await this.stagingProductVariantModel.updateOne(
+      { variantId, productId },
+      {
+        $set: {
+          isPriceUpdateable: isPriceUpdateable,
+        }
+      }
+    );
+  }
 
+  //funcion para actualizar isUpdateable a true o false de todos
+  async updateAllIsPriceUpdateable(isPriceUpdateable: boolean) {
+    await this.stagingProductVariantModel.updateMany(
+      {},
+      {
+        $set: {
+          isPriceUpdateable: isPriceUpdateable,
+        }
+      }
+    );
+  }
+
+  //actualizar solo algunos isUpdateable a true o false
+  async updateSomeIsPriceUpdateable(variantIds: number[], isPriceUpdateable: boolean) {
+    await this.stagingProductVariantModel.updateMany(
+      { variantId: { $in: variantIds } },
+      {
+        $set: {
+          isPriceUpdateable: isPriceUpdateable,
+        }
+      }
+    );
+  }
 }

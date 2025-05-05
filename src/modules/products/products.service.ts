@@ -171,10 +171,10 @@ export class ProductsService {
     try {
       const [productCards, total] = await Promise.all([
         this.productModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
-        this.productModel.countDocuments(filters).exec()
+        this.productModel.countDocuments(filters).exec() 
       ]);
       return {
-        items: productCards.map(user => user.toObject()),
+        items: productCards,
         meta: {
           totalItems: total,
           itemsPerPage: productCards.length,

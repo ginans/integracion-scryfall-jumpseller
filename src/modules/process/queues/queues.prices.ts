@@ -1,6 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import { StagingProductVariantService } from 'src/modules/products/staging-product-variant/staging-product-variant.service';
 
 
 
@@ -10,23 +11,21 @@ export class QueuesPrices extends WorkerHost {
     timestamp: true,
   });
   constructor(
+    private readonly stageingProductVariantService: StagingProductVariantService,
   ) {
     super();
   }
   async process(job: Job<any, any, string>): Promise<any> {
     try {
-    //   await job.updateProgress(25);
-    //   await this.updatePrices(job.data); //hacer referencia a la funcion de abajo
-    //   await job.updateProgress(100);
+      await job.updateProgress(25);
+      await this.stageingProductVariantService.savePricesFromFront(job.data);
+      await job.updateProgress(50);
+      await this.stageingProductVariantService.sendPriceToJumpseller(job.data);
+      await job.updateProgress(100);
       return 'done';
     } catch (error) {
       throw new Error(`Job failed at step: ${error.message}`);
     }
-  }
-  //funcion oara actualizar precios
-
-  async updatePrices() { //o crearla en otro lado e importarla aqui jeje
-    
   }
 
   @OnWorkerEvent('completed')

@@ -6,17 +6,17 @@ import { EnumStatus } from '../enums/status.enum';
 
 @Schema({ timestamps: true })
 export class MagicCard implements MappedMagicCard{
+
   @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
   _id: Types.ObjectId;
   
-  
-  @Prop({ default: null })
+  @Prop({ default: null, index: true })
   idJumpSeller: number;
   
   @Prop({ required: true })
   id: string;
   
-  @Prop()
+  @Prop({ index: true })
   oracleId: string;
   
   @Prop()

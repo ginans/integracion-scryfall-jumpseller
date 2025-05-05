@@ -5,6 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
 
 
 interface Ilist {
@@ -33,9 +34,9 @@ export class ProcessService {
     )}
   }
   
-  async updatePricesQueue(products){
-    for(const product of products){
-      await this.queuesPrices.add('update-prices', product
+  async updatePricesQueue(variants: IPriceFromFront[]) {
+    for(const variant of variants){
+      await this.queuesPrices.add('update-prices', variant
     )}
   }
 

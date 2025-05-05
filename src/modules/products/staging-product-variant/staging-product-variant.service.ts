@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { IStockFromFront, StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { Model, ObjectId } from 'mongoose';
@@ -12,13 +12,24 @@ import { Product, ProductDocument } from '../entities/product.entity';
 import e from 'express';
 import { IPriceFromFront } from './interfaces/stagingProductVariant.interface';
 import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
+import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
+import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
+import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
+import { MagicCard } from 'src/modules/magic/entities/magic-card.entity';
+import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
+import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
 
 @Injectable()
 export class StagingProductVariantService {
   constructor(
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
-    @InjectModel(Product.name) private ProductModel: Model<ProductDocument>,
+    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(MagicCard.name) private magicCardModel: Model<MagicCard>,
+    @InjectModel(UsdPrice.name) private usdPriceModel: Model<UsdPrice>,
+    @InjectModel( BasePrice.name) private basePriceModel: Model<BasePrice>,
     private readonly jumpsellerService: JumpsellerService,
+    private readonly usdPricesService: UsdPricesService,
+    private readonly basePricesService: BasePricesService,
     private readonly logger: LoggerService
   ) {}
 
@@ -139,7 +150,6 @@ export class StagingProductVariantService {
   //Manejo de stock
   //primero guardar stock desde el front en stagingProductVariant
   async saveStockFromFront(variant: IStockFromFront) {
-     //lo que me envia el front
      const existingVariant = await this.stagingProductVariantModel.findOne({
        variantId: variant.variantId,
        productId: variant.productId,
@@ -169,7 +179,6 @@ export class StagingProductVariantService {
    //segundo, enviar el stock a jumpseller desde stagingProductVariant
    async sendStockToJumpseller(variant: IStockFromFront) {
      try {
-       // Traer la data de base de datos
        const productVariant = await this.stagingProductVariantModel.findOne({
          productId: variant.productId,
          variantId: variant.variantId,
@@ -181,7 +190,6 @@ export class StagingProductVariantService {
          throw new Error(errorMsg);
        }
   
-       // Mapear el producto a la estructura requerida por Jumpseller
        const stockRequest: StockJumpsellerRequest = {
          stock: productVariant.variantStock,
          product_id: productVariant.productId,
@@ -190,7 +198,6 @@ export class StagingProductVariantService {
          stock_unlimited: productVariant.stockUnlimited,
        };
   
-       // Actualizar estado a "En Progreso" antes de enviar
        await this.updateVariantStockStatus(
          variant.variantId, 
          variant.productId, 
@@ -201,7 +208,6 @@ export class StagingProductVariantService {
        this.logger.log(`🦍 Enviando stock a Jumpseller: ${JSON.stringify(stockRequest)}`);
        const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);
        
-       // Verificar si la respuesta tiene un status y si es 200
        if (!response?.error && response?.status === 200) {
          await this.updateVariantStockStatus(
            variant.variantId, 
@@ -212,23 +218,18 @@ export class StagingProductVariantService {
          this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
          this.logger.log(`Se actualizó el stock de la variante ${variant.variantId} en Jumpseller`);
          
-         //actualizar el stock en la coleccion products
          try {
-           //me traigo el producto completo desde jumpseller por id
            const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productVariant.productId);
            
-           //actualizar el producto completo en la coleccion products
-           await this.ProductModel.updateOne(
+           await this.productModel.updateOne(
              { productId: jumpsellerProduct.product.id },
              { ...jumpsellerProduct }
            ); 
            this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
          } catch (error) {
            this.logger.error(`Error al actualizar el producto en la coleccion products: ${error.message}`);
-           // No cambiamos el estado principal porque el stock sí se actualizó correctamente
          }
        } else {
-         // Si hay un error o la respuesta no es 200
          const errorMsg = `Status ${response?.status || 'desconocido'} - ${response?.message || 'Sin detalles'}`;
          this.logger.error(errorMsg);
          await this.updateVariantStockStatus(
@@ -252,7 +253,6 @@ export class StagingProductVariantService {
      }
    }
   
-   // Método auxiliar para actualizar el estado de la variante
    private async updateVariantStockStatus(
      variantId: number, 
      productId: number, 
@@ -274,106 +274,199 @@ export class StagingProductVariantService {
   //Manejo de precios
    //calculo de todos los precios desde la api a jumpseller
 
-   //Calcular precio de todas las cartas
-  // async calculatePricesForAllCards( variant: IPriceFromFront): Promise<{ updated: number; errors: number }> {
-  //   let updated = 0;
-  //   let errors = 0;
-
-  //   const usdPricesArr = await this.usdPricesService.findAllPrices();
-  //   const usdPriceDoc = Array.isArray(usdPricesArr)
-  //     ? usdPricesArr.find(p => p.game === "Magic: The Gathering")
-  //     : null;
-  //   if (!usdPriceDoc || !usdPriceDoc.usdPrice) throw new NotFoundException('Valor del dólar no encontrado');
-  //   const dollarValue = usdPriceDoc.usdPrice;
-
-  //   const basePricesArr = await this.basePricesService.findAllBasePrices();
-  //   const basePriceObj = Array.isArray(basePricesArr)
-  //     ? basePricesArr.find(bp => bp.game === "Magic: The Gathering" && bp.type === "rarity")
-  //     : null;
-  //   if (!basePriceObj || !basePriceObj.basePrices) throw new NotFoundException('Precios base no encontrados');
-
-  //   const cards = await this.model.find({}).exec();
-
-  //   for (const card of cards) {
-  //     try {
-  //       const rarity = card.rarity?.toLowerCase() || '';
-  //       let labelBase = '';
-  //       if (rarity === 'rare') labelBase = 'rareR';
-  //       else if (rarity === 'mythic') labelBase = 'mythicM';
-  //       else if (rarity === 'common') labelBase = 'commonC';
-  //       else if (rarity === 'uncommon') labelBase = 'uncommonU';
-
-  //       let precioApiNonFoil = card.prices.usd ? parseFloat(card.prices.usd) : 0;
-  //       let precioFinalNonFoilmultiploCien = 0;
-  //       if (precioApiNonFoil > 0) {
-  //         const precioCalculadoNonFoil = Math.round(precioApiNonFoil * dollarValue);
-  //         let basePriceNonFoil = 0;
-  //         if (labelBase) {
-  //           const baseItem = basePriceObj.basePrices.find(bp => bp.label === labelBase);
-  //           basePriceNonFoil = baseItem ? baseItem.price : 0;
-  //         }
-  //         const precioFinalNonFoil = Math.max(precioCalculadoNonFoil, basePriceNonFoil);
-  //         precioFinalNonFoilmultiploCien = Math.ceil(precioFinalNonFoil / 100) * 100;
-  //       } else {
-  //         this.logger.warn(`Precio API en dolar para nonfoil no disponible para carta ${card.oracleId}`);
-  //       }
-
-  //       let precioApiFoil = card.prices.usdFoil ? parseFloat(card.prices.usdFoil) : 0;
-  //       let precioFinalFoilmultiploCien = 0;
-  //       if (precioApiFoil > 0) {
-  //         const precioCalculadoFoil = Math.round(precioApiFoil * dollarValue);
-  //         let basePriceFoil = 0;
-  //         if (labelBase) {
-  //           const baseItemFoil = basePriceObj.basePrices.find(bp => bp.label === `${labelBase}-Foil`);
-  //           basePriceFoil = baseItemFoil ? baseItemFoil.price : 0;
-  //         }
-  //         const precioFinalFoil = Math.max(precioCalculadoFoil, basePriceFoil);
-  //         precioFinalFoilmultiploCien = Math.ceil(precioFinalFoil / 100) * 100;
-  //       } else {
-  //         this.logger.warn(`Precio API en dolar para foil no disponible para carta ${card.oracleId}`);
-  //       }
-
-  //       let precioApiEtched = card.prices.usdEtched ? parseFloat(card.prices.usdEtched) : 0;
-  //       let precioFinalEtchedmultiploCien = 0;
-  //       if (precioApiEtched > 0) {
-  //         const precioCalculadoEtched = Math.round(precioApiEtched * dollarValue);
-  //         let basePriceEtched = 0;
-  //         if (labelBase) {
-  //           const baseItemEtched = basePriceObj.basePrices.find(bp => bp.label === `${labelBase}-Etched`);
-  //           basePriceEtched = baseItemEtched ? baseItemEtched.price : 0;
-  //         }
-  //         const precioFinalEtched = Math.max(precioCalculadoEtched, basePriceEtched);
-  //         precioFinalEtchedmultiploCien = Math.ceil(precioFinalEtched / 100) * 100;
-  //       } else {
-  //         this.logger.warn(`Precio API en dolar para etched no disponible para carta ${card.oracleId}`);
-  //       }
-
-  //       if (precioApiNonFoil > 0) {
-  //         card.prices.valorPesoChilenoCalculado = precioFinalNonFoilmultiploCien.toString();
-  //       }
-  //       if (precioApiFoil > 0) {
-  //         card.prices.valorPesoChilenoCalculadoFoil = precioFinalFoilmultiploCien.toString();
-  //       }
-  //       if (precioApiEtched > 0) {
-  //         card.prices.valorPesoChilenoCalculadoEtched = precioFinalEtchedmultiploCien.toString();
-  //       }
-
-  //       await this.model.updateOne({ oracleId: card.oracleId }, { prices: card.prices });
-  //       this.logger.log(`Actualizado precio para carta ${card.oracleId}: NonFoil: ${precioFinalNonFoilmultiploCien}, Foil: ${precioFinalFoilmultiploCien}, Etched: ${precioFinalEtchedmultiploCien}`);
-  //       updated++;
-        
-  //     } catch (e) {
-  //       this.logger.error(`Error al calcular precio para carta ${card.oracleId}: ${e.message}`);
-  //       errors++;
-  //     }
-  //   }
-
-  //   return { updated, errors };
-  // }
-
+   //Calcular precio de todos los precios que vienen de scryfall
+   //en el front: boton "Sincronizar precios de scryfall"
+   async calculatePricesForAllCards() {
+    try {
+      const variantes = await this.stagingProductVariantModel.find({ isPriceUpdateable: true });
+      this.logger.log(`Procesando ${variantes.length} variantes para actualizar precios...`);
+  
+      const usdPriceDoc = await this.usdPriceModel.findOne({ gameID: "MG" });
+      if (!usdPriceDoc) {
+        throw new Error("No se encontró el precio del dólar para Magic");
+      }
+      const usdPrice = usdPriceDoc.usdPrice;
+      this.logger.log(`Precio del dólar: ${usdPrice} CLP`);
+  
+      const basePrice = await this.basePriceModel.findOne({ game: "Magic: The Gathering" });
+      if (!basePrice) {
+        throw new Error("No se encontraron precios base para Magic");
+      }
+  
+      const rarityPrices = {};
+      basePrice.basePrices.forEach(item => {
+        rarityPrices[item.label] = item.price;
+      });
+      
+      let updatedCount = 0;
+      
+      for (const variante of variantes) {
+        try {
+          const matchingPrice = await this.magicCardModel.findOne({ idJumpSeller: variante.productId });
+          
+          if (!matchingPrice) {
+            this.logger.warn(`No se encontró carta para productId: ${variante.productId}`);
+            await this.stagingProductVariantModel.updateOne(
+              { _id: variante._id },
+              {
+                $set: {
+                  priceUpdateError: 'Carta base no encontrada en colección Magic',
+                  priceUpdateStatus: EnumPriceAndStockState.ERROR
+                }
+              }
+            );
+            continue;
+          }
+  
+          let precioUSD = 0;
+          const isFoil = variante.finish?.toLowerCase().includes('foil');
+          const isEtched = variante.finish?.toLowerCase().includes('etched');
+          
+          if (matchingPrice.prices) {
+            if (isEtched && matchingPrice.prices.usdEtched) {
+              precioUSD = parseFloat(matchingPrice.prices.usdEtched);
+              this.logger.log(`Precio Etched encontrado: $${precioUSD} USD`);
+            } else if (isFoil && matchingPrice.prices.usdFoil) {
+              precioUSD = parseFloat(matchingPrice.prices.usdFoil);
+              this.logger.log(`Precio Foil encontrado: $${precioUSD} USD`);
+            } else if (matchingPrice.prices.usd) {
+              precioUSD = parseFloat(matchingPrice.prices.usd);
+              this.logger.log(`Precio regular encontrado: $${precioUSD} USD`);
+            } else {
+              this.logger.warn(`No se encontraron precios para la carta ${matchingPrice.oracleId} con finish ${variante.finish}`);
+              continue;
+            }
+          } else {
+            this.logger.warn(`No hay información de precios para la carta ${matchingPrice.oracleId}`);
+            continue;
+          }
+  
+          let rarezaKey = '';
+          
+          switch(variante.rarity?.toLowerCase()) {
+            case 'common':
+              rarezaKey = 'commonC';
+              break;
+            case 'uncommon':
+              rarezaKey = 'uncommonU';
+              break;
+            case 'rare':
+              rarezaKey = 'rareR';
+              break;
+            case 'mythic':
+              rarezaKey = 'mythicM';
+              break;
+            default:
+              rarezaKey = 'commonC';
+          }
+          
+          if (isFoil) {
+            rarezaKey += '-Foil';
+          }
+          
+          const precioBaseRareza = rarityPrices[rarezaKey] || 0;
+          this.logger.log(`Precio base por rareza (${rarezaKey}): ${precioBaseRareza} CLP`);
+  
+          let precioCLP = precioUSD * usdPrice;
+          
+          precioCLP = Math.ceil(precioCLP / 100) * 100;
+          
+          precioCLP = Math.max(precioCLP, precioBaseRareza);
+          
+          this.logger.log(`Precio final calculado: ${precioCLP} CLP`);
+  
+          if (precioCLP <= 0) {
+            this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variante.variantId} con sku ${variante.sku}`);
+            continue;
+          }
+  
+          await this.stagingProductVariantModel.updateOne(
+            { _id: variante._id },
+            {
+              $set: {
+                variantPrice: precioCLP,
+                priceUpdateStatus: EnumPriceAndStockState.PENDING,
+                priceUpdateError: null
+              }
+            }
+          );
+          
+          this.logger.log(`Precio actualizado para variante ${variante.variantId}: ${precioCLP} CLP, estado: PENDING`);
+         //agregar estado in progress
+          await this.updateVariantPriceStatus(
+            variante.variantId, 
+            variante.productId, 
+            EnumPriceAndStockState.IN_PROGRESS,
+            null  
+          );
+          
+          // Enviar a jumpseller
+          const variantTo: JumpsellerUpdateVariantRequest = {
+            variant: {
+              price: precioCLP, // Usar precioCLP en lugar de variante.variantPrice
+              sku: variante.sku,
+              stock: null,
+              stock_unlimited: null,
+            }
+          };
+  
+          const response = await this.jumpsellerService.updateVariant(variante.productId, variante.variantId, variantTo);
+  
+          if (!response?.error && response?.status === 200) {
+            await this.updateVariantPriceStatus(
+              variante.variantId, 
+              variante.productId, 
+              EnumPriceAndStockState.COMPLETED,
+              null  
+            );
+            this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
+            this.logger.log(`Se actualizó el precio de la variante ${variante.variantId} en Jumpseller`);
+            
+            try {
+              const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(variante.productId);
+              
+              await this.productModel.updateOne(
+                { productId: jumpsellerProduct.product.id },
+                { ...jumpsellerProduct }
+              ); 
+              this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
+              updatedCount++;
+            } catch (error) {
+              this.logger.error(`Error al actualizar el producto en la coleccion products: ${error.message}`);
+            }
+          } else {
+            const errorMsg = `Status ${response?.status || 'desconocido'} - ${response?.message || 'Sin detalles'}`;
+            this.logger.error(errorMsg);
+            await this.updateVariantPriceStatus(
+              variante.variantId, 
+              variante.productId, 
+              EnumPriceAndStockState.ERROR, 
+              errorMsg
+            );
+          }
+        } catch (varianteError) {
+          this.logger.error(`Error procesando variante ${variante.variantId}: ${varianteError.message}`);
+          await this.stagingProductVariantModel.updateOne(
+            { _id: variante._id },
+            {
+              $set: {
+                priceUpdateError: varianteError.message,
+                priceUpdateStatus: EnumPriceAndStockState.ERROR
+              }
+            }
+          );
+        }
+      }
+      
+      return { success: true, message: `Se actualizaron los precios de ${updatedCount} variantes de ${variantes.length} procesadas` };
+    } catch (error) {
+      this.logger.error(`Error al calcular precios para todas las cartas: ${error.message}`);
+      throw new InternalServerErrorException(`Error al calcular precios para todas las cartas: ${error.message}`);
+    }
+  }
+  
 //-----------------------------------------------------------------------------------------------------
    //precios individuales desde el front 
-  //primero guardar precios desde el front en stagingProductVariant
   async savePricesFromFront(variant: IPriceFromFront) {
     const existingVariant = await this.stagingProductVariantModel.findOne({
       variantId: variant.variantId,
@@ -400,10 +493,8 @@ export class StagingProductVariantService {
     ); 
   }
 
-  //segundo, enviar el precio a jumpseller desde stagingProductVariant
   async sendPriceToJumpseller(variant: IPriceFromFront) {
     try {
-      // Traer la data de base de datos
       const productVariant = await this.stagingProductVariantModel.findOne({
         productId: variant.productId,
         variantId: variant.variantId,
@@ -415,7 +506,6 @@ export class StagingProductVariantService {
         throw new Error(errorMsg);
       }
 
-      // Actualizar estado a "En Progreso" antes de enviar
       await this.updateVariantPriceStatus(
         variant.variantId, 
         variant.productId, 
@@ -423,21 +513,17 @@ export class StagingProductVariantService {
         null 
       );
  
-      //actualizar precios con endpoint de actualizacion de variantes
-
-      //armar mapeo para el endpoint de actualizacion de variantes
       const variantTo: JumpsellerUpdateVariantRequest = {
         variant: {
           price: productVariant.variantPrice,
           sku: productVariant.sku,
-          stock: productVariant.variantStock,
-          stock_unlimited: productVariant.stockUnlimited
+          stock: null,
+          stock_unlimited: null,
         }
       };
 
       const response = await this.jumpsellerService.updateVariant(productVariant.productId, productVariant.variantId, variantTo);
 
-      // Verificar si la respuesta tiene un status y si es 200
       if (!response?.error && response?.status === 200) {
         await this.updateVariantPriceStatus(
           variant.variantId, 
@@ -448,23 +534,18 @@ export class StagingProductVariantService {
         this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
         this.logger.log(`Se actualizó el precio de la variante ${variant.variantId} en Jumpseller`);
         
-        //actualizar el stock en la coleccion products
          try {
-           //me traigo el producto completo desde jumpseller por id
            const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productVariant.productId);
            
-           //actualizar el producto completo en la coleccion products
-           await this.ProductModel.updateOne(
+           await this.productModel.updateOne(
              { productId: jumpsellerProduct.product.id },
              { ...jumpsellerProduct }
            ); 
            this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
          } catch (error) {
            this.logger.error(`Error al actualizar el producto en la coleccion products: ${error.message}`);
-           // No cambiamos el estado principal porque el stock sí se actualizó correctamente
          }
          } else {
-          // Si hay un error o la respuesta no es 200
           const errorMsg = `Status ${response?.status || 'desconocido'} - ${response?.message || 'Sin detalles'}`;
           this.logger.error(errorMsg);
           await this.updateVariantPriceStatus(
@@ -485,7 +566,6 @@ export class StagingProductVariantService {
          }
       }
 
-  // Método auxiliar para actualizar el estado del precio de la variante
   private async updateVariantPriceStatus(
     variantId: number, 
     productId: number, 

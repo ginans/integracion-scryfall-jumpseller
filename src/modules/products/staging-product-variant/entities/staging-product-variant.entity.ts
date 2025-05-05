@@ -10,17 +10,19 @@ export class StagingProductVariant implements IStagingProductVariant {
     @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
     _id: Types.ObjectId;
    
-    @Prop({ default: null })
+    @Prop({ default: null, index: true })
     productId: number;
 
-    @Prop({ default: null })
+    @Prop({ default: null, index: { unique: true } })
     variantId: number;
     
+    @Prop({ default: null })
     name: string;
 
+    @Prop({ default: null })
     anotherLangName: string;
 
-    @Prop({ default: null })
+    @Prop({ default: null, index: { unique: true } })
     sku: string;
 
     @Prop({ default: null })
@@ -43,6 +45,9 @@ export class StagingProductVariant implements IStagingProductVariant {
 
     @Prop({ default: null })
     rarity: string | null;
+
+    @Prop({ default: null })
+    game: string | null;
 
     @Prop({ 
         type: Object, 
@@ -98,3 +103,5 @@ export class StagingProductVariant implements IStagingProductVariant {
 
 export type StagingProductVariantDocument = HydratedDocument<StagingProductVariant>;
 export const StagingProductVariantSchema = SchemaFactory.createForClass(StagingProductVariant);
+
+StagingProductVariantSchema.index({ productId: 1, variantId: 1, sku: 1 }, { unique: true });

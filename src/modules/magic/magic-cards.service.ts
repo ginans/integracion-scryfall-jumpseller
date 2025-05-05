@@ -126,6 +126,19 @@ export class MagicCardsService {
           });
           
           if (!cardWithStock) {
+
+            const getGameFromSku = (sku: string) => {
+              if (!sku) return null;
+              const prefix = sku.split('-')[0];
+            
+              switch (prefix) {
+                case 'M': return 'Magic';
+                case 'PK': return 'Pokémon';
+                case 'OP': return 'One Piece';
+                default: return `Juego no encontrado para el SKU: ${sku}`;
+              }
+            };
+            
             //solo agregar al stock si no existe
             this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
             await this.stagingProductVariantModel.create(
@@ -137,6 +150,7 @@ export class MagicCardsService {
                 sku: varRes.variant.sku,
                 finish: finishKey || "",
                 rarity: enCard.rarity || "",
+                game: getGameFromSku(varRes.variant.sku) || null,
                 imageUrl: {
                   large: enCard.imageUris?.large || null,
                   cardFacelarge1: enCard.cardFaces?.[0]?.imageUris?.large || null,

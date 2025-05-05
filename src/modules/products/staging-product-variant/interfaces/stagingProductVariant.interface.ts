@@ -17,6 +17,7 @@ export interface IStagingProductVariant {
     stockUnlimited: boolean;
     finish: string | null;
     rarity: string | null;
+    game: string | null;
     imageUrl: {
         large: string | null;
         cardFaceLarge1: string | null;

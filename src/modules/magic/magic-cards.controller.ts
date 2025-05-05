@@ -44,10 +44,6 @@ export class MagicCardsController {
   // async calcularPrecio(@Param('oracleId') oracleId: string) {
   //   return this.magicCardsService.addDollarValueToCard(oracleId);
   // }
-  // @Get('calcular-precio')
-  // async calculatePricesForAllCards() {
-  //   return this.magicCardsService.calculatePricesForAllCards();
-  // }
     
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateProductCardDto: UpdateProductCardDto) {

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MagicCardsService } from './magic-cards.service';
 import { MagicCardsController } from './magic-cards.controller';
@@ -18,7 +18,7 @@ import { StagingProductVariantModule } from '../products/staging-product-variant
     JumpsellerModule,
     UsdPricesModule,
     BasePricesModule,
-    StagingProductVariantModule, 
+    forwardRef(() => StagingProductVariantModule), 
   ],
   controllers: [MagicCardsController],
   providers: [MagicCardsService],

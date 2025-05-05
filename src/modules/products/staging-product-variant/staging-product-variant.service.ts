@@ -461,20 +461,23 @@ export class StagingProductVariantService {
       throw new Error(`Variant with variantId: ${variant.variantId} and productId: ${variant.productId} not found.`);
     }
 
-    await this.stagingProductVariantModel.updateOne(
-      {
-        variantId: variant.variantId,
-        productId: variant.productId,
-      },
+    const updatedVariant = await this.stagingProductVariantModel.updateOne(
+      { variantId: variant.variantId, productId: variant.productId },
       {
         $set: {
-          variantPrice: +variant.variantPrice,
+          variantPrice: variant.variantPrice,
           isPriceUpdateable: false,
           priceUpdateStatus: EnumPriceAndStockState.PENDING,
           priceUpdateError: null,
         }
       }
     );
+
+    if (updatedVariant.modifiedCount === 0) {
+      throw new Error(`Failed to update variant with variantId: ${variant.variantId} and productId: ${variant.productId}.`);
+    }
+
+    return updatedVariant;
   }
 
   async sendPriceToJumpseller(variant: IPriceFromFront) {

@@ -24,6 +24,7 @@ export class QueuesPrices extends WorkerHost {
       await job.updateProgress(100);
       return 'done';
     } catch (error) {
+      await job.moveToFailed(new Error(error.message), "true");
       throw new Error(`Job failed at step: ${error.message}`);
     }
   }

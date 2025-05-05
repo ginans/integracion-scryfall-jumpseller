@@ -1,7 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
-import { response } from 'express';
 import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
 
 @Controller('process')

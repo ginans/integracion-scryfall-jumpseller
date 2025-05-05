@@ -9,6 +9,7 @@ import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { QueuesStock } from './queues/queues.stock';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
+import { QueuesPrices } from './queues/queues.prices';
 
 @Module({
   imports: [
@@ -51,7 +52,7 @@ import { StagingProductVariantModule } from '../products/staging-product-variant
   ],
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
-  providers: [ProcessService, QueuesMagic, QueuesStock],
+  providers: [ProcessService, QueuesMagic, QueuesStock, QueuesPrices],
 
 })
 export class ProcessModule {

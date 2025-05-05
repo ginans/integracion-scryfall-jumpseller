@@ -22,12 +22,8 @@ export class QueuesStock extends WorkerHost {
       await job.updateProgress(100);
       return 'done';
     } catch (error) {
-      //reintentar el job si falla
-      await job.updateProgress(0);
       await job.moveToFailed(new Error(error.message), "true");
-      await job.retry();
       throw new Error(`Job failed at step: ${error.message}`);
-
     }
   }
 

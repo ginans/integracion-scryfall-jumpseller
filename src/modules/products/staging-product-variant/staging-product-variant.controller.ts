@@ -16,11 +16,12 @@ export class StagingProductVariantController {
   }
 
   @Get('byId/:id')
-  async getById(@Param('id') id: string) {
+  async getById(
+    @Param('id') id: string
+  ) {
     const variantById = await this.stagingProductVariantService.findVariantById(id);
     return variantById;
   }
-
 
   @Get('sincronizar-precios-scryfall')
   async calculatePricesForAllCards() {
@@ -29,10 +30,10 @@ export class StagingProductVariantController {
 
   @Patch('byId/:id')
   async updateIsPriceUpdateable(
-    @Param('id') _id: ObjectId,
-    @Body('isPriceUpdateable') isPriceUpdateable: boolean
+    @Param('id') id: string,
+    @Body() variant: IStagingProductVariant
   ) {
-    return this.stagingProductVariantService.updateIsPriceUpdateable(_id, isPriceUpdateable);
+    return await this.stagingProductVariantService.updateVariantById(id, variant);
   }
 
   //actualzarlos todos
@@ -40,9 +41,7 @@ export class StagingProductVariantController {
   async updateAllIsPriceUpdateable(
     @Body('isPriceUpdateable') isPriceUpdateable: boolean
   ) {
-    return this.stagingProductVariantService.updateAllIsPriceUpdateable(isPriceUpdateable);
+    return await this.stagingProductVariantService.updateAllIsPriceUpdateable(isPriceUpdateable);
   }
-
   
-
 }

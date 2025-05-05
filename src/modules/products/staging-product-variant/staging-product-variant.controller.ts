@@ -28,10 +28,9 @@ export class StagingProductVariantController {
   @Patch('update-price-updateable/:variantId/:productId')
   async updateIsPriceUpdateable(
     @Param('variantId') variantId: number, 
-    @Param('productId') productId: number, 
     @Body('isPriceUpdateable') isPriceUpdateable: boolean
   ) {
-    return this.stagingProductVariantService.updateIsPriceUpdateable(variantId, productId, isPriceUpdateable);
+    return this.stagingProductVariantService.updateIsPriceUpdateable(variantId, isPriceUpdateable);
   }
 
   //actualzarlos todos

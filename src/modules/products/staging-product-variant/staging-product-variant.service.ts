@@ -587,9 +587,9 @@ export class StagingProductVariantService {
   }
 
   //funcion para actualizar isUpdateable a true o false de a uno
-  async updateIsPriceUpdateable(variantId: number, productId: number, isPriceUpdateable: boolean) {
+  async updateIsPriceUpdateable(variantId: number, isPriceUpdateable: boolean) {
     await this.stagingProductVariantModel.updateOne(
-      { variantId, productId },
+      { variantId },
       {
         $set: {
           isPriceUpdateable: isPriceUpdateable,

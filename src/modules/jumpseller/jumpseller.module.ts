@@ -5,6 +5,7 @@ import { JumpsellerController } from './jumpseller.controller';
 @Module({
   controllers: [JumpsellerController],
   providers: [JumpsellerService],
-  exports:[JumpsellerService]
+  exports:[
+    JumpsellerService]
 })
 export class JumpsellerModule {}

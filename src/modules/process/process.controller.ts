@@ -1,5 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ProcessService } from './process.service';
+import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { response } from 'express';
 
 @Controller('process')
 export class ProcessController {
@@ -12,9 +14,14 @@ export class ProcessController {
     return "ok"
   }
   @Post('stock')
-  async updateStock(@Body() product: any){
-    await this.processService.updateStockQueue(product);
-    return "ok"
+  async updateStock(@Body() product: IStockFromFront[]) {
+    try{
+      const response = await this.processService.updateStockQueue(product);
+      return response
+    }catch(error){
+      return error
+    }
+ 
   }
   @Post('prices')
   async updatePrices(@Body() product: any){

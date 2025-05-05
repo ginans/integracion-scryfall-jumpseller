@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, InternalServerErrorException, Logger, 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Product, ProductDocument } from './entities/product.entity';
-import { IdataProduct, IsetProduct } from './interface/product.interface';
+import { IdataProduct, IsetProduct } from './interfaces/product.interface';
 import { JumpsellerGetAllProductResponse } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';

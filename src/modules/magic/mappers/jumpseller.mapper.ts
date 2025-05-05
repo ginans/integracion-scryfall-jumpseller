@@ -40,19 +40,13 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
         .map(([f]) => f)
         .join(', ') || 'No legal'}.
     `,
-    price: card.nonfoil
-      ? parseInt(card.prices?.valorPesoChilenoCalculado) || 0
-      : card.foil
-        ? parseInt(card.prices?.valorPesoChilenoCalculadoFoil) || 0
-        : card.finishes?.includes('etched')
-          ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
-          : 0,
+    price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
         ? collectorNumberToUpperCase.padStart(4, '0')
         : collectorNumberToUpperCase)
       : ''}`,
-    stock: 0,
+    stock: null,
     weight: 2,
     width: 6.35,
     height: 8.89,
@@ -89,19 +83,13 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
         .map(([f]) => f)
         .join(', ') || 'No legal'}.
     `,
-    price: card.nonfoil
-      ? parseInt(card.prices?.valorPesoChilenoCalculado) || 0
-      : card.foil
-        ? parseInt(card.prices?.valorPesoChilenoCalculadoFoil) || 0
-        : card.finishes?.includes('etched')
-          ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
-          : 0,
+    price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${ collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
         ? collectorNumberToUpperCase.padStart(4, '0')
         : collectorNumberToUpperCase)
       : ''}`,
-    stock: 0,
+    stock: null,
     weight: 2,
     width: 6.35,
     height: 8.89,
@@ -111,62 +99,71 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
   return { product };
 }
 
-export function mapImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
-  return { image: { url: card.imageUris.large || '', position: 0 } };
+export function mapImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest | null {
+  if (!card.imageUris || !card.imageUris.large) {
+    console.warn(`⚠️ Carta sin imagen: ${card.name}`);
+    return null;
+  }
+  
+  return { image: { url: card.imageUris.large, position: 0 } };
 }
 
-export function mapCardFace1ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
-  return { image: { url: card.cardFaces[0]?.imageUris.large || '', position: 0 } };
+export function mapCardFace1ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest | null {
+  if (!card.cardFaces || !card.cardFaces[0] || !card.cardFaces[0].imageUris || !card.cardFaces[0].imageUris.large) {
+    console.warn(`⚠️ Carta sin imagen para la primera cara: ${card.name}`);
+    return null;
+  }
+  
+  return { image: { url: card.cardFaces[0].imageUris.large, position: 0 } };
 }
 
-export function mapCardFace2ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest {
-  return { image: { url: card.cardFaces[1]?.imageUris.large || '', position: 0 } };
+export function mapCardFace2ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest | null {
+  if (!card.cardFaces || !card.cardFaces[1] || !card.cardFaces[1].imageUris || !card.cardFaces[1].imageUris.large) {
+    console.warn(`⚠️ Carta sin imagen para la segunda cara: ${card.name}`);
+    return null;
+  }
+  
+  return { image: { url: card.cardFaces[1].imageUris.large, position: 0 } };
 }
-
 
 export function mapVariantsToJumpseller(
-    card: MappedMagicCard,
-    languages: Language[]
+  card: MappedMagicCard,
+  languages: Language[]
 ): JumpsellerCreateVariantRequest[] {
+  const finishes = [
+    { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
+    { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
+    { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
+  ];
+  
+  const variants: JumpsellerCreateVariantRequest[] = [];
 
-  const priceCondition = card.nonfoil
-                ? parseInt(card.prices?.valorPesoChilenoCalculado) || 0
-                : card.foil
-                    ? parseInt(card.prices?.valorPesoChilenoCalculadoFoil) || 0
-                    : card.finishes?.includes('etched')
-                        ? parseInt(card.prices?.valorPesoChilenoCalculadoEtched) || 0
-                        : 0;
-    const finishes = [
-        { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
-        { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
-        { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
-    ];
-    const variants: JumpsellerCreateVariantRequest[] = [];
-
-    for (const lang of languages) {
-        for (const finish of finishes) {
-            if (!finish.available) continue;
-            const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
-            const base = collectorNumberToUpperCase
-                ? (collectorNumberToUpperCase.length <= 4
-                    ? collectorNumberToUpperCase.padStart(4, '0')
-                    : collectorNumberToUpperCase)
-                : '';
-            const sku = `M-${card.set?.toUpperCase() || ''}${base ? base + `-${lang.code.toUpperCase()}-${finish.suffix}` : ''}`;
-            variants.push({
-                variant: {
-                    sku,
-                    price: priceCondition,
-                    options: [
-                      { name: 'Finish',  option_type: JumpsellerOptionType.OPTION, value: finish.name },
-                      { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
-                    ],
-                },
-            });
-        }
+  for (const lang of languages) {
+    for (const finish of finishes) {
+      if (!finish.available) continue;
+      const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
+      const base = collectorNumberToUpperCase
+          ? (collectorNumberToUpperCase.length <= 4
+              ? collectorNumberToUpperCase.padStart(4, '0')
+              : collectorNumberToUpperCase)
+          : '';
+      const sku = `M-${card.set?.toUpperCase() || ''}${base ? base + `-${lang.code.toUpperCase()}-${finish.suffix}` : ''}`;
+      variants.push({
+        variant: {
+          sku,
+          price: 0, 
+          options: [
+            { name: 'Finish', option_type: JumpsellerOptionType.OPTION, value: finish.name },
+            { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
+          ],
+        },
+        finishKey: finish.key,
+      });
     }
+  }
 
-    return variants;
+  return variants;
 }
+
 
 

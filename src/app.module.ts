@@ -27,10 +27,9 @@ import { MagicCardsModule } from './modules/magic/magic-cards.module';
 import { JumpsellerModule } from './modules/jumpseller/jumpseller.module';
 import { ProcessModule } from './modules/process/process.module';
 import { ProductsModule } from './modules/products/products.module';
-import { BasePricesModule } from './modules/prices/submodules/base-prices/base-prices.module';
-import { UsdPricesModule } from './modules/prices/submodules/usd-prices/usd-prices.module';
-import { PricesModule } from './modules/prices/prices.module';
-import { StockModule } from './modules/stock/stock.module';
+import { BasePricesModule } from './modules/prices/base-prices/base-prices.module';
+import { UsdPricesModule } from './modules/prices/usd-prices/usd-prices.module';
+import { StagingProductVariantModule } from './modules/products/staging-product-variant/staging-product-variant.module';
 
 @Module({
   imports: [
@@ -69,8 +68,7 @@ import { StockModule } from './modules/stock/stock.module';
     ProductsModule,
     UsdPricesModule,
     BasePricesModule,
-    StockModule,
-    PricesModule,
+    StagingProductVariantModule,
   ],
   controllers: [AppController],
   providers: [

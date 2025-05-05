@@ -12,10 +12,10 @@ import { ProductsService } from 'src/modules/products/products.service';
 import { Product, ProductDocument } from '../products/entities/product.entity';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
 import { CreateMagicCardDto } from './dto/create-magic-card.dto';
-import { UsdPricesService } from '../prices/submodules/usd-prices/usd-prices.service';
-import { UsdPrice, UsdPriceDocument } from 'src/modules/prices/submodules/usd-prices/entities/usd-price.entity';
-import { BasePrice, BasePriceDocument } from 'src/modules/prices/submodules/base-prices/entities/base-price.entity';
-import { BasePricesService } from 'src/modules/prices/submodules/base-prices/base-prices.service';
+import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
+import { UsdPrice, UsdPriceDocument } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
+import { BasePrice, BasePriceDocument } from 'src/modules/prices/base-prices/entities/base-price.entity';
+import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
 import {
   mapDBProductToJumpseller,
   mapImageToJumpseller,
@@ -24,6 +24,10 @@ import {
   mapVariantsToJumpseller,
 } from './mappers/jumpseller.mapper';
 import { EnumLanguage } from './enums/lang.enum';
+import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
+import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
+import { StagingProductVariant, StagingProductVariantDocument, StagingProductVariantSchema } from '../products/staging-product-variant/entities/staging-product-variant.entity';
+import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 
 @Injectable()
 export class MagicCardsService {
@@ -32,11 +36,11 @@ export class MagicCardsService {
   constructor(
     private readonly jumpsellerService: JumpsellerService,
     private readonly productsService: ProductsService,
-    @InjectModel(MagicCard.name)
-    private readonly model: Model<MagicCardEntity>,
+    @InjectModel(MagicCard.name) private readonly model: Model<MagicCardEntity>,
     @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
     @InjectModel(UsdPrice.name) private readonly usdPricesModel: Model<UsdPriceDocument>,
     @InjectModel(BasePrice.name) private readonly basePricesModel: Model<BasePriceDocument>,
+    @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
     private readonly scryfallService: ScryfallService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
@@ -52,7 +56,21 @@ export class MagicCardsService {
     try {
       // 1. guardar en BD todas las versiones (fetchAndCreateCards)
       const versions: MappedMagicCard[] = [];
-      versions.push(await this.fetchAndCreateCards(cards));
+      
+      // Guardar la carta original
+      const originalCard = await this.fetchAndCreateCards(cards);
+      versions.push(originalCard);
+      
+      // Verificación de seguridad: si la carta no está en inglés, buscarla
+      if (originalCard.lang?.toLowerCase() !== 'en') {
+        this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
+        const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
+        await this.delay(300);
+        if (versionEN?.data?.length) {
+          versions.push(await this.fetchAndCreateCards(versionEN.data[0]));
+        }
+      }
+
       const versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, cards.oracle_id);
       await this.delay(300);
       if (versionES?.data?.length) {
@@ -71,8 +89,8 @@ export class MagicCardsService {
         await this.delay(300);
       }
 
-      // 3. calcular precios en BD
-      await this.calculatePricesForAllCards();
+      // // 3. calcular precios en BD
+      // await this.calculatePricesForAllCards();
       await this.delay(300);
 
       // 4. crear variantes para idiomas != 'en'
@@ -89,39 +107,49 @@ export class MagicCardsService {
         });
       // generar todas las variantes de una vez
       const variantReqs = mapVariantsToJumpseller(enCard, langs);
-      for (const variantReq of variantReqs) {
+      for (const { variant, finishKey } of variantReqs) {
         if (enCard.idJumpSeller) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
             enCard.idJumpSeller,
-            variantReq
+            {variant}
           );
+
+         
+            
           await this.delay(300);
           
-          //verificar si esta variante ya existe en el stock antes de agregarla
-          const cardWithStock = await this.model.findOne({
-            id: enCard.id,
-            "stock.variant_id": varRes.variant.id,
-            "stock.product_id": enCard.idJumpSeller
+          //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
+          const cardWithStock : IStagingProductVariant = await this.stagingProductVariantModel.findOne({
+            variantId: varRes.variant.id,
+            productId: enCard.idJumpSeller,
+            sku: varRes.variant.sku
           });
           
           if (!cardWithStock) {
             //solo agregar al stock si no existe
             this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
-            await this.model.updateOne(
-              { id: enCard.id },
+            await this.stagingProductVariantModel.create(
               {
-                $push: {
-                  stock: {
-                    card_name: enCard.name? enCard.name : "",
-                    another_lang_name: enCard.printedName? enCard.printedName : "",
-                    sku: varRes.variant.sku,
-                    product_id: enCard.idJumpSeller,
-                    variant_id: varRes.variant.id,
-                    location_id: null,       
-                    stock_unlimited: null,   
-                    stock: null             
-                  }
-                }
+                productId: enCard.idJumpSeller,
+                variantId: varRes.variant.id,
+                name: enCard.name || "",
+                anotherLangName: enCard.printedName || "",
+                sku: varRes.variant.sku,
+                finish: finishKey || "",
+                rarity: enCard.rarity || "",
+                imageUrl: {
+                  large: enCard.imageUris?.large || null,
+                  cardFacelarge1: enCard.cardFaces?.[0]?.imageUris?.large || null,
+                  cardFacelarge2: enCard.cardFaces?.[1]?.imageUris?.large || null,
+                  small: enCard.imageUris?.small || null,
+                  cardFaceSmall1: enCard.cardFaces?.[0]?.imageUris?.small || null,
+                  cardFaceSmall2: enCard.cardFaces?.[1]?.imageUris?.small || null,
+                },
+                fatherProduct: {
+                  oracleId: enCard.oracleId,
+                  // sku: REVISAR LOGICA, SE DEBE CREAR VARIANTES EN LA ACTUALIZACION DE LOS PRODUCTOS
+                  description: enCard.oracleText || "",
+                },
               }
             );
           } else {
@@ -133,16 +161,43 @@ export class MagicCardsService {
 
       // 6. insertar imágenes
       if (enCard.idJumpSeller) {
+        // Subir imagen principal solo si existe
         const imgReq = mapImageToJumpseller(enCard);
-        await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, imgReq);
-        await this.delay(300);
-        if (enCard.cardFaces && enCard.cardFaces.length >= 2 && enCard.cardFaces[0].imageUris && enCard.cardFaces[1].imageUris) {
-          const mappedCardFace2Image = mapCardFace2ImageToJumpseller(enCard);
-          await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace2Image);
+        if (imgReq) {
+          try {
+            await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, imgReq);
+            this.logger.log(`✅ Imagen principal subida para carta ${enCard.name}`);
+          } catch (error) {
+            this.logger.error(`❌ Error al subir imagen principal: ${error.message}`);
+          }
           await this.delay(300);
+        }
+        
+        // Verificar si es una carta de doble cara y procesar imágenes de ambas caras
+        if (enCard.cardFaces && enCard.cardFaces.length >= 2) {
+          // Subir imagen cara 1 si existe
           const mappedCardFace1Image = mapCardFace1ImageToJumpseller(enCard);
-          await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace1Image);
-          await this.delay(300);
+          if (mappedCardFace1Image) {
+            try {
+              await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace1Image);
+              this.logger.log(`✅ Imagen cara 1 subida para carta ${enCard.name}`);
+            } catch (error) {
+              this.logger.error(`❌ Error al subir imagen cara 1: ${error.message}`);
+            }
+            await this.delay(300);
+          }
+          
+          // Subir imagen cara 2 si existe
+          const mappedCardFace2Image = mapCardFace2ImageToJumpseller(enCard);
+          if (mappedCardFace2Image) {
+            try {
+              await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace2Image);
+              this.logger.log(`✅ Imagen cara 2 subida para carta ${enCard.name}`);
+            } catch (error) {
+              this.logger.error(`❌ Error al subir imagen cara 2: ${error.message}`);
+            }
+            await this.delay(300);
+          }
         }
       }
 
@@ -235,9 +290,6 @@ export class MagicCardsService {
         usd: card.prices?.usd || null,
         usdFoil: card.prices?.usd_foil || null,
         usdEtched: card.prices?.usd_etched || null,
-        valorPesoChilenoCalculado: null,
-        valorPesoChilenoCalculadoFoil: null,
-        valorPesoChilenoCalculadoEtched: null,
       },
       stock: [],
       collectorNumber: card.collector_number || '',
@@ -469,100 +521,4 @@ export class MagicCardsService {
     }
   }
 
-  //Calcular precio de todas las cartas
-  async calculatePricesForAllCards(): Promise<{ updated: number; errors: number }> {
-    let updated = 0;
-    let errors = 0;
-
-    const usdPricesArr = await this.usdPricesService.findAllPrices();
-    const usdPriceDoc = Array.isArray(usdPricesArr)
-      ? usdPricesArr.find(p => p.game === "Magic: The Gathering")
-      : null;
-    if (!usdPriceDoc || !usdPriceDoc.usdPrice) throw new NotFoundException('Valor del dólar no encontrado');
-    const dollarValue = usdPriceDoc.usdPrice;
-
-    const basePricesArr = await this.basePricesService.findAllBasePrices();
-    const basePriceObj = Array.isArray(basePricesArr)
-      ? basePricesArr.find(bp => bp.game === "Magic: The Gathering" && bp.type === "rarity")
-      : null;
-    if (!basePriceObj || !basePriceObj.basePrices) throw new NotFoundException('Precios base no encontrados');
-
-    const cards = await this.model.find({}).exec();
-
-    for (const card of cards) {
-      try {
-        const rarity = card.rarity?.toLowerCase() || '';
-        let labelBase = '';
-        if (rarity === 'rare') labelBase = 'rareR';
-        else if (rarity === 'mythic') labelBase = 'mythicM';
-        else if (rarity === 'common') labelBase = 'commonC';
-        else if (rarity === 'uncommon') labelBase = 'uncommonU';
-
-        let precioApiNonFoil = card.prices.usd ? parseFloat(card.prices.usd) : 0;
-        let precioFinalNonFoilmultiploCien = 0;
-        if (precioApiNonFoil > 0) {
-          const precioCalculadoNonFoil = Math.round(precioApiNonFoil * dollarValue);
-          let basePriceNonFoil = 0;
-          if (labelBase) {
-            const baseItem = basePriceObj.basePrices.find(bp => bp.label === labelBase);
-            basePriceNonFoil = baseItem ? baseItem.price : 0;
-          }
-          const precioFinalNonFoil = Math.max(precioCalculadoNonFoil, basePriceNonFoil);
-          precioFinalNonFoilmultiploCien = Math.ceil(precioFinalNonFoil / 100) * 100;
-        } else {
-          this.logger.warn(`Precio API en dolar para nonfoil no disponible para carta ${card.oracleId}`);
-        }
-
-        let precioApiFoil = card.prices.usdFoil ? parseFloat(card.prices.usdFoil) : 0;
-        let precioFinalFoilmultiploCien = 0;
-        if (precioApiFoil > 0) {
-          const precioCalculadoFoil = Math.round(precioApiFoil * dollarValue);
-          let basePriceFoil = 0;
-          if (labelBase) {
-            const baseItemFoil = basePriceObj.basePrices.find(bp => bp.label === `${labelBase}-Foil`);
-            basePriceFoil = baseItemFoil ? baseItemFoil.price : 0;
-          }
-          const precioFinalFoil = Math.max(precioCalculadoFoil, basePriceFoil);
-          precioFinalFoilmultiploCien = Math.ceil(precioFinalFoil / 100) * 100;
-        } else {
-          this.logger.warn(`Precio API en dolar para foil no disponible para carta ${card.oracleId}`);
-        }
-
-        let precioApiEtched = card.prices.usdEtched ? parseFloat(card.prices.usdEtched) : 0;
-        let precioFinalEtchedmultiploCien = 0;
-        if (precioApiEtched > 0) {
-          const precioCalculadoEtched = Math.round(precioApiEtched * dollarValue);
-          let basePriceEtched = 0;
-          if (labelBase) {
-            const baseItemEtched = basePriceObj.basePrices.find(bp => bp.label === `${labelBase}-Etched`);
-            basePriceEtched = baseItemEtched ? baseItemEtched.price : 0;
-          }
-          const precioFinalEtched = Math.max(precioCalculadoEtched, basePriceEtched);
-          precioFinalEtchedmultiploCien = Math.ceil(precioFinalEtched / 100) * 100;
-        } else {
-          this.logger.warn(`Precio API en dolar para etched no disponible para carta ${card.oracleId}`);
-        }
-
-        if (precioApiNonFoil > 0) {
-          card.prices.valorPesoChilenoCalculado = precioFinalNonFoilmultiploCien.toString();
-        }
-        if (precioApiFoil > 0) {
-          card.prices.valorPesoChilenoCalculadoFoil = precioFinalFoilmultiploCien.toString();
-        }
-        if (precioApiEtched > 0) {
-          card.prices.valorPesoChilenoCalculadoEtched = precioFinalEtchedmultiploCien.toString();
-        }
-
-        await this.model.updateOne({ oracleId: card.oracleId }, { prices: card.prices });
-        this.logger.log(`Actualizado precio para carta ${card.oracleId}: NonFoil: ${precioFinalNonFoilmultiploCien}, Foil: ${precioFinalFoilmultiploCien}, Etched: ${precioFinalEtchedmultiploCien}`);
-        updated++;
-        
-      } catch (e) {
-        this.logger.error(`Error al calcular precio para carta ${card.oracleId}: ${e.message}`);
-        errors++;
-      }
-    }
-
-    return { updated, errors };
-  }
 }

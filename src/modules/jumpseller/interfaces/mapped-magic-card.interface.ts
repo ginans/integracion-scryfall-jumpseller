@@ -53,9 +53,6 @@ export interface MappedMagicCard {
         usd?: string | null;
         usdFoil?: string | null;
         usdEtched?: string | null;
-        valorPesoChilenoCalculado?: string | null;
-        valorPesoChilenoCalculadoFoil?: string| null,
-        valorPesoChilenoCalculadoEtched?: string | null;
     };
     stock?: {
         name?: string;

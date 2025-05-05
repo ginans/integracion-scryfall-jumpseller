@@ -9,6 +9,8 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { EnumLang, SortOrder, StateCards } from '../enums/query.enum';
+import { JumpsellerStatus } from 'src/modules/products/staging-product-variant/enums/jumpsellerStatus.enum';
+import { EnumPriceAndStockState } from 'src/modules/products/staging-product-variant/enums/price-and-stock-state.enum';
 export class PaginationQueryDto {
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()
@@ -56,7 +58,19 @@ export class PaginationQueryDto {
 
   @IsOptional()
   @IsString()
-  status?: StateCards | null;
+  status?: StateCards;
+
+  @IsOptional()
+  @IsString()
+  jumpsellerStatus?: JumpsellerStatus;
+
+  @IsOptional()
+  @IsString()
+  stockUpdateStatus?: EnumPriceAndStockState;
+
+  @IsOptional()
+  @IsString()
+  priceUpdateStatus?: EnumPriceAndStockState;
 
   @IsOptional()
   @IsString()

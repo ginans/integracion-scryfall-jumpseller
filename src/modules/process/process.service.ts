@@ -4,9 +4,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
-import { MagicCard, magicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
+import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 
 
 interface Ilist {
@@ -29,9 +27,9 @@ export class ProcessService {
     @InjectQueue('queues-prices') private readonly queuesPrices: Queue,
   ) { }
 
-  async updateStockQueue(products){
-    for(const product of products){
-      await this.queuesStock.add('update-stock', product
+  async updateStockQueue(variants: IStockFromFront[]) {
+    for(const variant of variants){
+      await this.queuesStock.add('update-stock', variant
     )}
   }
   
@@ -66,7 +64,7 @@ export class ProcessService {
       //detener proceso si has_more es false
       //let process = has_more;
       //comentar esto en produccion
-      if(page==1){
+      if(page==1){// para las pruebas solo consultamos la primera pagina 
         process = false;
       }
       page++;

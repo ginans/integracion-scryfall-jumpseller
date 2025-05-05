@@ -8,11 +8,13 @@ import { ProcessController } from './process.controller';
 import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { QueuesStock } from './queues/queues.stock';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
+import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 
 @Module({
   imports: [
     MagicCardsModule,
     JumpsellerModule,
+    StagingProductVariantModule,
     BullModule.registerQueue({
       name: 'queues-magic',
       defaultJobOptions: {

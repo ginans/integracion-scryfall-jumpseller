@@ -3,7 +3,6 @@ import { HydratedDocument, Types } from 'mongoose';
 import { MappedMagicCard } from '../../../modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { EnumCondition } from '../enums/condition.enum';
 import { EnumStatus } from '../enums/status.enum';
-import { Stock } from 'src/modules/process/interface/stock.interface';
 
 @Schema({ timestamps: true })
 export class MagicCard implements MappedMagicCard{
@@ -145,12 +144,7 @@ export class MagicCard implements MappedMagicCard{
     usd: string | null;
     usdFoil: string | null;
     usdEtched: string | null;
-    valorPesoChilenoCalculado: string | null,
-    valorPesoChilenoCalculadoFoil: string | null,
-    valorPesoChilenoCalculadoEtched: string | null;
   };
-  @Prop({ type: Array })
-  stock: Stock[];
 
   @Prop()
   gameChanger: boolean;

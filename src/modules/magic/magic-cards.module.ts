@@ -6,11 +6,9 @@ import { MagicCard, magicCardSchema } from './entities/magic-card.entity';
 import { ScryfallModule } from './submodules/scryfall/scryfall.module';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
 import { ProductsModule } from 'src/modules/products/products.module';
-import { UsdPricesModule } from 'src/modules/prices/submodules/usd-prices/usd-prices.module';
-import { UsdPrice, UsdPriceSchema } from 'src/modules/prices/submodules/usd-prices/entities/usd-price.entity';
-import { BasePricesModule } from 'src/modules/prices/submodules/base-prices/base-prices.module';
-import { BasePrice, BasePriceSchema } from 'src/modules/prices/submodules/base-prices/entities/base-price.entity';
-import mongoose from 'mongoose';
+import { UsdPricesModule } from 'src/modules/prices/usd-prices/usd-prices.module';
+import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.module';
+import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 
 @Module({
   imports: [
@@ -19,7 +17,8 @@ import mongoose from 'mongoose';
     ScryfallModule,
     JumpsellerModule,
     UsdPricesModule,
-    BasePricesModule
+    BasePricesModule,
+    StagingProductVariantModule, 
   ],
   controllers: [MagicCardsController],
   providers: [MagicCardsService],

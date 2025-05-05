@@ -5,15 +5,15 @@ export interface JumpsellerUpdateVariantRequest {
 export interface Variant {
     price: number
     sku: string
-    barcode: number
+    barcode?: number
     stock: number
     stock_unlimited: boolean
-    stock_threshold: number
-    stock_notification: boolean
-    cost_per_item: number
-    compare_at_price: number
-    image_id: number
-    options: VariantOption[]
+    stock_threshold?: number
+    stock_notification?: boolean
+    cost_per_item?: number
+    compare_at_price?: number
+    image_id?: number
+    options?: VariantOption[]
 }
 
 export interface VariantOption {

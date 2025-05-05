@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { IdataProduct, IsetProduct } from './interface/product.interface';
+import { IdataProduct, IsetProduct } from './interfaces/product.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { IreqWebhookSalesProduct } from 'src/modules/jumpseller/interfaces/webhook/saleData.interface';

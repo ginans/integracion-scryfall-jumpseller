@@ -1,12 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Job } from 'bullmq';
-import { Model } from 'mongoose';
-import { MagicCard, magicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
-import { Stock } from '../interface/stock.interface';
-import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
-import { StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { StagingProductVariantService } from 'src/modules/products/staging-product-variant/staging-product-variant.service';
 
 @Processor('queues-stock')
 export class QueuesStock extends WorkerHost {
@@ -14,87 +9,28 @@ export class QueuesStock extends WorkerHost {
     timestamp: true,
   });
   constructor(
-    @InjectModel(MagicCard.name) private readonly magicCardModel: Model<magicCardDocument>,
-    private readonly jumpsellerService: JumpsellerService
+    private readonly stageingProductVariantService: StagingProductVariantService,
   ) {
     super();
   }
   async process(job: Job<any, any, string>): Promise<any> {
     try {
       await job.updateProgress(25);
-      await this.updateStock(job.data);
+      await this.stageingProductVariantService.saveStockFromFront(job.data);
+      await job.updateProgress(50);
+      await this.stageingProductVariantService.sendStockToJumpseller(job.data);
       await job.updateProgress(100);
       return 'done';
     } catch (error) {
+      //reintentar el job si falla
+      await job.updateProgress(0);
+      await job.moveToFailed(new Error(error.message), "true");
+      await job.retry();
       throw new Error(`Job failed at step: ${error.message}`);
+
     }
   }
 
-  //TODO: MOVER AL SERVICIO DE STOCK Y CAMBIAR DEL PARAMETRO A VARIANT
-  async updateStock(product: StockJumpsellerRequest) {
-    // Recibir id y el stock
-    await this.magicCardModel.updateOne(
-      { 
-        idJumpSeller: product.product_id, 
-        "stock.variant_id": product.variant_id,
-        "stock.product_id": product.product_id,
-      },
-      {
-        $set: {
-          "stock.$.stock": product.stock,
-          "stock.$.location_id": product.location_id,
-          "stock.$.stock_unlimited": product.stock_unlimited,
-        }
-      }
-    );
-    
-    //traer la data de base de datos
-    const magicCard = await this.magicCardModel.findOne(
-      {
-        "stock.product_id": product.product_id, 
-        "stock.variant_id": product.variant_id
-      }
-    );
-   
-    if (magicCard) {
-      //encontrar la variante específica en el array de stock
-      const stockItem = magicCard.stock.find(item => item.variant_id === product.variant_id);
-
-      
-      interface StockMappingResult {
-        stock: number;
-        product_id: number;
-        variant_id: number;
-        location_id?: number;
-        stock_unlimited?: boolean;
-      }
-        if (stockItem){
-          const mapStockItemToJumpsellerRequest = (stockItem: Stock): StockMappingResult => {
-            return {
-              stock: stockItem.stock,
-              product_id: stockItem.product_id,
-              variant_id: stockItem.variant_id,
-              location_id: stockItem.location_id,
-              stock_unlimited: stockItem.stock_unlimited
-            };
-          };
-
-          console.log(`🤡cuerpo de stock con ULTTRA typado: ${mapStockItemToJumpsellerRequest(stockItem) as StockMappingResult}`);
-          
-          const stockRequest = mapStockItemToJumpsellerRequest(stockItem);
-          this.logger.log(` 🦍 body de stock enviado a jumpseller ${JSON.stringify(stockRequest)}`);
-          try{
-            const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);  
-            this.logger.log(` 🦍 respuesta stock ${JSON.stringify(response)}`);
-          }catch (error) {
-            this.logger.error(`Error al enviar stock a Jumpseller: ${error}`);
-            throw new Error(`Error al enviar stock a Jumpseller: ${error}`);
-          }
-        }
-    }
-    
-    return true;
-  }
 
   @OnWorkerEvent('completed')
   onCompleted(job: Job<any, any, string>) {

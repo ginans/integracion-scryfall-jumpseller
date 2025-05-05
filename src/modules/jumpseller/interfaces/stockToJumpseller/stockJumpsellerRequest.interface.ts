@@ -5,3 +5,11 @@ export interface StockJumpsellerRequest {
     location_id?: number;
     stock_unlimited?: boolean;
 }
+
+export interface IStockFromFront {
+    stock: number;
+    productId: number;
+    variantId: number;
+    locationId?: number;
+    stockUnlimited?: boolean;
+}

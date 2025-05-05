@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { IdataProduct } from '../interface/product.interface';
+import { IdataProduct } from '../interfaces/product.interface';
 
 @Schema({ timestamps: true })
 export class Product implements IdataProduct {
@@ -211,6 +211,5 @@ export class Product implements IdataProduct {
     };
   }>;
 }
-
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

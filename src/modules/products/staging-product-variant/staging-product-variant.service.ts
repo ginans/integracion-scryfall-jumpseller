@@ -142,15 +142,6 @@ export class StagingProductVariantService {
     }
   }
 
-   async findVariantById(_id: string): Promise<IStagingProductVariant> {
-      if (!Types.ObjectId.isValid(_id))
-        throw new BadRequestException('Formato de ID inválido');
-      const variant = await this.stagingProductVariantModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
-      if (!variant) throw new NotFoundException('Variante no encontrada');
-      const variantResponse = variant as unknown as IStagingProductVariant;
-      return variantResponse;
-    }
-
   // Manejo de stock
   async saveStockFromFront(variant: IStockFromFront) {
     const existingVariant = await this.stagingProductVariantModel.findOne({
@@ -576,15 +567,49 @@ export class StagingProductVariantService {
     );
   }
 
-  async updateIsPriceUpdateable(_id: ObjectId, isPriceUpdateable: boolean) {
-    await this.stagingProductVariantModel.updateOne(
-      { _id },
-      {
-        $set: {
-          isPriceUpdateable: isPriceUpdateable,
-        }
+  //encontrar variante por id
+  async findVariantById(_id: string): Promise<IStagingProductVariant> {
+    if (!Types.ObjectId.isValid(_id))
+      throw new BadRequestException('Formato de ID inválido');
+    const variant = await this.stagingProductVariantModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
+    if (!variant) throw new NotFoundException('Variante no encontrada');
+    const variantResponse = variant as unknown as IStagingProductVariant;
+    return variantResponse;
+  }
+
+  //actualizar variante por id
+  async updateVariantById(_id: string, variant: Partial<IStagingProductVariant>) {
+    if (!Types.ObjectId.isValid(_id)) {
+      throw new BadRequestException('ID no es válido');
+    }
+    
+    this.logger.log(`Actualizando variante con ID ${_id} con datos: ${JSON.stringify(variant)}`);
+    
+    try {
+      // Usar directamente el string del OID sin convertirlo
+     const variante = await this.stagingProductVariantModel.findById(new Types.ObjectId(_id)).exec();
+      if (!variante) {
+        this.logger.error(`No se encontró la variante con ID ${_id}`);
+        throw new NotFoundException(`Variant with ID ${_id} not found.`);
       }
-    );
+
+      // Actualizar la variante con los nuevos datos
+      const updatedVariant = await this.stagingProductVariantModel.updateOne(
+        { _id: new Types.ObjectId(_id) },
+        {
+          $set: {
+            ...variant,
+          }
+        },
+        { new: true }
+      );
+      
+      this.logger.log(`Variante actualizada exitosamente: ${updatedVariant}`);
+      return updatedVariant;
+    } catch (error) {
+      this.logger.error(`Error al actualizar variante: ${error.message}`);
+      throw new InternalServerErrorException(`Error al actualizar variante: ${error.message}`);
+    }
   }
 
   async updateAllIsPriceUpdateable(isPriceUpdateable: boolean) {

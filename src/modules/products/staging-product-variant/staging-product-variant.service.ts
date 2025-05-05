@@ -466,7 +466,7 @@ export class StagingProductVariantService {
   }
   
 //-----------------------------------------------------------------------------------------------------
-   //precios individuales desde el front 
+   //precios manuales desde el front 
   async savePricesFromFront(variant: IPriceFromFront) {
     const existingVariant = await this.stagingProductVariantModel.findOne({
       variantId: variant.variantId,
@@ -485,7 +485,7 @@ export class StagingProductVariantService {
       {
         $set: {
           variantPrice: +variant.variantPrice,
-          isPriceUpdateable: variant.isPriceUpdateable,
+          isPriceUpdateable: false, //cambiar a false si el precio es actualizado manualmente
           priceUpdateStatus: EnumPriceAndStockState.PENDING,
           priceUpdateError: null,
         }

@@ -41,9 +41,7 @@ export class StagingProductVariantController {
   async updateAllIsPriceUpdateable(
     @Body('isPriceUpdateable') isPriceUpdateable: boolean
   ) {
-    return this.stagingProductVariantService.updateAllIsPriceUpdateable(isPriceUpdateable);
+    return await this.stagingProductVariantService.updateAllIsPriceUpdateable(isPriceUpdateable);
   }
-
   
-
 }

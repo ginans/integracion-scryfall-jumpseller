@@ -622,15 +622,5 @@ export class StagingProductVariantService {
       }
     );
   }
-
-  async updateSomeIsPriceUpdateable(variantIds: number[], isPriceUpdateable: boolean) {
-    await this.stagingProductVariantModel.updateMany(
-      { variantId: { $in: variantIds } },
-      {
-        $set: {
-          isPriceUpdateable: isPriceUpdateable,
-        }
-      }
-    );
-  }
+  
 }

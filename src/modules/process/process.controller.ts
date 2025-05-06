@@ -10,8 +10,11 @@ export class ProcessController {
 
   @Post('magic')
   async procesarCardMagic(): Promise<string> {
-    await this.processService.initCardMagic();
-    return "ok"
+    try{
+      await this.processService.initCardMagic();
+    }catch(error){
+      return error
+    }
   }
   @Post('stock')
   async updateStock(@Body() product: IStockFromFront[]) {
@@ -25,7 +28,12 @@ export class ProcessController {
   }
   @Post('prices')
   async updatePrices(@Body() product: IPriceFromFront[]){
-    await this.processService.updatePricesQueue(product);
-    return "ok"
+    try{
+      const response = await this.processService.updatePricesQueue(product);
+      return response
+    }
+    catch(error){
+      return error
+    }
   }
 }

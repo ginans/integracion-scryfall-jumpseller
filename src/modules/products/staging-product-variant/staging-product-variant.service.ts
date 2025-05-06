@@ -641,5 +641,6 @@ export class StagingProductVariantService {
       this.logger.error(`Error al actualizar isPriceUpdateable: ${error.message}`);
       throw new InternalServerErrorException(`Error al actualizar isPriceUpdateable: ${error.message}`);
     }
+  }
   
 }

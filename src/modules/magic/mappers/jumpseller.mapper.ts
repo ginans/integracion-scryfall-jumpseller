@@ -144,7 +144,6 @@ export function mapImageToJumpseller(card: MappedMagicCard): JumpsellerCreateIma
     console.warn(`⚠️ Carta sin imagen: ${card.name}`);
     return null;
   }
-  
   return { image: { url: card.imageUris.large, position: 0 } };
 }
 

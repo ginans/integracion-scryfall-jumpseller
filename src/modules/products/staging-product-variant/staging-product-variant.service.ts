@@ -152,7 +152,7 @@ export class StagingProductVariantService {
     if (!existingVariant) {
       throw new Error(`Variant with variantId: ${variant.variantId} and productId: ${variant.productId} not found.`);
     }
-
+    const nullErrorMsg = ""
     await this.stagingProductVariantModel.updateOne(
       {
         variantId: variant.variantId,
@@ -164,7 +164,7 @@ export class StagingProductVariantService {
           locationId: variant.locationId,
           stockUnlimited: variant.stockUnlimited,
           stockUpdateStatus: EnumPriceAndStockState.PENDING,
-          stockUpdateError: null,
+          stockUpdateError: nullErrorMsg,
         }
       }
     );
@@ -191,22 +191,24 @@ export class StagingProductVariantService {
         stock_unlimited: productVariant.stockUnlimited,
       };
 
+      const nullErrorMsg= ""
       await this.updateVariantStockStatus(
         variant.variantId,
         variant.productId,
         EnumPriceAndStockState.IN_PROGRESS,
-        null
+        nullErrorMsg
       );
 
       this.logger.log(`🦍 Enviando stock a Jumpseller: ${JSON.stringify(stockRequest)}`);
       const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);
 
       if (!response?.error && response?.status === 200) {
+
         await this.updateVariantStockStatus(
           variant.variantId,
           variant.productId,
           EnumPriceAndStockState.COMPLETED,
-          null
+          nullErrorMsg
         );
         this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
         this.logger.log(`Se actualizó el stock de la variante ${variant.variantId} en Jumpseller`);
@@ -363,18 +365,19 @@ export class StagingProductVariantService {
 
           this.logger.log(`Precio final calculado: ${precioCLP} CLP`);
 
+          //SI EL PRECIO EN IGUAL O MENOR A 0 NO SE ACTUALIZA
           if (precioCLP <= 0) {
             this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variante.variantId} con sku ${variante.sku}`);
             continue;
           }
-
+          const nullErrorMsg = ""
           await this.stagingProductVariantModel.updateOne(
             { _id: variante._id },
             {
               $set: {
                 variantPrice: precioCLP,
                 priceUpdateStatus: EnumPriceAndStockState.PENDING,
-                priceUpdateError: null
+                priceUpdateError: nullErrorMsg
               }
             }
           );
@@ -384,7 +387,7 @@ export class StagingProductVariantService {
             variante.variantId,
             variante.productId,
             EnumPriceAndStockState.IN_PROGRESS,
-            null
+            nullErrorMsg
           );
 
           const variantTo: JumpsellerUpdateVariantRequest = {
@@ -403,7 +406,7 @@ export class StagingProductVariantService {
               variante.variantId,
               variante.productId,
               EnumPriceAndStockState.COMPLETED,
-              null
+              nullErrorMsg
             );
             this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
             this.logger.log(`Se actualizó el precio de la variante ${variante.variantId} en Jumpseller`);
@@ -461,6 +464,7 @@ export class StagingProductVariantService {
       throw new Error(`Variant with variantId: ${variant.variantId} and productId: ${variant.productId} not found.`);
     }
 
+    const nullErrorMsg = ""
     const updatedVariant = await this.stagingProductVariantModel.updateOne(
       { variantId: variant.variantId, productId: variant.productId },
       {
@@ -468,7 +472,7 @@ export class StagingProductVariantService {
           variantPrice: variant.variantPrice,
           isPriceUpdateable: false,
           priceUpdateStatus: EnumPriceAndStockState.PENDING,
-          priceUpdateError: null,
+          priceUpdateError: nullErrorMsg,
         }
       }
     );
@@ -493,11 +497,12 @@ export class StagingProductVariantService {
         throw new Error(errorMsg);
       }
 
+      const nullErrorMsg= ""
       await this.updateVariantPriceStatus(
         variant.variantId,
         variant.productId,
         EnumPriceAndStockState.IN_PROGRESS,
-        null
+        nullErrorMsg
       );
 
       const variantTo: JumpsellerUpdateVariantRequest = {
@@ -516,7 +521,7 @@ export class StagingProductVariantService {
           variant.variantId,
           variant.productId,
           EnumPriceAndStockState.COMPLETED,
-          null
+          nullErrorMsg
         );
         this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
         this.logger.log(`Se actualizó el precio de la variante ${variant.variantId} en Jumpseller`);
@@ -615,15 +620,26 @@ export class StagingProductVariantService {
     }
   }
 
+  //actualizar todos los isPriceUpdateable a true o false
   async updateAllIsPriceUpdateable(isPriceUpdateable: boolean) {
-    await this.stagingProductVariantModel.updateMany(
-      {},
-      {
-        $set: {
-          isPriceUpdateable: isPriceUpdateable,
+    try{
+      await this.stagingProductVariantModel.updateMany(
+        {},
+        {
+          $set: {
+            isPriceUpdateable: isPriceUpdateable,
+          }
         }
+      );
+      if (isPriceUpdateable === true) {
+        this.logger.log(`Se actualizaron todos los isPriceUpdateable a true`);
+      }else {
+        this.logger.log(`Se actualizaron todos los isPriceUpdateable a false`);
       }
-    );
-  }
+      return { message: `Se actualizaron todos los isPriceUpdateable a ${isPriceUpdateable}` };
+    }catch(error){
+      this.logger.error(`Error al actualizar isPriceUpdateable: ${error.message}`);
+      throw new InternalServerErrorException(`Error al actualizar isPriceUpdateable: ${error.message}`);
+    }
   
 }

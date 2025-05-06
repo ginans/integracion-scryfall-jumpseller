@@ -175,8 +175,13 @@ export class MagicCard implements MappedMagicCard{
   })
   status: EnumStatus;
 
-  @Prop({ default: EnumCondition.NearMint })
-  condition: EnumCondition;
+@Prop({ default:[
+  EnumCondition.NearMint,  
+  EnumCondition.LightlyPlayed, 
+  EnumCondition.ModeratelyPlayed, 
+  EnumCondition.HeavilyPlayed, 
+  EnumCondition.Damaged] })
+condition: string[];
 
 }
 

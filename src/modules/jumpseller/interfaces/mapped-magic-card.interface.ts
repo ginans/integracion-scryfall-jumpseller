@@ -1,16 +1,8 @@
+import { EnumCondition } from "src/modules/magic/enums/condition.enum";
+
 export interface IsetMagic{
     idJumpSeller?:number;
-    status?:string,
-    stock?: [{
-        name?: string,
-        another_lang_name?: string,
-        sku?: string,
-        product_id?: number,
-        stock?: number,
-        variant_id?: number,
-        location_id?: number,
-        stock_unlimited?: boolean,
-      }]
+    status?:string;
 }
 
 //info mapeada
@@ -54,22 +46,13 @@ export interface MappedMagicCard {
         usdFoil?: string | null;
         usdEtched?: string | null;
     };
-    stock?: {
-        name?: string;
-        another_lang_name?: string;
-        sku?: string;
-        stock?: number | null;
-        product_id?: number | null;
-        variant_id?: number | null;
-        location_id?: number | null;
-        stock_unlimited?: boolean | null;
-    }[]
     collectorNumber?: string;
     setId?: string;
     set?: string;
     setType: string;
     setName: string;
     games?: string[];
+    condition?: string[];
 }
 
 interface CardFace {

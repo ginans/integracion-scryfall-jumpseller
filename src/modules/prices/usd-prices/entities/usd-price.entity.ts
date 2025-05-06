@@ -1,30 +1,30 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { BasePrice } from "../interfaces/usd-prices.interface";
-import { EnumGame } from "../enums/games.enum";
+import { EnumGame, EnumGamePrefix } from "../../../../common/enums/game.enum";
 
 @Schema({ timestamps: true })
 export class UsdPrice implements BasePrice {
-@Prop({ 
-    default: function() {
-        if (this.game === EnumGame.POKEMON) {
-            return "PK";
+    @Prop({ 
+        default: function() {
+            if (this.game === EnumGame.POKEMON) {
+                return EnumGamePrefix.POKEMON;
+            }
+            if (this.game === EnumGame.ONEPIECE) {
+                return EnumGamePrefix.ONEPIECE;
+            }
+            if (this.game === EnumGame.MAGIC) {
+            return EnumGamePrefix.MAGIC;
         }
-        if (this.game === EnumGame.ONEPIECE) {
-            return "OP";
-        }
-        if (this.game === EnumGame.MAGIC) {
-        return "MG";
     }
-}
-})
-gameID: string;
+    })
+    gameID: string;
 
-  @Prop({ required: true})
-  game: string;
+    @Prop({ required: true})
+    game: string;
 
-  @Prop({ required: true})
-  usdPrice: number;
+    @Prop({ required: true})
+    usdPrice: number;
 
 }
 

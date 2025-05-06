@@ -12,7 +12,8 @@ export interface JumpsellerCreateVariantRequest {
         image_id?: number;
         options?: JumpsellerVariantOption[];
     }
-    finishKey?: string;
+    finish?: string;
+    condition?: string;
 }
 
 interface JumpsellerVariantOption {

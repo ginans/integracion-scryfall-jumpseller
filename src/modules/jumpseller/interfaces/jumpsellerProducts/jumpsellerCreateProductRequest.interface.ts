@@ -21,8 +21,8 @@ export interface JumpsellerProductRequest {
   google_product_category?: string; //Categoría del producto basada en la taxonomía de productos de Google
   featured?: boolean //Por defecto: false, True si el producto es destacado
   shipping_required?: boolean //Por defecto: true, False si el producto es digital
-  status?: jumpsellerStatus; //Por defecto: available
-  package_format?: jumpsellerPackage //Por defecto: "box". Formato del paquete del producto
+  status?: JumpsellerStatus; //Por defecto: available
+  package_format?: JumpsellerPackage //Por defecto: "box". Formato del paquete del producto
   length?: number //Longitud del producto
   width?: number; //Ancho del producto
   height?: number; //Altura del producto
@@ -31,13 +31,13 @@ export interface JumpsellerProductRequest {
   variants?: JumpsellerVariants[];
 }
 
-export enum jumpsellerStatus {
+export enum JumpsellerStatus {
   AVALIABLE = "available", //Disponible
   NOTAVALIABLE = "not-available", //No disponible
   DISABLED = "disabled" //Deshabilitado
 }
 
-export enum jumpsellerPackage {
+export enum JumpsellerPackage {
   BOX = "box", //Caja
   CYLINDER= "cylinder" //Cilindro
 }

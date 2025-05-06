@@ -3,3 +3,9 @@ export enum EnumGame{
     POKEMON = 'Pokemon',
     ONEPIECE = 'One Piece Card Game',
 }
+
+export enum EnumGamePrefix{
+    MAGIC = 'M',
+    POKEMON = 'PK',
+    ONEPIECE = 'OP',
+}

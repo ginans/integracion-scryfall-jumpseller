@@ -18,6 +18,7 @@ import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.se
 import { MagicCard } from 'src/modules/magic/entities/magic-card.entity';
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
+import { EnumGame } from 'src/common/enums/game.enum';
 
 @Injectable()
 export class StagingProductVariantService {
@@ -267,6 +268,7 @@ export class StagingProductVariantService {
 
   // Manejo de precios
   async calculatePricesForAllCards() {
+    //TODO: QUE EL CALCULO DEL PRECIO SEA DINAMICO EN BASE AL JUEGO
     try {
       const variantes = await this.stagingProductVariantModel.find({ isPriceUpdateable: true });
       this.logger.log(`Procesando ${variantes.length} variantes para actualizar precios...`);
@@ -277,8 +279,8 @@ export class StagingProductVariantService {
       }
       const usdPrice = usdPriceDoc.usdPrice;
       this.logger.log(`Precio del dólar: ${usdPrice} CLP`);
-
-      const basePrice = await this.basePriceModel.findOne({ game: "Magic: The Gathering" });
+      
+      const basePrice = await this.basePriceModel.findOne({ game: EnumGame.MAGIC });
       if (!basePrice) {
         throw new Error("No se encontraron precios base para Magic");
       }

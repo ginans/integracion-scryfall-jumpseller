@@ -47,6 +47,9 @@ export class StagingProductVariant implements IStagingProductVariant {
     rarity: string | null;
 
     @Prop({ default: null })
+    condition: string | null;
+
+    @Prop({ default: null })
     game: string | null;
 
     @Prop({ 

@@ -28,6 +28,7 @@ import { StagingProductVariantService } from '../products/staging-product-varian
 import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
 import { StagingProductVariant, StagingProductVariantDocument, StagingProductVariantSchema } from '../products/staging-product-variant/entities/staging-product-variant.entity';
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
+import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
 
 @Injectable()
 export class MagicCardsService {
@@ -107,15 +108,12 @@ export class MagicCardsService {
         });
       // generar todas las variantes de una vez
       const variantReqs = mapVariantsToJumpseller(enCard, langs);
-      for (const { variant, finishKey } of variantReqs) {
+      for (const { variant, finish, condition } of variantReqs) {
         if (enCard.idJumpSeller) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
             enCard.idJumpSeller,
             {variant}
           );
-
-         
-            
           await this.delay(300);
           
           //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
@@ -126,15 +124,13 @@ export class MagicCardsService {
           });
           
           if (!cardWithStock) {
-
             const getGameFromSku = (sku: string) => {
               if (!sku) return null;
               const prefix = sku.split('-')[0];
-            
               switch (prefix) {
-                case 'M': return 'Magic';
-                case 'PK': return 'Pokémon';
-                case 'OP': return 'One Piece';
+                case EnumGamePrefix.MAGIC: return EnumGame.MAGIC;
+                case  EnumGamePrefix.POKEMON: return EnumGame.POKEMON;
+                case EnumGamePrefix.ONEPIECE: return EnumGame.ONEPIECE;
                 default: return `Juego no encontrado para el SKU: ${sku}`;
               }
             };
@@ -148,8 +144,9 @@ export class MagicCardsService {
                 name: enCard.name || "",
                 anotherLangName: enCard.printedName || "",
                 sku: varRes.variant.sku,
-                finish: finishKey || "",
+                finish: finish || "",
                 rarity: enCard.rarity || "",
+                condition: condition || "",
                 game: getGameFromSku(varRes.variant.sku) || null,
                 imageUrl: {
                   large: enCard.imageUris?.large || null,
@@ -305,7 +302,6 @@ export class MagicCardsService {
         usdFoil: card.prices?.usd_foil || null,
         usdEtched: card.prices?.usd_etched || null,
       },
-      stock: [],
       collectorNumber: card.collector_number || '',
       setId: card.set_id || '',
       set: card.set || '',

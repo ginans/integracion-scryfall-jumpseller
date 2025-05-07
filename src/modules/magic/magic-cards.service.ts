@@ -106,6 +106,9 @@ export class MagicCardsService {
             : v.lang!;
           return { code, name };
         });
+
+        this.logger.debug(`🤡[Variant Creation] Languages to process (langs): ${JSON.stringify(langs)}`);
+        this.logger.debug(`🤡[Variant Creation] English card (enCard) for base properties: ${JSON.stringify(enCard ? { id: enCard.id, lang: enCard.lang, foil: enCard.foil, nonfoil: enCard.nonfoil, condition: enCard.condition, idJumpSeller: enCard.idJumpSeller } : null)}`);
       // generar todas las variantes de una vez
       const variantReqs = mapVariantsToJumpseller(enCard, langs);
       for (const { variant, finish, condition } of variantReqs) {

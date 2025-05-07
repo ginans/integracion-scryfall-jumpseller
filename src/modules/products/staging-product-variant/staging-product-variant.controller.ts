@@ -15,6 +15,11 @@ export class StagingProductVariantController {
     return this.stagingProductVariantService.findAllVariants(query);
   }
 
+  @Get("widthoutPagination")
+  async findAllVariantsWithoutPagination(): Promise<IStagingProductVariant[]> {
+    return this.stagingProductVariantService.findAllVariantsWithoutPagination();
+  }
+
   @Get('byId/:id')
   async getById(
     @Param('id') id: string

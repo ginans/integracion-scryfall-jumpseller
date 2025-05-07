@@ -12,33 +12,34 @@ export type Language = {
   name: string;
 };
 
-  const translatedLanguages = (lang: string)  => {
-    switch (lang) {
-      case EnumLanguage.ESPAÑOL: lang = 'Español'; break;
-      case EnumLanguage.PORTUGUES: lang = 'Portugués'; break;
-      case EnumLanguage.FRANCES: lang = 'Frances'; break;
-      case EnumLanguage.ALEMAN: lang = 'Alemán'; break;
-      case EnumLanguage.ITALIANO: lang = 'Italiano'; break;
-      case EnumLanguage.JAPONES: lang = 'Japonés'; break;
-      case EnumLanguage.COREANO: lang = 'Coreano'; break;
-      case EnumLanguage.CHINO_SIMP: lang = 'Chino simplificado'; break;
-      case EnumLanguage.CHINO_TRAD: lang = 'Chino tradicional'; break;
-      case EnumLanguage.RUSO: lang = 'Ruso'; break;
-      case EnumLanguage.ARABE: lang = 'Árabe'; break;
-      case EnumLanguage.GRIEGO_ANTIGUO: lang = 'Griego antiguo'; break;
-      case EnumLanguage.HEBREO: lang = 'Hebreo'; break;
-      case EnumLanguage.LATIN: lang = 'Latín'; break;
-      case EnumLanguage.PHYREXIAN: lang = 'Pyrexiano'; break;
-      case EnumLanguage.QUENYA: lang = 'Quenya'; break;
-      case EnumLanguage.SANSCRITO: lang = 'Sánscrito'; break;
-      default: lang = "Desconocido"; break;
-    }
-
+const translatedLanguages = (langInput: string): string  => {
+  let translatedLang = langInput; // Usar una nueva variable para la traducción
+  switch (langInput) {
+    case EnumLanguage.ESPAÑOL: translatedLang = 'Español'; break;
+    case EnumLanguage.PORTUGUES: translatedLang = 'Portugués'; break;
+    case EnumLanguage.FRANCES: translatedLang = 'Frances'; break;
+    case EnumLanguage.ALEMAN: translatedLang = 'Alemán'; break;
+    case EnumLanguage.ITALIANO: translatedLang = 'Italiano'; break;
+    case EnumLanguage.JAPONES: translatedLang = 'Japonés'; break;
+    case EnumLanguage.COREANO: translatedLang = 'Coreano'; break;
+    case EnumLanguage.CHINO_SIMP: translatedLang = 'Chino simplificado'; break;
+    case EnumLanguage.CHINO_TRAD: translatedLang = 'Chino tradicional'; break;
+    case EnumLanguage.RUSO: translatedLang = 'Ruso'; break;
+    case EnumLanguage.ARABE: translatedLang = 'Árabe'; break;
+    case EnumLanguage.GRIEGO_ANTIGUO: translatedLang = 'Griego antiguo'; break;
+    case EnumLanguage.HEBREO: translatedLang = 'Hebreo'; break;
+    case EnumLanguage.LATIN: translatedLang = 'Latín'; break;
+    case EnumLanguage.PHYREXIAN: translatedLang = 'Pyrexiano'; break;
+    case EnumLanguage.QUENYA: translatedLang = 'Quenya'; break;
+    case EnumLanguage.SANSCRITO: translatedLang = 'Sánscrito'; break;
+    default: translatedLang = "Desconocido"; break;
   }
+  return translatedLang;
+}
+
 
 export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
-  let lang = card.lang
-  const translatedlang= translatedLanguages(lang)
+  const translatedlang = translatedLanguages(card.lang)
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   const cardFaceOracleText = card.oracleText
     || card.cardFaces?.map(f => f.oracleText).join('. ')
@@ -57,7 +58,7 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
   const product = {
     name: card.name || '',
     description: `
-      $Nombre en Inglés: ${card.name}.
+      Nombre en Inglés: ${card.name}.
       Nombre en ${card.lang === "en"? "otro idioma": translatedlang}: ${card.lang === "en"? "Esta carta solo esta en inglés" : card.printedName || ''}
       Tipo: ${card.typeLine}.
       Texto: ${card.oracleText || cardFaceOracleText}.
@@ -93,8 +94,7 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   let rarity = card.rarity;
 
-  let lang = card.lang
-  const translatedlang= translatedLanguages(lang)
+  const translatedlang = translatedLanguages(card.lang)
 
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -108,7 +108,7 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     name: card.name || '',
     description: `
       Nombre en Inglés: ${card.name}.
-      Nombre en ${card.lang === "en"? "otro idioma": translatedlang}: ${card.lang === "en"? "Esta carta solo esta en inglés" : card.printedName || ''}.
+       Nombre en ${card.lang === "en"? "otro idioma": translatedlang}: ${card.lang === "en"? "Esta carta solo esta en inglés" : card.printedName || ''}
       Tipo: ${card.typeLine}.
       Texto: ${card.oracleText}.
       Edición: ${card.setName}.
@@ -195,15 +195,15 @@ export function mapVariantsToJumpseller(
                 ? collectorNumberToUpperCase.padStart(4, '0')
                 : collectorNumberToUpperCase)
             : '';
-        const sku = `M-${card.set?.toUpperCase() || ''}${base ? base + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == "NM"? "" : "-"+ condition.suffix}` : ''}`;
+        const sku = `M-${card.set?.toUpperCase() || ''}${base ? base + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == EnumCondition.NearMint ? "" : "-"+ condition.suffix}` : ''}`;
         variants.push({
           variant: {
             sku,
             price: 0, 
             options: [
+              { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
               { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition.name },
-              { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
             ],
           },
           finish: finish.key,

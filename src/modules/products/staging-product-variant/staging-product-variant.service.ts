@@ -143,6 +143,18 @@ export class StagingProductVariantService {
     }
   }
 
+
+  async findAllVariantsWithoutPagination() {
+    try {
+      const variants = await this.stagingProductVariantModel.find({}).exec();
+      this.logger.log(`Se encontraron ${variants.length} variantes`);
+      return variants;
+    } catch (error) {
+      this.logger.error(`Error al buscar variantes: ${error.message}`);
+      throw new InternalServerErrorException(`Error trayendo variantes: ${error.message}`);
+    }
+  }
+
   // Manejo de stock
   async saveStockFromFront(variant: IStockFromFront) {
     const existingVariant = await this.stagingProductVariantModel.findOne({

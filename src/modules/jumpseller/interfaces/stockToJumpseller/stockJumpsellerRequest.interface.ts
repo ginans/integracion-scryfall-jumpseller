@@ -7,7 +7,7 @@ export interface StockJumpsellerRequest {
 }
 
 export interface IStockFromFront {
-    stock: number;
+    variantStock: number;
     productId: number;
     variantId: number;
     locationId?: number;

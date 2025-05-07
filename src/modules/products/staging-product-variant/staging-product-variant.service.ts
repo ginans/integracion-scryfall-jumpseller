@@ -173,7 +173,7 @@ export class StagingProductVariantService {
       },
       {
         $set: {
-          variantStock: +existingVariant.variantStock + +variant.stock,
+          variantStock: +existingVariant.variantStock + +variant.variantStock,
           locationId: variant.locationId,
           stockUnlimited: variant.stockUnlimited,
           stockUpdateStatus: EnumPriceAndStockState.PENDING,
@@ -247,7 +247,6 @@ export class StagingProductVariantService {
           errorMsg
         );
       }
-
       return response;
     } catch (error) {
       this.logger.error(`Error al enviar stock a Jumpseller: ${error.message}`);

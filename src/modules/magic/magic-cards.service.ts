@@ -62,7 +62,7 @@ export class MagicCardsService {
       const originalCard = await this.fetchAndCreateCards(cards);
       versions.push(originalCard);
       
-      // Verificación de seguridad: si la carta no está en inglés, buscarla
+      // Verificación de seguridad: si la carta no está en inglés, buscarla 
       if (originalCard.lang?.toLowerCase() !== 'en') {
         this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
         const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
@@ -112,7 +112,8 @@ export class MagicCardsService {
       // generar todas las variantes de una vez
       const variantReqs = mapVariantsToJumpseller(enCard, langs);
       for (const { variant, finish, condition } of variantReqs) {
-        if (enCard.idJumpSeller) {
+        this.logger.debug(`🤩[Variant Creation] Processing variant: ${JSON.stringify(variant)}`);
+        if (enCard.idJumpSeller ) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
             enCard.idJumpSeller,
             {variant}

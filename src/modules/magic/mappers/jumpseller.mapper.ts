@@ -8,12 +8,12 @@ import { EnumGame } from 'src/common/enums/game.enum';
 import { EnumCondition } from '../enums/condition.enum';
 
 export type Language = {
-  code: EnumLanguage;
+  code: EnumLanguage; 
   name: string;
 };
 
 const translatedLanguages = (langInput: string): string  => {
-  let translatedLang = langInput; // Usar una nueva variable para la traducción
+  let translatedLang = langInput; // Usar una nueva variable para la traducción 
   switch (langInput) {
     case EnumLanguage.ESPAÑOL: translatedLang = 'Español'; break;
     case EnumLanguage.PORTUGUES: translatedLang = 'Portugués'; break;
@@ -169,6 +169,7 @@ export function mapVariantsToJumpseller(
   card: MappedMagicCard,
   languages: Language[],
 ): JumpsellerCreateVariantRequest[] {
+     
   const finishes = [
     { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
     { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
@@ -211,7 +212,6 @@ export function mapVariantsToJumpseller(
         });
       }
     }
-
-  return variants;
   }
+  return variants;
 }

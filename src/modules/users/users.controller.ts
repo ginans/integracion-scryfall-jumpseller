@@ -1,0 +1,100 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { User } from './entities/user.entity';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UserRole } from './enums/user-role.enum';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+
+@Controller('users')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+  
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener lista de usuarios' })
+  @ApiResponse({
+    status: 200,
+    description: 'Operación exitosa',
+  })
+  @Roles(UserRole.Admin, UserRole.User)
+  @Get()
+  getUsers(@Query() query: PaginationQueryDto): Promise<PaginatedResponse<User>> {
+    return this.usersService.findAll(query);
+  }
+  
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener usuario por id' })
+  @ApiResponse({
+    status: 200,
+    description: 'Operación exitosa',
+  })
+  @Roles(UserRole.Admin, UserRole.User)
+  @Get(':id')
+  getUser(@Param('id') id: string): Promise<User | null> {
+    return this.usersService.findById(id);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'crear un nuevo usuario' })
+  @Post()
+  @Roles(UserRole.Admin)
+  createUser(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.createUser(createUserDto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'actualizar usuario por id' })
+  @ApiResponse({
+    status: 201,
+    description: 'Operación exitosa',
+  })
+  @Roles(UserRole.Admin)
+  @Put(':id')
+  updateUser(
+    @Param('id') id: string,
+    @Body() user: UpdateUserDto,
+  ): Promise<User | null> {
+    return this.usersService.update(id, user);
+  }
+  
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'desactivar usuario por id' })
+  @ApiResponse({
+    status: 201,
+    description: 'Operación exitosa',
+  })
+  @Roles(UserRole.Admin)
+  @Patch(':id/isActive')
+  updateUserIsActive(@Param('id') id: string): Promise<User | null> {
+    return this.usersService.updateIsActive(id);
+  }
+  
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'eliminar usuario por id' })
+  @ApiResponse({
+    status: 201,
+    description: 'Operación exitosa',
+  })
+  @Roles(UserRole.Admin)
+  @Delete(':id')
+  deleteUser(@Param('id') id: string) {
+    return this.usersService.deleteById(id);
+  }
+}

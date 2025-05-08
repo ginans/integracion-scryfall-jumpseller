@@ -6,9 +6,9 @@ import { AuthController } from './auth.controller';
 import { Auth, AuthSchema } from './entities/auth.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
-import { UsersModule } from 'src/users/users.module';
+import { UsersModule } from 'src/modules/users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MailModule } from 'src/mail/mail.module';
+import { MailModule } from 'src/modules/mail/mail.module';
 
 @Global()
 @Module({

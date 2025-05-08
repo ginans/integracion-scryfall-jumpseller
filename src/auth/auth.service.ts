@@ -39,7 +39,6 @@ export class AuthService {
   }
   async createToken(payload: { sub: string; email: string; name: string }) {
     const token = await this.jwtService.signAsync(payload);
-    this.logger.log("token generado", token)
     return token
   }
   async validateToken(token: string): Promise<Payload> {
@@ -53,10 +52,10 @@ export class AuthService {
   }
   async signIn(email: string, password: string) {
     const User = await this.userService.findByEmail(email);
-    if (!User) throw new BadRequestException('Correo o contraseña incorrecto 1');
+    if (!User) throw new BadRequestException('Correo o contraseña incorrecto');
     const validarPass = await this.compare(password, User.password);
     if (!validarPass)
-      throw new UnauthorizedException('Correo/contraseña incorrecto 2');
+      throw new UnauthorizedException('Correo o contraseña incorrecto');
     if (!User.isActive) throw new UnauthorizedException('Usuario deshabilitado');
     const payload = {
       sub: User._id.toString(),
@@ -64,7 +63,6 @@ export class AuthService {
       name: User.name,
     };
     const access_token = await this.createToken(payload);
-    this.logger.log('token 2', access_token);
     await this.createRegister({ email });
     await this.userService.updateLogin(User._id.toString());
     return {

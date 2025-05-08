@@ -157,30 +157,44 @@ export class StagingProductVariantService {
 
   // Manejo de stock
   async saveStockFromFront(variant: IStockFromFront) {
-    const existingVariant = await this.stagingProductVariantModel.findOne({
-      variantId: variant.variantId,
-      productId: variant.productId,
-    });
+    try{
 
-    if (!existingVariant) {
-      throw new Error(`Variant with variantId: ${variant.variantId} and productId: ${variant.productId} not found.`);
-    }
-    const nullErrorMsg = ""
-    await this.stagingProductVariantModel.updateOne(
-      {
+      const existingVariant = await this.stagingProductVariantModel.findOne({
         variantId: variant.variantId,
         productId: variant.productId,
-      },
-      {
-        $set: {
-          variantStock: +existingVariant.variantStock + +variant.variantStock,
-          locationId: variant.locationId,
-          stockUnlimited: variant.stockUnlimited,
-          stockUpdateStatus: EnumPriceAndStockState.PENDING,
-          stockUpdateError: nullErrorMsg,
-        }
+      });
+  
+      if (!existingVariant) {
+        throw new Error(`Variant with variantId: ${variant.variantId} and productId: ${variant.productId} not found.`);
       }
-    );
+      const nullErrorMsg = null
+      await this.stagingProductVariantModel.updateOne(
+        {
+          variantId: variant.variantId,
+          productId: variant.productId,
+        },
+        {
+          $set: {
+            variantStock: +existingVariant.variantStock + +variant.variantStock,
+            locationId: variant.locationId,
+            stockUnlimited: variant.stockUnlimited,
+            stockUpdateStatus: EnumPriceAndStockState.PENDING,
+            stockUpdateError: nullErrorMsg,
+          }
+        }
+      );
+    }catch(error){
+      this.logger.error(`Error al guardar stock desde el front: ${error.message}`);
+
+      this.updateVariantStockStatus(
+        variant.variantId,
+        variant.productId,
+        EnumPriceAndStockState.ERROR,
+        error.message
+      );
+
+      throw new InternalServerErrorException(`Error al guardar stock desde el front: ${error.message}`);
+    }
   }
 
   async sendStockToJumpseller(variant: IStockFromFront) {
@@ -204,7 +218,7 @@ export class StagingProductVariantService {
         stock_unlimited: productVariant.stockUnlimited,
       };
 
-      const nullErrorMsg= ""
+      const nullErrorMsg= null
       await this.updateVariantStockStatus(
         variant.variantId,
         variant.productId,
@@ -215,7 +229,7 @@ export class StagingProductVariantService {
       this.logger.log(`🦍 Enviando stock a Jumpseller: ${JSON.stringify(stockRequest)}`);
       const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);
 
-      if (!response?.error && response?.status === 200) {
+      if (!response?.error) {
 
         await this.updateVariantStockStatus(
           variant.variantId,
@@ -383,7 +397,7 @@ export class StagingProductVariantService {
             this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variante.variantId} con sku ${variante.sku}`);
             continue;
           }
-          const nullErrorMsg = ""
+          const nullErrorMsg = null
           await this.stagingProductVariantModel.updateOne(
             { _id: variante._id },
             {
@@ -477,7 +491,7 @@ export class StagingProductVariantService {
       throw new Error(`Variant with variantId: ${variant.variantId} and productId: ${variant.productId} not found.`);
     }
 
-    const nullErrorMsg = ""
+    const nullErrorMsg = null
     const updatedVariant = await this.stagingProductVariantModel.updateOne(
       { variantId: variant.variantId, productId: variant.productId },
       {
@@ -510,7 +524,7 @@ export class StagingProductVariantService {
         throw new Error(errorMsg);
       }
 
-      const nullErrorMsg= ""
+      const nullErrorMsg= null
       await this.updateVariantPriceStatus(
         variant.variantId,
         variant.productId,

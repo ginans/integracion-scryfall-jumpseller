@@ -25,13 +25,13 @@ export class StagingProductVariant implements IStagingProductVariant {
     @Prop({ default: null, index: { unique: true } })
     sku: string;
 
-    @Prop({ default: null })
+    @Prop({ default: 0 })
     variantPrice: number;
 
     @Prop({default: true })
     isPriceUpdateable: boolean;
 
-    @Prop({ default: null }) 
+    @Prop({ default: 0 }) 
     variantStock: number;
 
     @Prop({ default: 46801 })

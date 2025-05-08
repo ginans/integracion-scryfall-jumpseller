@@ -29,8 +29,8 @@ export class StagingProductVariantController {
   }
 
   @Get('sincronizar-precios-scryfall')
-  async calculatePricesForAllCards() {
-    return this.stagingProductVariantService.calculatePricesForAllCards();
+  async calculatePricesForAllCards(variantId: number, productId: number) {
+    return this.stagingProductVariantService.calculatePricesForAllCards(variantId, productId);
   }
 
   @Patch('byId/:id')

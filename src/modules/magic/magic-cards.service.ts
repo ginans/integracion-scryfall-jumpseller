@@ -42,6 +42,7 @@ export class MagicCardsService {
     @InjectModel(UsdPrice.name) private readonly usdPricesModel: Model<UsdPriceDocument>,
     @InjectModel(BasePrice.name) private readonly basePricesModel: Model<BasePriceDocument>,
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
+    private readonly stagingProductVariantService: StagingProductVariantService,
     private readonly scryfallService: ScryfallService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
@@ -174,8 +175,16 @@ export class MagicCardsService {
             this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
           }
           await this.delay(300);
+          //Calcular precios para cada variante
+         const price= await this.stagingProductVariantService.calculatePricesForAllCards( enCard.idJumpSeller, varRes.variant.id )
+          if (price) {
+            this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id}`);
+          } else {
+            this.logger.warn(`🪙😭Error al calcular precios para la variante ${varRes.variant.id}`);
+          }
         }
       }
+
 
       // 6. insertar imágenes
       if (enCard.idJumpSeller) {

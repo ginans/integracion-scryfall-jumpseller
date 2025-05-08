@@ -35,6 +35,8 @@ export interface IStagingProductVariant {
         oracleId: string | null;
         sku?: string | null;
         description: string | null;
+        setId: string | null;
+        set: string | null;
     } | null;
 }
 

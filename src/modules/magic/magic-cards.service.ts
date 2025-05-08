@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ScryfallCard, ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 import { MagicCard, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
-import { Model, Types } from 'mongoose';
+import { Model, set, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { IsetMagic, MappedMagicCard } from '../../modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
@@ -164,6 +164,9 @@ export class MagicCardsService {
                   oracleId: enCard.oracleId,
                   // sku: REVISAR LOGICA, SE DEBE CREAR VARIANTES EN LA ACTUALIZACION DE LOS PRODUCTOS
                   description: enCard.oracleText || "",
+                  setName: enCard.setName || "",
+                  setId: enCard.setId || "",
+                  set: enCard.set || "",
                 },
               }
             );

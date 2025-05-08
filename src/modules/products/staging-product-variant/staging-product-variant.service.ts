@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { IStockFromFront, StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
-import { Model, ObjectId, Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { StagingProductVariant, StagingProductVariantDocument } from './entities/staging-product-variant.entity';
@@ -10,16 +10,16 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { Product, ProductDocument } from '../entities/product.entity';
 import e from 'express';
-import { IPriceFromFront, IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
+import { IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
 import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
 import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
 import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
 import { MagicCard } from 'src/modules/magic/entities/magic-card.entity';
-import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
 import { EnumGame } from 'src/common/enums/game.enum';
 import { CreateStockDto } from './dto/stock/create-stock.dto';
+import { CreatePricesDto } from './dto/prices/create-prices.dto';
 
 @Injectable()
 export class StagingProductVariantService {
@@ -30,8 +30,6 @@ export class StagingProductVariantService {
     @InjectModel(UsdPrice.name) private usdPriceModel: Model<UsdPrice>,
     @InjectModel(BasePrice.name) private basePriceModel: Model<BasePrice>,
     private readonly jumpsellerService: JumpsellerService,
-    private readonly usdPricesService: UsdPricesService,
-    private readonly basePricesService: BasePricesService,
     private readonly logger: LoggerService
   ) {}
 
@@ -119,13 +117,10 @@ export class StagingProductVariantService {
     }
 
     try {
-      this.logger.log(`Buscando variantes con filtros: ${JSON.stringify(filters)}`);
       const [variants, total] = await Promise.all([
         this.stagingProductVariantModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
         this.stagingProductVariantModel.countDocuments(filters).exec()
       ]);
-
-      this.logger.log(`Se encontraron ${variants.length} variantes de un total de ${total}`);
 
       return {
         items: variants,
@@ -148,7 +143,6 @@ export class StagingProductVariantService {
   async findAllVariantsWithoutPagination() {
     try {
       const variants = await this.stagingProductVariantModel.find({}).exec();
-      this.logger.log(`Se encontraron ${variants.length} variantes`);
       return variants;
     } catch (error) {
       this.logger.error(`Error al buscar variantes: ${error.message}`);
@@ -482,7 +476,7 @@ export class StagingProductVariantService {
     }
   }
 
-  async savePricesFromFront(variant: IPriceFromFront) {
+  async savePricesFromFront(variant: CreatePricesDto) {
     try{
 
       const existingVariant = await this.stagingProductVariantModel.findOne({
@@ -524,7 +518,7 @@ export class StagingProductVariantService {
     }
   }
 
-  async sendPriceToJumpseller(variant: IPriceFromFront) {
+  async sendPriceToJumpseller(variant: CreatePricesDto) {
     try {
       const productVariant = await this.stagingProductVariantModel.findOne({
         productId: variant.productId,

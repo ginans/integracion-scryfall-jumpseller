@@ -101,6 +101,8 @@ export class StagingProductVariant implements IStagingProductVariant {
         oracleId: string | null;
         sku?: string | null;
         description: string | null;
+        setId: string
+        set: string
     }
 }
 

@@ -18,7 +18,7 @@ import { UpdateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/
 import { CustomFieldResponse, GetAllCustomFieldResponse } from './interfaces/jumpselllerCustomFields/getAllCustomFieldResponse.interface';
 import { StockJumpsellerRequest } from './interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerUpdateVariantRequest } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
-import { JumpsellerUpdateVariantResponse } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantResponse.interface';
+import { JumpsellerUpdateVariantResponse, JumpsellerUpdateVariantResponseError } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantResponse.interface';
 
 @Injectable()
 export class JumpsellerService {  
@@ -289,7 +289,7 @@ export class JumpsellerService {
       }
     }
 
-    async addStocktoJumpseller(product: StockJumpsellerRequest) {
+    async addStocktoJumpseller(product: StockJumpsellerRequest): Promise<StockJumpsellerResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products_locations`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
@@ -319,7 +319,6 @@ export class JumpsellerService {
           return {
             status: error.response.status,
             message: error.response.data.message || error.message,
-            error: true
           };
         }
         
@@ -327,7 +326,6 @@ export class JumpsellerService {
         return {
           status: 500,
           message: error.message,
-          error: true
         };
       }
     }
@@ -357,7 +355,7 @@ export class JumpsellerService {
       return data;
     }
 
-    async updateVariant(productId: number, variantId: number, variant: JumpsellerUpdateVariantRequest): Promise<JumpsellerUpdateVariantResponse | any> {
+    async updateVariant(productId: number, variantId: number, variant: JumpsellerUpdateVariantRequest): Promise<JumpsellerUpdateVariantResponse | JumpsellerUpdateVariantResponseError> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/variants/${variantId}.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
@@ -377,25 +375,22 @@ export class JumpsellerService {
         );
         return data as JumpsellerUpdateVariantResponse;
       } catch (error) {
+        console.error(` ${error}`);
         this.logger.error(`❌ Error actualizar stock en Jumpseller: ${error.message}`);
-        if (error.response) {
+        if (error.message) {
           this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
           this.logger.error(`Código de estado: ${error.response.status}`);
           this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
           
           // Devolver información estructurada del error
           return {
-            status: error.response.status,
             message: error.response.data.message || error.message,
-            error: true
           };
         }
         
         // Error genérico si no hay respuesta
         return {
-          status: 500,
           message: error.message,
-          error: true
         };
       }
     }

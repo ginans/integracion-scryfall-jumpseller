@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ScryfallCard, ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 import { MagicCard, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
-import { Model, Types } from 'mongoose';
+import { Model, set, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { IsetMagic, MappedMagicCard } from '../../modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
@@ -62,7 +62,7 @@ export class MagicCardsService {
       const originalCard = await this.fetchAndCreateCards(cards);
       versions.push(originalCard);
       
-      // Verificación de seguridad: si la carta no está en inglés, buscarla
+      // Verificación de seguridad: si la carta no está en inglés, buscarla 
       if (originalCard.lang?.toLowerCase() !== 'en') {
         this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
         const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
@@ -112,7 +112,8 @@ export class MagicCardsService {
       // generar todas las variantes de una vez
       const variantReqs = mapVariantsToJumpseller(enCard, langs);
       for (const { variant, finish, condition } of variantReqs) {
-        if (enCard.idJumpSeller) {
+        this.logger.debug(`🤩[Variant Creation] Processing variant: ${JSON.stringify(variant)}`);
+        if (enCard.idJumpSeller ) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
             enCard.idJumpSeller,
             {variant}
@@ -163,6 +164,9 @@ export class MagicCardsService {
                   oracleId: enCard.oracleId,
                   // sku: REVISAR LOGICA, SE DEBE CREAR VARIANTES EN LA ACTUALIZACION DE LOS PRODUCTOS
                   description: enCard.oracleText || "",
+                  setName: enCard.setName || "",
+                  setId: enCard.setId || "",
+                  set: enCard.set || "",
                 },
               }
             );

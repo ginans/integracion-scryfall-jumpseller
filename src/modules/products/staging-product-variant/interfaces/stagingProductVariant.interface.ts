@@ -41,16 +41,16 @@ export interface IStagingProductVariant {
 }
 
 export interface IStockFromFront {
-    stock: number;
+    stock?: number;
     productId: number;
     variantId: number;
-    locationId?: number;
+    locationId: number;
     stockUnlimited?: boolean;
 }
 
 export interface IPriceFromFront {
     productId: number;
     variantId: number;
-    variantPrice: number;
+    variantPrice?: number;
     isPriceUpdateable?: boolean;
 }

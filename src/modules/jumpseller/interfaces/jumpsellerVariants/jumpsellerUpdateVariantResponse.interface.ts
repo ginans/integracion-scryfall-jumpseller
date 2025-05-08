@@ -37,3 +37,8 @@ export enum JumpsellerOptionType {
     COLOR = "color",
     DROPDOWN = "dropdown"
   }
+
+
+export interface JumpsellerUpdateVariantResponseError {
+    message: string
+}

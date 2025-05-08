@@ -119,13 +119,10 @@ export class StagingProductVariantService {
     }
 
     try {
-      this.logger.log(`Buscando variantes con filtros: ${JSON.stringify(filters)}`);
       const [variants, total] = await Promise.all([
         this.stagingProductVariantModel.find(filters).sort(sort).skip(skip).limit(limit).exec(),
         this.stagingProductVariantModel.countDocuments(filters).exec()
       ]);
-
-      this.logger.log(`Se encontraron ${variants.length} variantes de un total de ${total}`);
 
       return {
         items: variants,
@@ -148,7 +145,6 @@ export class StagingProductVariantService {
   async findAllVariantsWithoutPagination() {
     try {
       const variants = await this.stagingProductVariantModel.find({}).exec();
-      this.logger.log(`Se encontraron ${variants.length} variantes`);
       return variants;
     } catch (error) {
       this.logger.error(`Error al buscar variantes: ${error.message}`);

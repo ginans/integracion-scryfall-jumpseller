@@ -107,13 +107,9 @@ export class MagicCardsService {
             : v.lang!;
           return { code, name };
         });
-
-        this.logger.debug(`🤡[Variant Creation] Languages to process (langs): ${JSON.stringify(langs)}`);
-        this.logger.debug(`🤡[Variant Creation] English card (enCard) for base properties: ${JSON.stringify(enCard ? { id: enCard.id, lang: enCard.lang, foil: enCard.foil, nonfoil: enCard.nonfoil, condition: enCard.condition, idJumpSeller: enCard.idJumpSeller } : null)}`);
       // generar todas las variantes de una vez
       const variantReqs = mapVariantsToJumpseller(enCard, langs);
       for (const { variant, finish, condition } of variantReqs) {
-        this.logger.debug(`🤩[Variant Creation] Processing variant: ${JSON.stringify(variant)}`);
         if (enCard.idJumpSeller ) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
             enCard.idJumpSeller,
@@ -171,17 +167,16 @@ export class MagicCardsService {
                 },
               }
             );
+            const price= await this.stagingProductVariantService.calculatePricesForAllCards( enCard.idJumpSeller, varRes.variant.id); 
+              if (price) {
+                this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id} con precio ${JSON.stringify(price)}`);
+              } else {
+                this.logger.warn(`🪙😭Error al calcular precios para la variante ${varRes.variant.id}`);
+              }
           } else {
             this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
           }
           await this.delay(300);
-          //Calcular precios para cada variante
-         const price= await this.stagingProductVariantService.calculatePricesForAllCards( enCard.idJumpSeller, varRes.variant.id )
-          if (price) {
-            this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id}`);
-          } else {
-            this.logger.warn(`🪙😭Error al calcular precios para la variante ${varRes.variant.id}`);
-          }
         }
       }
 

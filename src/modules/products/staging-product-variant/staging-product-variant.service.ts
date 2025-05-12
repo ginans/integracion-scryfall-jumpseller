@@ -34,7 +34,20 @@ export class StagingProductVariantService {
   ) {}
 
   async findAllVariants(query: PaginationQueryDto) {
-    const { limit, page, sortBy, sortOrder, to, from, search, jumpsellerStatus, priceUpdateStatus, stockUpdateStatus } = query;
+    const { 
+      limit, 
+      page, 
+      sortBy, 
+      sortOrder, 
+      to, 
+      from, 
+      search, 
+      jumpsellerStatus, 
+      priceUpdateStatus, 
+      stockUpdateStatus,
+      set,
+      setName
+    } = query;
 
     const sort: { [key: string]: 1 | -1 } = {
       [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
@@ -91,9 +104,27 @@ export class StagingProductVariantService {
               options: "i"
             }
           }
+        },
+        {
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$fatherProduct.set" },
+            regex: searchValue,
+            options: "i"
+          }
         }
-      ];
-    }
+      },
+      {
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$fatherProduct.setName" },
+            regex: searchValue,
+            options: "i"
+          }
+        }
+      }
+        ];
+      }
 
     // Aplicar filtros de rango de fechas
     if (from && to) {
@@ -114,6 +145,14 @@ export class StagingProductVariantService {
 
     if (jumpsellerStatus) {
       filters.jumpsellerStatus = { $regex: `^${jumpsellerStatus}$`, $options: "i" };
+    }
+    
+    if (set) {
+      filters['fatherProduct.set'] = { $regex: `^${set}$`, $options: 'i' };
+    }
+
+    if (setName) {
+      filters['fatherProduct.setName'] = { $regex: `^${setName}$`, $options: 'i' };
     }
 
     try {
@@ -288,19 +327,18 @@ export class StagingProductVariantService {
 // QUE RECIBA VARIANTID Y PRODUCTID
   // Manejo de precios
   async calculatePricesForAllCards(variantId: number, productId: number) {
-    //TODO: QUE EL CALCULO DEL PRECIO SEA DINAMICO EN BASE AL JUEGO
     try {
-      const variantes = await this.stagingProductVariantModel.find({ isPriceUpdateable: true });
-      this.logger.log(`Procesando ${variantes.length} variantes para actualizar precios...`);
+      const variante = await this.stagingProductVariantModel.findOne({ isPriceUpdateable: true, variantId: variantId, productId: productId }).exec();
+      this.logger.log(`Procesando ${variante} variantes para actualizar precios...`);
 
-      const usdPriceDoc = await this.usdPriceModel.findOne({ gameID: EnumGame.MAGIC });
+      const usdPriceDoc = await this.usdPriceModel.findOne({ gameID: EnumGamePrefix.MAGIC });
       if (!usdPriceDoc) {
         throw new Error("No se encontró el precio del dólar para Magic");
       }
       const usdPrice = usdPriceDoc.usdPrice;
       this.logger.log(`Precio del dólar: ${usdPrice} CLP`);
       
-      const basePrice = await this.basePriceModel.findOne({ game: EnumGamePrefix.MAGIC });
+      const basePrice = await this.basePriceModel.findOne({ game: EnumGame.MAGIC });
       if (!basePrice) {
         throw new Error("No se encontraron precios base para Magic");
       }
@@ -312,14 +350,18 @@ export class StagingProductVariantService {
 
       let updatedCount = 0;
 
-      for (const variante of variantes) {
-        try {
-          const matchingPrice = await this.magicCardModel.findOne({ idJumpSeller: productId });
 
-          if (!matchingPrice) {
+     
+      // for (const variante of variantes) {
+        try {
+          const matchingCard = await this.magicCardModel.findOne(
+            { idJumpSeller: productId })
+
+          if (!matchingCard) {
             this.logger.warn(`No se encontró carta para productId: ${productId}`);
+
             await this.stagingProductVariantModel.updateOne(
-              { _id: variante._id },
+              { productId: productId, variantId: variantId },
               {
                 $set: {
                   priceUpdateError: 'Carta base no encontrada en colección Magic',
@@ -327,30 +369,29 @@ export class StagingProductVariantService {
                 }
               }
             );
-            continue;
           }
 
           let precioUSD = 0;
-          const isFoil = variante.finish?.toLowerCase().includes('foil');
-          const isEtched = variante.finish?.toLowerCase().includes('etched');
+          const isFoil = variante.finish === "foil"
+          const isNonFoil = variante.finish === 'nonfoil'
+        
+          this.logger.log(`❤️❤️❤️❤️❤️❤️isFoil: ${isFoil}, isNonFoil: ${isNonFoil}`);
 
-          if (matchingPrice.prices) {
-            if (isEtched && matchingPrice.prices.usdEtched) {
-              precioUSD = parseFloat(matchingPrice.prices.usdEtched);
-              this.logger.log(`Precio Etched encontrado: $${precioUSD} USD`);
-            } else if (isFoil && matchingPrice.prices.usdFoil) {
-              precioUSD = parseFloat(matchingPrice.prices.usdFoil);
+          if (matchingCard.prices) {
+            if (isNonFoil && matchingCard.prices.usd) {
+              precioUSD = parseFloat(matchingCard.prices.usd);
+              this.logger.log(`Precio No Foil encontrado: $${precioUSD} USD`);
+            } else if (isFoil && matchingCard.prices.usdFoil) {
+              precioUSD = parseFloat(matchingCard.prices.usdFoil);
               this.logger.log(`Precio Foil encontrado: $${precioUSD} USD`);
-            } else if (matchingPrice.prices.usd) {
-              precioUSD = parseFloat(matchingPrice.prices.usd);
-              this.logger.log(`Precio regular encontrado: $${precioUSD} USD`);
+            } else if (matchingCard.prices.usdEtched) {
+              precioUSD = parseFloat(matchingCard.prices.usdEtched);
+              this.logger.log(`Precio Etched encontrado: $${precioUSD} USD`);
             } else {
-              this.logger.warn(`No se encontraron precios para la carta ${matchingPrice.oracleId} con finish ${variante.finish}`);
-              continue;
+              this.logger.warn(`No se encontraron precios para la carta ${matchingCard.oracleId} con finish ${variante.finish}`);
             }
           } else {
-            this.logger.warn(`No hay información de precios para la carta ${matchingPrice.oracleId}`);
-            continue;
+            this.logger.warn(`No hay información de precios para la carta ${matchingCard.oracleId}`);
           }
 
           let rarezaKey = '';
@@ -390,7 +431,6 @@ export class StagingProductVariantService {
           //SI EL PRECIO EN IGUAL O MENOR A 0 NO SE ACTUALIZA
           if (precioCLP <= 0) {
             this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variante.variantId} con sku ${variante.sku}`);
-            continue;
           }
           const nullErrorMsg = null
           await this.stagingProductVariantModel.updateOne(
@@ -455,10 +495,12 @@ export class StagingProductVariantService {
               errorMsg
             );
           }
+        return precioCLP;
+          
         } catch (varianteError) {
           this.logger.error(`Error procesando variante ${variantId}: ${varianteError.message}`);
           await this.stagingProductVariantModel.updateOne(
-            { _id: variante._id },
+            { variantId: variantId, productId: productId },
             {
               $set: {
                 priceUpdateError: varianteError.message,
@@ -467,9 +509,8 @@ export class StagingProductVariantService {
             }
           );
         }
-      }
-
-      return response
+      // }
+      
     } catch (error) {
       this.logger.error(`Error al calcular precios para todas las cartas: ${error.message}`);
       throw new InternalServerErrorException(`Error al calcular precios para todas las cartas: ${error.message}`);

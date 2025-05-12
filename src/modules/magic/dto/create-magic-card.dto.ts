@@ -8,9 +8,9 @@ export class CreateMagicCardDto {
         message: 'oracle_id no puede estar vacío.',
     })
     @IsString({
-        message: 'oracle_id tiene que ser de Tipo String',
+        message: 'collectorNumber tiene que ser de tipo String',
     })
-    oracle_id: string;
+    collectorNumber: string;
     
     @IsNotEmpty({
         message: 'lenguaje no puede estar vacío.',

@@ -69,15 +69,12 @@ export class BasePricesService {
           new: true
         }
       );
-  
       return await this.basePriceModel.findById(id);
-  
     } catch (error) {
       return { error: error.message };
     }
   }
   
-
   remove(id: number) {
     return `This action removes a #${id} basePrice`;
   }

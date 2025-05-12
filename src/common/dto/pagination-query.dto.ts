@@ -75,5 +75,13 @@ export class PaginationQueryDto {
   @IsOptional()
   @IsString()
   lang?: EnumLang | null;
+
+  @IsOptional()
+  @IsString()
+  set?: string;
+
+  @IsOptional()
+  @IsString()
+  setName?: string;
   
 }

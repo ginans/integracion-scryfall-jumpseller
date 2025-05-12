@@ -207,7 +207,7 @@ export function mapVariantsToJumpseller(
               { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition.name },
             ],
           },
-          finish: finish.key,
+          finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
           condition: condition.suffix,
         });
       }

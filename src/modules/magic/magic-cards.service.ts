@@ -492,9 +492,8 @@ export class MagicCardsService {
     );
   }
 //endpoint para buscar en bd y traer si no existe en scryfall
-  async findByCollectorNumberAndLang(colNumber: string, language: string, set: string): Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
+  async findByCollectorNumberAndLang(colNumber: string, language: string, set: string) : Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
-
       const existingCard = await this.model.findOne({ collectorNumber: colNumber, lang: language, set: set }).exec();
 
       if (existingCard) {

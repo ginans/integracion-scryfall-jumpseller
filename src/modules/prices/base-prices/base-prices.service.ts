@@ -51,21 +51,18 @@ export class BasePricesService {
     }
   }
 
-  async updatePrices(id: string, updateBasePriceItemDto: UpdateBasePriceItemDto) {
-    try {
-      const { subId, price } = updateBasePriceItemDto;
-  
+  async updatePrices(id: string, subid: string, price: number) {
+    try {  
       const existingBasePrice = await this.basePriceModel.findById(id);
       if (!existingBasePrice) {
         throw new Error('Este precio base no existe');
       }
-  
       // Acceso y actualización del _id de un objeto dentro del array basePrices
        await this.basePriceModel.updateOne(
         { _id: id },
         { $set: { "basePrices.$[elem].price": price } },
         {
-          arrayFilters: [{ "elem._id": new Types.ObjectId(subId) }],
+          arrayFilters: [{ "elem._id": new Types.ObjectId(subid) }],
           new: true
         }
       );

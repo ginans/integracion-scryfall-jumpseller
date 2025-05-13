@@ -11,7 +11,6 @@ import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { ProductsService } from 'src/modules/products/products.service';
 import { Product, ProductDocument } from '../products/entities/product.entity';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
-import { CreateMagicCardDto } from './dto/create-magic-card.dto';
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { UsdPrice, UsdPriceDocument } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { BasePrice, BasePriceDocument } from 'src/modules/prices/base-prices/entities/base-price.entity';
@@ -30,6 +29,9 @@ import { StagingProductVariant, StagingProductVariantDocument, StagingProductVar
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
 import { all } from 'axios';
+import { ObjectId } from 'typeorm';
+import { exist } from 'joi';
+import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 
 @Injectable()
 export class MagicCardsService {
@@ -492,44 +494,43 @@ export class MagicCardsService {
     );
   }
 //endpoint para buscar en bd y traer si no existe en scryfall
-  async findByCollectorNumberAndLang(colNumber: string, language: string, set: string) : Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
+  async findByCollectorNumberAndLang( form: findByCollectorNumberAndLangDto, _id: string ) : Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
-      const existingCard = await this.model.findOne({ collectorNumber: colNumber, lang: language, set: set }).exec();
-
-      if (existingCard) {
-        return({
-          oracleId: existingCard.oracleId,
-          message: `Ya existe una carta con el mismo collectorNumber ${existingCard.collectorNumber}, lenguaje ${language} y set ${set}` 
+        const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id)  }).exec();
+        if (!existingCard) {
+          throw new NotFoundException(`No se encontró la carta con id: ${_id}`);
         }
+
+        //revisar si la carta que se quiere crear ya existe en la base de datos
+        const existingCardByColNumberAndLang = await this.model.findOne({ collectorNumber: form.collectorNumber, lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
+        if (existingCardByColNumberAndLang) {
+          return { 
+            oracleId: existingCardByColNumberAndLang.oracleId, 
+            message: `La carta con collectorNumber ${existingCardByColNumberAndLang.collectorNumber} y lenguaje ${existingCardByColNumberAndLang.lang} ya existe en la base de datos` };
+        }
+        
+        const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
+          existingCard.oracleId,
+          form.lenguaje,
         );
-      }
-      const cardByOracleId = await this.model.find({ collectorNumber: colNumber }).exec();
-      if (!cardByOracleId.length) {
-        throw new NotFoundException(`No se encontró la carta con collectorNumber: ${colNumber}`);
-      }
 
-      const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
-        cardByOracleId[0]?.oracleId,
-        language,
-      );
-      if (!scryfallResponse?.data) {
-        throw new NotFoundException(
-          `No existe la carta para oracleId: ${cardByOracleId[0].oracleId}, lang: ${language}`
+        if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {
+          throw new NotFoundException(`No se encontraron cartas para oracleId: ${existingCard.oracleId} y lang: ${form.lenguaje}`);
+        }
+
+        const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
+          scryfallCard.oracle_id === existingCard.oracleId &&
+          scryfallCard.set?.toLowerCase() === existingCard.set &&
+          scryfallCard.lang?.toLowerCase() === form.lenguaje?.toLowerCase() &&
+          (form.collectorNumber ? scryfallCard.collector_number?.toLowerCase() === form.collectorNumber?.toLowerCase() : true)
         );
-      }
+  
+        if (!filteredBySet.length) {
+          throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
+        }
 
-      const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
-        scryfallCard.oracle_id === cardByOracleId[0].oracleId &&
-        scryfallCard.lang.toLowerCase() === language.toLowerCase() &&
-        scryfallCard.set.toLowerCase() === set.toLowerCase()
-      );
-
-      if (!filteredBySet.length) {
-        throw new NotFoundException(`No se encontró la carta en el set ${set}`);
-      }
-
-      this.logger.log(`Buscando carta con collectorNumber: ${colNumber}`);
-      return filteredBySet;
+         this.logger.log(`Buscando carta con collectorNumber: ${form.collectorNumber}`);
+        return filteredBySet;
 
     } catch (error) {
       this.logger.error(`Error al buscar carta: ${error.message}`);

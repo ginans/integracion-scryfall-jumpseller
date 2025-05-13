@@ -5,6 +5,7 @@ import { PaginatedResponse } from 'src/common/interfaces/paginated-response.inte
 import { MagicCard } from './entities/magic-card.entity';
 import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
 import { CreateMagicCardDto } from './dto/create-magic-card.dto';
+import { IresponseSryfall, ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 
 @Controller('magic-cards')
 export class MagicCardsController {
@@ -23,6 +24,19 @@ export class MagicCardsController {
   @Get('findAllCardsWithoutFilters')
   async findAllCardsWithoutFilters(): Promise<MagicCard[]> {
     return this.magicCardsService.findAllCardsWithoutFilters();
+  }
+  
+  @Post("findByCollectorNumberAndLang")
+  async findByCollectorNumberAndLang(
+    @Body('collectorNumber') collectorNumber: string,
+    @Body('language') language: string,
+    @Body('set') set: string
+  ): Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
+    return this.magicCardsService.findByCollectorNumberAndLang(
+      collectorNumber,
+      language,
+      set
+    );
   }
 
   @Get('by-id/:id')

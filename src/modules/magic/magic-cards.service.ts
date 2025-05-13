@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { ScryfallCard, ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException, HttpException } from '@nestjs/common';
+import { IresponseSryfall, ScryfallCard, ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 import { MagicCard, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
 import { Model, set, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -29,6 +29,7 @@ import { IStagingProductVariant } from '../products/staging-product-variant/inte
 import { StagingProductVariant, StagingProductVariantDocument, StagingProductVariantSchema } from '../products/staging-product-variant/entities/staging-product-variant.entity';
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
+import { all } from 'axios';
 
 @Injectable()
 export class MagicCardsService {
@@ -60,7 +61,7 @@ export class MagicCardsService {
       const versions: MappedMagicCard[] = [];
       
       // Guardar la carta original
-      const originalCard = await this.fetchAndCreateCards(cards);
+      const originalCard = await this.createMagicCards(cards);
       versions.push(originalCard);
       
       // Verificación de seguridad: si la carta no está en inglés, buscarla 
@@ -69,14 +70,14 @@ export class MagicCardsService {
         const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
         await this.delay(300);
         if (versionEN?.data?.length) {
-          versions.push(await this.fetchAndCreateCards(versionEN.data[0]));
+          versions.push(await this.createMagicCards(versionEN.data[0]));
         }
       }
 
       const versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, cards.oracle_id);
       await this.delay(300);
       if (versionES?.data?.length) {
-        versions.push(await this.fetchAndCreateCards(versionES.data[0]));
+        versions.push(await this.createMagicCards(versionES.data[0]));
       }
 
       // 2. crear producto base en Jumpseller (versión en inglés)
@@ -328,7 +329,7 @@ export class MagicCardsService {
   }
 
   //buscar actualizar o crear magic card
-  async fetchAndCreateCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
+  async createMagicCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
     const mappedCardData: MappedMagicCard = this.mapCardData(cards);
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
@@ -490,56 +491,53 @@ export class MagicCardsService {
       { ...set }
     );
   }
-
-  //agregar nueva carta a la db magic
-  async addCard(card: CreateMagicCardDto): Promise<MappedMagicCard> {
+//endpoint para buscar en bd y traer si no existe en scryfall
+  async findByCollectorNumberAndLang(colNumber: string, language: string, set: string): Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
-      const lang = card.lenguaje.toLowerCase();
-      const oracle_id = card.oracle_id.toLowerCase();
 
-      this.logger.log(`Buscando carta con oracle_id: ${card.oracle_id} en idioma: ${lang}`);
-
-      const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
-        oracle_id,
-        lang
-      );
-
-      const exactMatch = scryfallResponse.data.find(card =>
-        card.oracle_id === card.oracle_id &&
-        card.lang.toLowerCase() === lang
-      );
-
-      if (!exactMatch) {
-        throw new NotFoundException(`No se encontró una coincidencia exacta para oracle_id: ${card.oracle_id} y lenguaje: ${lang}`);
-      }
-
-      const cardData = exactMatch;
-
-      const mappedCardData: MappedMagicCard = this.mapCardData(cardData);
-
-      const existingCard = await this.model.findOne({
-        oracleId: mappedCardData.oracleId,
-        lang: mappedCardData.lang
-      });
+      const existingCard = await this.model.findOne({ collectorNumber: colNumber, lang: language, set: set }).exec();
 
       if (existingCard) {
-        this.logger.log(`La carta con ID ${mappedCardData.id} ya existe, actualizando`);
-        await this.model.updateOne({
-          oracleId: mappedCardData.oracleId,
-          lang: mappedCardData.lang
-        },
-          { ...mappedCardData });
-        return { ...mappedCardData, idJumpSeller: existingCard.idJumpSeller };
-
-      } else {
-        this.logger.log(`Creando nueva carta Magic con ID ${mappedCardData.id}`);
-        const newCard = await this.model.create(mappedCardData);
-        return newCard as unknown as MappedMagicCard;
+        return({
+          oracleId: existingCard.oracleId,
+          message: `Ya existe una carta con el mismo collectorNumber ${existingCard.collectorNumber}, lenguaje ${language} y set ${set}` 
+        }
+        );
       }
+      const cardByOracleId = await this.model.find({ collectorNumber: colNumber }).exec();
+      if (!cardByOracleId.length) {
+        throw new NotFoundException(`No se encontró la carta con collectorNumber: ${colNumber}`);
+      }
+
+      const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
+        cardByOracleId[0]?.oracleId,
+        language,
+      );
+      if (!scryfallResponse?.data) {
+        throw new NotFoundException(
+          `No existe la carta para oracleId: ${cardByOracleId[0].oracleId}, lang: ${language}`
+        );
+      }
+
+      const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
+        scryfallCard.oracle_id === cardByOracleId[0].oracleId &&
+        scryfallCard.lang.toLowerCase() === language.toLowerCase() &&
+        scryfallCard.set.toLowerCase() === set.toLowerCase()
+      );
+
+      if (!filteredBySet.length) {
+        throw new NotFoundException(`No se encontró la carta en el set ${set}`);
+      }
+
+      this.logger.log(`Buscando carta con collectorNumber: ${colNumber}`);
+      return filteredBySet;
+
     } catch (error) {
-      this.logger.error(`Error al agregar carta: ${error.message}`);
-      throw new InternalServerErrorException(`Error al agregar carta: ${error.message}`);
+      this.logger.error(`Error al buscar carta: ${error.message}`);
+      throw new InternalServerErrorException(`Error al buscar carta: ${error.message}`);
     }
   }
+
+  
 
 }

@@ -266,7 +266,6 @@ export class StagingProductVariantService {
           EnumPriceAndStockState.COMPLETED,
           nullErrorMsg
         );
-        this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
         this.logger.log(`Se actualizó el stock de la variante ${variant.variantId} en Jumpseller`);
 
       
@@ -325,14 +324,18 @@ export class StagingProductVariantService {
   // Manejo de precios
   async calculatePricesForAllCards(variantId: number, productId: number) {
     try {
-      const variante = await this.stagingProductVariantModel.findOne({ isPriceUpdateable: true, variantId: variantId, productId: productId }).exec();
-      this.logger.log(`Procesando ${variante} variantes para actualizar precios...`);
+      const variante = await this.stagingProductVariantModel.findOne({  isPriceUpdateable: true, variantId: variantId, productId: productId }).exec();
+      if (!variante) {
+      this.logger.error(`❌ No se encontró la variante con variantId ${variantId} y productId ${productId}`);
+      return null;
+      }
 
       const usdPriceDoc = await this.usdPriceModel.findOne({ gameID: EnumGamePrefix.MAGIC });
-      if (!usdPriceDoc) {
-        throw new Error("No se encontró el precio del dólar para Magic");
-      }
       const usdPrice = usdPriceDoc.usdPrice;
+      if (!usdPrice) {
+         throw new Error("No se encontraron valores del dolar para la colección Magic");    
+        }
+
       this.logger.log(`Precio del dólar: ${usdPrice} CLP`);
       
       const basePrice = await this.basePriceModel.findOne({ game: EnumGame.MAGIC });
@@ -417,82 +420,81 @@ export class StagingProductVariantService {
           const precioBaseRareza = rarityPrices[rarezaKey] || 0;
           this.logger.log(`Precio base por rareza (${rarezaKey}): ${precioBaseRareza} CLP`);
 
-          let precioCLP = precioUSD * usdPrice;
+          let precioCLP = (precioUSD === 0 || precioUSD === null)? 0 : precioUSD * usdPrice;
 
           precioCLP = Math.ceil(precioCLP / 100) * 100;
 
-          precioCLP = Math.max(precioCLP, precioBaseRareza);
+          const precioFinal = (precioCLP === 0 )? 0: Math.max(precioCLP, precioBaseRareza);
 
-          this.logger.log(`Precio final calculado: ${precioCLP} CLP`);
+          this.logger.log(`Precio final: ${precioFinal} CLP`);
 
-          //SI EL PRECIO EN IGUAL O MENOR A 0 NO SE ACTUALIZA
-          if (precioCLP <= 0) {
-            this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variante.variantId} con sku ${variante.sku}`);
-          }
-          const nullErrorMsg = null
-          await this.stagingProductVariantModel.updateOne(
-            { variantId: variantId, productId: productId },
-            {
-              $set: {
-                variantPrice: precioCLP,
-                priceUpdateStatus: EnumPriceAndStockState.PENDING,
-                priceUpdateError: nullErrorMsg
+          // SI EL PRECIO EN IGUAL O MENOR A 0 NO SE ACTUALIZA
+
+          if ( precioFinal > 0 ) {
+            const nullErrorMsg = null
+            await this.stagingProductVariantModel.updateOne(
+              { variantId: variantId, productId: productId },
+              {
+                $set: {
+                  variantPrice: precioFinal,
+                  priceUpdateStatus: EnumPriceAndStockState.PENDING,
+                  priceUpdateError: nullErrorMsg
+                }
               }
-            }
-          );
-
-          this.logger.log(`Precio actualizado para variante ${variantId}: ${precioCLP} CLP, estado: PENDING`);
-          await this.updateVariantPriceStatus(
-            variantId,
-            productId,
-            EnumPriceAndStockState.IN_PROGRESS,
-            nullErrorMsg
-          );
-
-          const variantTo: JumpsellerUpdateVariantRequest = {
-            variant: {
-              price: precioCLP,
-              sku: variante.sku,
-              stock: null,
-              stock_unlimited: null,
-            }
-          };
-          
-          const response = await this.jumpsellerService.updateVariant(productId, variantId, variantTo);
-          this.logger.log(`🦍 bazinga: ${JSON.stringify(response)}`)  ;
-          if (!('message' in response)) {
+            );
+            this.logger.log(`Precio actualizado para variante ${variantId}: ${precioFinal} CLP, estado: PENDING`);
             await this.updateVariantPriceStatus(
               variantId,
               productId,
-              EnumPriceAndStockState.COMPLETED,
+              EnumPriceAndStockState.IN_PROGRESS,
               nullErrorMsg
             );
-            this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
-            this.logger.log(`Se actualizó el precio de la variante ${variantId} en Jumpseller`);
 
-            try {
-              const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productId);
-
-              await this.productModel.updateOne(
-                { id: jumpsellerProduct.product.id },
-                { ...jumpsellerProduct }
+            const variantTo: JumpsellerUpdateVariantRequest = {
+              variant: {
+                price: precioFinal,
+                sku: variante.sku,
+                stock: null,
+                stock_unlimited: null,
+              }
+            };
+            
+            const response = await this.jumpsellerService.updateVariant(productId, variantId, variantTo);
+            if (!('message' in response)) {
+              await this.updateVariantPriceStatus(
+                variantId,
+                productId,
+                EnumPriceAndStockState.COMPLETED,
+                nullErrorMsg
               );
-              this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
-              updatedCount++;
-            } catch (error) {
-              this.logger.error(`Error al actualizar el producto en la coleccion products: ${error.message}`);
+              this.logger.log(`Se actualizó el precio de la variante ${variantId} en Jumpseller`);
+
+              try {
+                const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productId);
+
+                await this.productModel.updateOne(
+                  { id: jumpsellerProduct.product.id },
+                  { ...jumpsellerProduct }
+                );
+                this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
+                updatedCount++;
+              } catch (error) {
+                this.logger.error(`Error al actualizar el producto en la coleccion products: ${error.message}`);
+              }
+            } else {
+              const errorMsg = `Status 400 - ${'message' in response ? response.message : 'Sin detalles'}`;
+              this.logger.error(errorMsg);
+              await this.updateVariantPriceStatus(
+                variantId,
+                productId,
+                EnumPriceAndStockState.ERROR,
+                errorMsg
+              );
             }
-          } else {
-            const errorMsg = `Status 400 - ${'message' in response ? response.message : 'Sin detalles'}`;
-            this.logger.error(errorMsg);
-            await this.updateVariantPriceStatus(
-              variantId,
-              productId,
-              EnumPriceAndStockState.ERROR,
-              errorMsg
-            );
+          }else {
+            this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variantId} con sku ${variante.sku}`);
           }
-        return precioCLP;
+          return precioFinal;
           
         } catch (varianteError) {
           this.logger.error(`Error procesando variante ${variantId}: ${varianteError.message}`);
@@ -506,8 +508,6 @@ export class StagingProductVariantService {
             }
           );
         }
-      // }
-      
     } catch (error) {
       this.logger.error(`Error al calcular precios para todas las cartas: ${error.message}`);
       throw new InternalServerErrorException(`Error al calcular precios para todas las cartas: ${error.message}`);
@@ -595,7 +595,6 @@ export class StagingProductVariantService {
           EnumPriceAndStockState.COMPLETED,
           nullErrorMsg
         );
-        this.logger.log(`🦍 Respuesta exitosa de Jumpseller: ${JSON.stringify(response)}`);
         this.logger.log(`Se actualizó el precio de la variante ${variant.variantId} en Jumpseller`);
 
        

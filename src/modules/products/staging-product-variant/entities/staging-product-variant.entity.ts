@@ -26,13 +26,13 @@ export class StagingProductVariant implements IStagingProductVariant {
     sku: string;
 
     @Prop({ default: 0 })
-    variantPrice: number;
+    variantPrice: number | 0;
 
     @Prop({default: true })
     isPriceUpdateable: boolean;
 
     @Prop({ default: 0 }) 
-    variantStock: number;
+    variantStock: number | 0;
 
     @Prop({ default: 46801 })
     locationId: number | 46801;
@@ -51,6 +51,9 @@ export class StagingProductVariant implements IStagingProductVariant {
 
     @Prop({ default: null })
     game: string | null;
+
+    @Prop({ default: 0 })
+    salesByCard: number | 0;
 
     @Prop({ 
         type: Object, 

@@ -9,12 +9,9 @@ import { EnumPriceAndStockState } from './enums/price-and-stock-state.enum';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { Product, ProductDocument } from '../entities/product.entity';
-import e, { response } from 'express';
 import { IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
 import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
 import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
-import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
-import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
 import { MagicCard } from 'src/modules/magic/entities/magic-card.entity';
 import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
 import { EnumGame, EnumGamePrefix } from 'src/common/enums/game.enum';
@@ -372,8 +369,8 @@ export class StagingProductVariantService {
           }
 
           let precioUSD = 0;
-          const isFoil = variante.finish === "foil"
-          const isNonFoil = variante.finish === 'nonfoil'
+          const isFoil = variante.finish?.toLowerCase() === "foil"
+          const isNonFoil = variante.finish?.toLowerCase() === 'nonfoil'
         
           this.logger.log(`❤️❤️❤️❤️❤️❤️isFoil: ${isFoil}, isNonFoil: ${isNonFoil}`);
 

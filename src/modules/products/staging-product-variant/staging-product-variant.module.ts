@@ -18,10 +18,10 @@ import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.mod
   imports: [
     MongooseModule.forFeature([{ name: StagingProductVariant.name, schema: StagingProductVariantSchema }]),
     JumpsellerModule,
-    ProductsModule,
     UsdPricesModule,
     BasePricesModule,
     forwardRef(() => MagicCardsModule),
+    forwardRef(() => ProductsModule),
   ],
   exports: [
     StagingProductVariantService,

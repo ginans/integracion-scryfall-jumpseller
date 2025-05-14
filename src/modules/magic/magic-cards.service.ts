@@ -496,20 +496,23 @@ export class MagicCardsService {
 //endpoint para buscar en bd y traer si no existe en scryfall
   async findByCollectorNumberAndLang( form: findByCollectorNumberAndLangDto, _id: string ) : Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
+      
+      //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
+      const existingCardByColNumberAndLang = await this.model.findOne({ collectorNumber: form.collectorNumber, lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
+      if (existingCardByColNumberAndLang) {
+        return { 
+          oracleId: existingCardByColNumberAndLang.oracleId, 
+          message: `La carta con collectorNumber ${existingCardByColNumberAndLang.collectorNumber} y lenguaje ${existingCardByColNumberAndLang.lang} ya existe en la base de datos` };
+        }
+        
+        //consultar solo por id para tomar el oracleId en caso de que sea distinta
         const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id)  }).exec();
         if (!existingCard) {
           throw new NotFoundException(`No se encontró la carta con id: ${_id}`);
         }
-
-        //revisar si la carta que se quiere crear ya existe en la base de datos
-        const existingCardByColNumberAndLang = await this.model.findOne({ collectorNumber: form.collectorNumber, lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
-        if (existingCardByColNumberAndLang) {
-          return { 
-            oracleId: existingCardByColNumberAndLang.oracleId, 
-            message: `La carta con collectorNumber ${existingCardByColNumberAndLang.collectorNumber} y lenguaje ${existingCardByColNumberAndLang.lang} ya existe en la base de datos` };
-        }
-        
+        //busco por el oracleId de la carta que ya existe en base de datos
         const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
+          //consulto con lo que me trajo la busqueda por id porque necesito el oracleId
           existingCard.oracleId,
           form.lenguaje,
         );
@@ -528,16 +531,12 @@ export class MagicCardsService {
         if (!filteredBySet.length) {
           throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
         }
-
-         this.logger.log(`Buscando carta con collectorNumber: ${form.collectorNumber}`);
         return filteredBySet;
-
+        
     } catch (error) {
       this.logger.error(`Error al buscar carta: ${error.message}`);
       throw new InternalServerErrorException(`Error al buscar carta: ${error.message}`);
     }
   }
-
-  
 
 }

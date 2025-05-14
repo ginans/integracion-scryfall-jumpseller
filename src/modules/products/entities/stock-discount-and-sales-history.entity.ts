@@ -6,7 +6,7 @@ export class StockAndSalesHistory {
     @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
     _id: Types.ObjectId;
 
-    @Prop({ type: String})
+    @Prop({ type: String })
     orderId: string;
 
     @Prop({ type: String})

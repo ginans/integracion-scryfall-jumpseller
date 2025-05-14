@@ -221,7 +221,7 @@ export class ProductsService {
   //funcion para manejar descuento de stock
   async updateStock(order: Order) {
     // iterar sobre todos los productos del webhook
-    const result = []
+    const results = []
     for (const webhookProduct of order.products) {
       const variantToUpdate = await this.stagingProductVariantModel.findOne({ productId: webhookProduct.id, variantId: webhookProduct.variant_id }).exec();
       if (variantToUpdate) {
@@ -254,19 +254,17 @@ export class ProductsService {
         );
 
         this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}, historySales: ${newHistorySales}`);
+      
 
-        result.push({ 
-          success: true,
-          message: 'Stock e historial de ventas por carta actualizado correctamente',
-          newStockAndSaleQty: newStockAndHistorySales,
-          newEntry: stockDiscountAndSalesHistoryEntry
-         });
+        results.push(
+          stockDiscountAndSalesHistoryEntry
+        );
 
       } else {
         this.logger.warn(`id producto no encontrado ${webhookProduct.id}`);
       }
-      return result;
     }
+    return results; 
   }
 
 }

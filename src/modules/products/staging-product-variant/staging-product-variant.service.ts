@@ -369,8 +369,8 @@ export class StagingProductVariantService {
           }
 
           let precioUSD = 0;
-          const isFoil = variante.finish === "foil"
-          const isNonFoil = variante.finish === 'nonfoil'
+          const isFoil = variante.finish?.toLowerCase() === "foil"
+          const isNonFoil = variante.finish?.toLowerCase() === 'nonfoil'
         
           this.logger.log(`❤️❤️❤️❤️❤️❤️isFoil: ${isFoil}, isNonFoil: ${isNonFoil}`);
 

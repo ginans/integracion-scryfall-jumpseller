@@ -89,11 +89,7 @@ export class StagingProductVariant implements IStagingProductVariant {
     @Prop({ default: null })
     stockUpdateError: string;
 
-    @Prop({ 
-        default: function () {
-            return this.variantStock === 0 ? JumpsellerStatus.NOT_AVALIABLE : JumpsellerStatus.AVALIABLE;
-        }
-     })
+    @Prop({ default: JumpsellerStatus.AVALIABLE })   
     jumpsellerStatus: JumpsellerStatus;
 
     @Prop({
@@ -112,4 +108,4 @@ export class StagingProductVariant implements IStagingProductVariant {
 export type StagingProductVariantDocument = HydratedDocument<StagingProductVariant>;
 export const StagingProductVariantSchema = SchemaFactory.createForClass(StagingProductVariant);
 
-StagingProductVariantSchema.index({ productId: 1, variantId: 1, sku: 1 }, { unique: true });
+StagingProductVariantSchema.index({ productId: 1, variantId: 1 }, { unique: true });

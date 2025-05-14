@@ -374,8 +374,6 @@ export class StagingProductVariantService {
           let precioUSD = 0;
           const isFoil = variante.finish?.toLowerCase() === "foil"
           const isNonFoil = variante.finish?.toLowerCase() === 'nonfoil'
-        
-          this.logger.log(`❤️❤️❤️❤️❤️❤️isFoil: ${isFoil}, isNonFoil: ${isNonFoil}`);
 
           if (matchingCard.prices) {
             if (isNonFoil && matchingCard.prices.usd) {
@@ -426,10 +424,7 @@ export class StagingProductVariantService {
 
           const precioFinal = (precioCLP === 0 )? 0: Math.max(precioCLP, precioBaseRareza);
 
-          this.logger.log(`Precio final: ${precioFinal} CLP`);
-
-          // SI EL PRECIO EN IGUAL O MENOR A 0 NO SE ACTUALIZA
-
+          // EL PRECIO MAYOR A 0 NO SE ACTUALIZA
           if ( precioFinal > 0 ) {
             const nullErrorMsg = null
             await this.stagingProductVariantModel.updateOne(

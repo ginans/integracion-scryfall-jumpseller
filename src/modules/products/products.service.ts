@@ -243,7 +243,7 @@ export class ProductsService {
          });
 
         // actualizar el stock de la variante en bd y agregar historial de ventas por carta
-        const newStockAndHistorySales = await this.stagingProductVariantModel.updateOne(
+        await this.stagingProductVariantModel.updateOne(
           { productId: webhookProduct.id, variantId: webhookProduct.variant_id },
           {
             $set: { 

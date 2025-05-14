@@ -170,11 +170,11 @@ export class MagicCardsService {
                 },
               }
             );
-            const price= await this.stagingProductVariantService.calculatePricesForAllCards( enCard.idJumpSeller, varRes.variant.id); 
+            const price= await this.stagingProductVariantService.calculatePricesForAllCards(varRes.variant.id, enCard.idJumpSeller); 
               if (price) {
                 this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id} con precio ${JSON.stringify(price)}`);
               } else {
-                this.logger.warn(`🪙😭Error al calcular precios para la variante ${varRes.variant.id}`);
+                this.logger.warn(`🪙No se calculó el precio para la variante ${varRes.variant.id}`);
               }
           } else {
             this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
@@ -485,7 +485,6 @@ export class MagicCardsService {
     const response = await this.model.find({ status: "pending", lang: { $regex: "^en$", $options: "i" } });
     return response as unknown as MappedMagicCard[];
   }
-
   //actualizar por id u estado
   async updateByStatus(id: string, set: IsetMagic): Promise<void> {
     await this.model.updateOne(
@@ -496,7 +495,6 @@ export class MagicCardsService {
 //endpoint para buscar en bd y traer si no existe en scryfall
   async findByCollectorNumberAndLang( form: findByCollectorNumberAndLangDto, _id: string ) : Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
-      
       //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
       const existingCardByColNumberAndLang = await this.model.findOne({ collectorNumber: form.collectorNumber, lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
       if (existingCardByColNumberAndLang) {

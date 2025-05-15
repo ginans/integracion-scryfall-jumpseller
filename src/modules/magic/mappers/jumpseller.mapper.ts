@@ -5,7 +5,6 @@ import { JumpsellerCreateImageRequest } from 'src/modules/jumpseller/interfaces/
 import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { EnumGame } from 'src/common/enums/game.enum';
-import { EnumCondition } from '../enums/condition.enum';
 
 export type Language = {
   code: EnumLanguage; 
@@ -102,13 +101,12 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     default: rarity = 'Desconocida'; break;
   }
 
-  //TODO: ARREGLAR NOMBRE EN OTRO IDIOMA
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
     description: `
       Nombre en Inglés: ${card.name}.
-      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: ""}
+      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: null}
       Tipo: ${card.typeLine}.
       Texto: ${card.oracleText}.
       Edición: ${card.setName}.
@@ -176,19 +174,19 @@ export function mapVariantsToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
 
-  const conditions = [
-    { key: 'Near Mint', name: 'Como nueva', suffix: 'NM', available: card.condition?.includes(EnumCondition.NearMint) },
-    { key: 'Lightly Played', name: 'Poco jugada', suffix: 'LP', available: card.condition?.includes(EnumCondition.LightlyPlayed) },
-    { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: 'MP', available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
-    { key: 'Heavily Played', name: 'Muy jugada', suffix: 'HP', available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
-    { key: 'Damaged', name: 'Dañada', suffix: 'D', available: card.condition?.includes(EnumCondition.Damaged) },
-  ];
+  // const conditions = [
+  //   { key: 'Near Mint', name: 'Como nueva', suffix: 'NM', available: card.condition?.includes(EnumCondition.NearMint) },
+  //   { key: 'Lightly Played', name: 'Poco jugada', suffix: 'LP', available: card.condition?.includes(EnumCondition.LightlyPlayed) },
+  //   { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: 'MP', available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
+  //   { key: 'Heavily Played', name: 'Muy jugada', suffix: 'HP', available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
+  //   { key: 'Damaged', name: 'Dañada', suffix: 'D', available: card.condition?.includes(EnumCondition.Damaged) },
+  // ];
   
   const variants: JumpsellerCreateVariantRequest[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
-      for (const condition of conditions) {
+      // for (const condition of conditions) {
         if (!finish.available) continue;
         const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
         const baseCollectorNumber = collectorNumberToUpperCase
@@ -198,7 +196,7 @@ export function mapVariantsToJumpseller(
             : '';
         // const baseSet = card.set? ;
 
-        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == EnumCondition.NearMint ? "" : "-"+ condition.suffix}` : ''}`;
+        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix} : ''}`: ''}`;
         variants.push({
           variant: {
             sku,
@@ -206,13 +204,13 @@ export function mapVariantsToJumpseller(
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
-              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition.name },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: "NM" },
             ],
           },
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
-          condition: condition.suffix,
+          condition: "NM",
         });
-      }
+      // }
     }
   }
   return variants;

@@ -25,14 +25,14 @@ export class StagingProductVariant implements IStagingProductVariant {
     @Prop({ default: null, index: { unique: true } })
     sku: string;
 
-    @Prop({ default: null })
-    variantPrice: number;
+    @Prop({ default: 0 })
+    variantPrice: number | 0;
 
     @Prop({default: true })
     isPriceUpdateable: boolean;
 
-    @Prop({ default: null }) 
-    variantStock: number;
+    @Prop({ default: 0 }) 
+    variantStock: number | 0;
 
     @Prop({ default: 46801 })
     locationId: number | 46801;
@@ -51,6 +51,9 @@ export class StagingProductVariant implements IStagingProductVariant {
 
     @Prop({ default: null })
     game: string | null;
+
+    @Prop({ default: 0 })
+    salesByCard: number | 0;
 
     @Prop({ 
         type: Object, 
@@ -86,11 +89,7 @@ export class StagingProductVariant implements IStagingProductVariant {
     @Prop({ default: null })
     stockUpdateError: string;
 
-    @Prop({ 
-        default: function () {
-            return this.variantStock === 0 ? JumpsellerStatus.NOT_AVALIABLE : JumpsellerStatus.AVALIABLE;
-        }
-     })
+    @Prop({ default: JumpsellerStatus.AVALIABLE })   
     jumpsellerStatus: JumpsellerStatus;
 
     @Prop({
@@ -109,4 +108,4 @@ export class StagingProductVariant implements IStagingProductVariant {
 export type StagingProductVariantDocument = HydratedDocument<StagingProductVariant>;
 export const StagingProductVariantSchema = SchemaFactory.createForClass(StagingProductVariant);
 
-StagingProductVariantSchema.index({ productId: 1, variantId: 1, sku: 1 }, { unique: true });
+StagingProductVariantSchema.index({ productId: 1, variantId: 1 }, { unique: true });

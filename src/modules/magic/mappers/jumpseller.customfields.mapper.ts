@@ -1,6 +1,7 @@
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { UpdateCustomFieldRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
-
+//crear manualmente y luego me traigo los creados con el el get
+// crear custom fields con un valor string 
 export function mapCMCCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
   return {
     custom_field: {

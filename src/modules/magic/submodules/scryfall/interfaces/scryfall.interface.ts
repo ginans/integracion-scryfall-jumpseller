@@ -6,7 +6,6 @@ export interface IresponseSryfall {
     data: ScryfallCardResponse[]
 }
 
-
 export interface ScryfallCardResponse {
     object?: string;
     id?: string;

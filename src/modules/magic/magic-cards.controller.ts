@@ -3,16 +3,18 @@ import { MagicCardsService } from './magic-cards.service';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { MagicCard } from './entities/magic-card.entity';
-import { CreateUserDto } from 'src/modules/users/dto/create-user.dto';
-import { CreateMagicCardDto } from './dto/create-magic-card.dto';
+import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
+import { MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
+import { ObjectId } from 'mongoose';
+import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 
 @Controller('magic-cards')
 export class MagicCardsController {
   constructor(private readonly magicCardsService: MagicCardsService) {}
 
   @Post("create")
-  async create(@Body() createMagicCardDto: CreateMagicCardDto) {
-    return this.magicCardsService.addCard(createMagicCardDto); 
+  async create(@Body() cards: ScryfallCardResponse): Promise<MappedMagicCard>  {
+    return this.magicCardsService.createMagicCards(cards); 
   }
   
   @Get()
@@ -23,6 +25,18 @@ export class MagicCardsController {
   @Get('findAllCardsWithoutFilters')
   async findAllCardsWithoutFilters(): Promise<MagicCard[]> {
     return this.magicCardsService.findAllCardsWithoutFilters();
+  }
+  
+  @Post("findToCreate/:_id")
+  async findByCollectorNumberAndLang(
+    @Param('_id') _id: string,
+    @Body() form: findByCollectorNumberAndLangDto
+  ): Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
+    try {
+      return this.magicCardsService.findByCollectorNumberAndLang(form, _id);
+    } catch (error) {
+      throw error;
+    }
   }
 
   @Get('by-id/:id')

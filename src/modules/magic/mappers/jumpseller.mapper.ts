@@ -52,14 +52,12 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
-
-
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
     description: `
       Nombre en Inglés: ${card.name}.
-      Nombre en ${card.lang === "en"? "otro idioma": translatedlang}: ${card.lang === "en"? "Esta carta solo esta en inglés" : card.printedName || ''}
+      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: ""}
       Tipo: ${card.typeLine}.
       Texto: ${card.oracleText || cardFaceOracleText}.
       Edición: ${card.setName}.
@@ -103,12 +101,14 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+
+  //TODO: ARREGLAR NOMBRE EN OTRO IDIOMA
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
     description: `
       Nombre en Inglés: ${card.name}.
-       Nombre en ${card.lang === "en"? "otro idioma": translatedlang}: ${card.lang === "en"? "Esta carta solo esta en inglés" : card.printedName || ''}
+      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: ""}
       Tipo: ${card.typeLine}.
       Texto: ${card.oracleText}.
       Edición: ${card.setName}.
@@ -191,12 +191,14 @@ export function mapVariantsToJumpseller(
       for (const condition of conditions) {
         if (!finish.available) continue;
         const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
-        const base = collectorNumberToUpperCase
+        const baseCollectorNumber = collectorNumberToUpperCase
             ? (collectorNumberToUpperCase.length <= 4
                 ? collectorNumberToUpperCase.padStart(4, '0')
                 : collectorNumberToUpperCase)
             : '';
-        const sku = `M-${card.set?.toUpperCase() || ''}${base ? base + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == EnumCondition.NearMint ? "" : "-"+ condition.suffix}` : ''}`;
+        // const baseSet = card.set? ;
+
+        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == EnumCondition.NearMint ? "" : "-"+ condition.suffix}` : ''}`;
         variants.push({
           variant: {
             sku,
@@ -207,7 +209,7 @@ export function mapVariantsToJumpseller(
               { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition.name },
             ],
           },
-          finish: finish.key,
+          finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
           condition: condition.suffix,
         });
       }

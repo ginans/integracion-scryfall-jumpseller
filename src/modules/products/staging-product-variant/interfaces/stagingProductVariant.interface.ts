@@ -10,9 +10,9 @@ export interface IStagingProductVariant {
     name: string;
     anotherLangName: string;
     sku: string | null;
-    variantPrice: number | null;
+    variantPrice: number | 0;
     isPriceUpdateable: boolean;
-    variantStock: number | null;
+    variantStock: number | 0;
     locationId: number;
     stockUnlimited: boolean;
     finish: string | null;
@@ -31,6 +31,7 @@ export interface IStagingProductVariant {
     stockUpdateStatus: EnumPriceAndStockState;
     stockUpdateError: string | null;
     jumpsellerStatus: JumpsellerStatus;
+    salesByCard: number | 0;
     fatherProduct: {
         oracleId: string | null;
         sku?: string | null;

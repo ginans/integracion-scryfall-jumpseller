@@ -51,24 +51,29 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+
+  const translatedNameLine = card.lang !== "en" && card.printedName
+  ? `Nombre en ${translatedlang}: ${card.printedName}.`
+  : "";
+
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
-    description: `
-      Nombre en Inglés: ${card.name}.
-      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: ""}
-      Tipo: ${card.typeLine}.
-      Texto: ${card.oracleText || cardFaceOracleText}.
-      Edición: ${card.setName}.
-      Color: ${card.colors?.join(', ') || cardFacesColors}.
-      Rareza: ${rarity}.
-      Artista: ${card.artist}.
-      Habilidades: ${card.keywords?.join(', ') || ''}.
-      Legal en: ${Object.entries(card.legalities || {})
-        .filter(([, v]) => v === 'legal')
-        .map(([f]) => f)
-        .join(', ') || 'No legal'}.
-    `,
+    description: [
+    `Nombre en Inglés: ${card.name}.`,
+    translatedNameLine, 
+    `Tipo: ${card.typeLine}.`,
+    `Texto: ${card.oracleText}.`,
+    `Edición: ${card.setName}.`,
+    `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+    `Rareza: ${rarity}.`,
+    `Artista: ${card.artist}.`,
+    `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+    `Legal en: ${Object.entries(card.legalities || {})
+      .filter(([, v]) => v === 'legal')
+      .map(([f]) => f)
+      .join(', ') || 'No legal'}.`,
+  ].filter(Boolean).join('\n'),
     price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
@@ -101,24 +106,28 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     default: rarity = 'Desconocida'; break;
   }
 
+  const translatedNameLine = card.lang !== "en" && card.printedName
+  ? `Nombre en ${translatedlang}: ${card.printedName}.`
+  : "";
+
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
-    description: `
-      Nombre en Inglés: ${card.name}.
-      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: null}
-      Tipo: ${card.typeLine}.
-      Texto: ${card.oracleText}.
-      Edición: ${card.setName}.
-      Color: ${card.colors?.join(', ') || cardFacesColors}.
-      Rareza: ${rarity}.
-      Artista: ${card.artist}.
-      Habilidades: ${card.keywords?.join(', ') || ''}.
-      Legal en: ${Object.entries(card.legalities || {})
-        .filter(([, v]) => v === 'legal')
-        .map(([f]) => f)
-        .join(', ') || 'No legal'}.
-    `,
+     description: [
+    `Nombre en Inglés: ${card.name}.`,
+    translatedNameLine, // si está vacío, no se agrega línea vacía
+    `Tipo: ${card.typeLine}.`,
+    `Texto: ${card.oracleText}.`,
+    `Edición: ${card.setName}.`,
+    `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+    `Rareza: ${rarity}.`,
+    `Artista: ${card.artist}.`,
+    `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+    `Legal en: ${Object.entries(card.legalities || {})
+      .filter(([, v]) => v === 'legal')
+      .map(([f]) => f)
+      .join(', ') || 'No legal'}.`,
+  ].filter(Boolean).join('\n'),
     price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${ collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
@@ -186,7 +195,6 @@ export function mapVariantsToJumpseller(
 
   for (const lang of languages) {
     for (const finish of finishes) {
-      // for (const condition of conditions) {
         if (!finish.available) continue;
         const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
         const baseCollectorNumber = collectorNumberToUpperCase
@@ -196,7 +204,7 @@ export function mapVariantsToJumpseller(
             : '';
         // const baseSet = card.set? ;
 
-        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix} : ''}`: ''}`;
+        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix} ` : ''}`;
         variants.push({
           variant: {
             sku,
@@ -210,7 +218,6 @@ export function mapVariantsToJumpseller(
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
           condition: "NM",
         });
-      // }
     }
   }
   return variants;

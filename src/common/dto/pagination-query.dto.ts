@@ -8,7 +8,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { SortOrder } from '../enums/sortOrder.enum';
+import { EnumLang, SortOrder, StateCards } from '../enums/query.enum';
+import { JumpsellerStatus } from 'src/modules/products/staging-product-variant/enums/jumpsellerStatus.enum';
+import { EnumPriceAndStockState } from 'src/modules/products/staging-product-variant/enums/price-and-stock-state.enum';
 export class PaginationQueryDto {
   @ApiProperty({ required: false, default: 1 })
   @IsOptional()
@@ -43,4 +45,43 @@ export class PaginationQueryDto {
   @ApiProperty({ required: false })
   @IsOptional()
   filters?: Record<string, string>;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  to?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: StateCards;
+
+  @IsOptional()
+  @IsString()
+  jumpsellerStatus?: JumpsellerStatus;
+
+  @IsOptional()
+  @IsString()
+  stockUpdateStatus?: EnumPriceAndStockState;
+
+  @IsOptional()
+  @IsString()
+  priceUpdateStatus?: EnumPriceAndStockState;
+
+  @IsOptional()
+  @IsString()
+  lang?: EnumLang | null;
+
+  @IsOptional()
+  @IsString()
+  set?: string;
+
+  @IsOptional()
+  @IsString()
+  setName?: string;
+  
 }

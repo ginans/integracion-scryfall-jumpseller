@@ -20,3 +20,5 @@ export interface PaginationMeta {
   // Indica si existe una página anterior
   hasPreviousPage: boolean;
 }
+
+

@@ -10,11 +10,11 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Payload } from './interface/payload.interface';
 import * as argon2 from 'argon2';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from 'src/modules/users/users.service';
 import { ReplacePassDto } from './dto/replace-pass.dto';
-import { MailService } from '../mail/mail.service';
+import { MailService } from '../modules/mail/mail.service';
 import { RecoverPassDto } from './dto/recover.dto';
-import { User } from '../users/entities/user.entity';
+import { User } from '../modules/users/entities/user.entity';
 import { last } from 'rxjs';
 
 @Injectable()
@@ -38,7 +38,8 @@ export class AuthService {
     return await argon2.hash(password);
   }
   async createToken(payload: { sub: string; email: string; name: string }) {
-    return await this.jwtService.signAsync(payload);
+    const token = await this.jwtService.signAsync(payload);
+    return token
   }
   async validateToken(token: string): Promise<Payload> {
     try {
@@ -54,7 +55,7 @@ export class AuthService {
     if (!User) throw new BadRequestException('Correo o contraseña incorrecto');
     const validarPass = await this.compare(password, User.password);
     if (!validarPass)
-      throw new UnauthorizedException('Correo/contraseña incorrecto');
+      throw new UnauthorizedException('Correo o contraseña incorrecto');
     if (!User.isActive) throw new UnauthorizedException('Usuario deshabilitado');
     const payload = {
       sub: User._id.toString(),
@@ -79,28 +80,32 @@ export class AuthService {
     const user = await this.userService.findByEmail(body.email);
     if (!user)
       return { message: 'Enviamos a tu correo el método de recuperación' };
-    if (user.rememberToken === null) {
-      throw new BadRequestException('No se ha solicitado recuperación de contraseña');
+    if (user.rememberToken !== null) {
+      return { message: 'Enviamos a tu correo el método de recuperación' };
     }
     const payload = {
       sub: user._id.toHexString(),
       email: user.email,
       name: user.name,
     };
-    const token = await this.createToken(payload);
-    if (token){
-      user.rememberToken = token;
+    const rememberToken = await this.createToken(payload);
+    if (rememberToken){
+      user.rememberToken = rememberToken;
       await this.userService.update(user._id.toHexString(), user);
     }
-    this.mailService.changePassword(user.email, user.name, token);
-       return {
+    this.mailService.changePassword(user.email, user.name, rememberToken);
+    return {
       message: 'Enviamos a tu correo el método de recuperación',
     };
   }
-  async changePass(body: ReplacePassDto, token: string) {
+  //TODO: si se uso el rememberToken para cambiar la contraseña, se debe eliminar el rememberToken
+  async changePass(body: ReplacePassDto, rememberToken: string) {
     const { password } = body;
-    const user = await this.validateToken(token);
+    const user = await this.validateToken(rememberToken);
     const userDB = await this.userService.findByEmail(user.email);
+    if (!userDB.rememberToken) {
+      throw new BadRequestException('No se ha solicitado recuperación de contraseña');
+    }
     const hashPassword = await this.hashPassword(password);
     userDB.password = hashPassword;
     await this.userService.updatePass(userDB._id.toHexString(), hashPassword);

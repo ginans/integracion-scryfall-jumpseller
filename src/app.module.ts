@@ -1,16 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
+import { UsersModule } from './modules/users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { EnvConfiguration } from './config/app.config';
 import { JoiValidationSchema } from './config/joi.validation';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
-import { MailModule } from './mail/mail.module';
+import { MailModule } from './modules/mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
-import { MailerModule } from '@nestjs-modules/mailer';
 import { JobsService } from './jobs/jobs.service';
 import { JobsModule } from './jobs/jobs.module';
 import { BullModule } from '@nestjs/bullmq';
@@ -20,9 +19,17 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestLoggerInterceptor } from './common/interceptor/request-logger.interceptor';
 import { LoggerService } from './common/logger/logger.service';
 import { LoggerModule } from './common/logger/logger.module';
-import { FilesModule } from './files/files.module';
+import { FilesModule } from './modules/files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
+import { ScryfallModule } from './modules/magic/submodules/scryfall/scryfall.module';
+import { MagicCardsModule } from './modules/magic/magic-cards.module';
+import { JumpsellerModule } from './modules/jumpseller/jumpseller.module';
+import { ProcessModule } from './modules/process/process.module';
+import { ProductsModule } from './modules/products/products.module';
+import { BasePricesModule } from './modules/prices/base-prices/base-prices.module';
+import { UsdPricesModule } from './modules/prices/usd-prices/usd-prices.module';
+import { StagingProductVariantModule } from './modules/products/staging-product-variant/staging-product-variant.module';
 
 @Module({
   imports: [
@@ -33,16 +40,6 @@ import {join} from "path";
     }),
     MongooseModule.forRoot(EnvConfiguration().db_uri, {
       dbName: EnvConfiguration().db_name,
-    }),
-    MailerModule.forRoot({
-      transport: {
-        host: 'smtp.gmail.com',
-        port: 587,
-        auth: {
-          user: 'user',
-          pass: 'pass',
-        },
-      },
     }),
     BullModule.forRoot({
       connection: {
@@ -63,7 +60,15 @@ import {join} from "path";
       rootPath: join(__dirname, '..', 'uploads/pdfs'),
       serveRoot: '/pdfs',
     }),
-    FilesModule
+    FilesModule,
+    ScryfallModule,
+    MagicCardsModule,
+    JumpsellerModule,
+    ProcessModule,
+    ProductsModule,
+    UsdPricesModule,
+    BasePricesModule,
+    StagingProductVariantModule,
   ],
   controllers: [AppController],
   providers: [

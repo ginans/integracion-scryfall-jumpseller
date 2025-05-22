@@ -12,7 +12,7 @@ export type Language = {
   name: string;
 };
 
-const translatedLanguages = (langInput: string): string  => {
+export const translatedLanguages = (langInput: string): string  => {
   let translatedLang = langInput; // Usar una nueva variable para la traducción 
   switch (langInput) {
     case EnumLanguage.ESPAÑOL: translatedLang = 'Español'; break;
@@ -52,24 +52,29 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+
+  const translatedNameLine = card.lang !== "en" && card.printedName
+  ? `Nombre en ${translatedlang}: ${card.printedName}.`
+  : "";
+
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
-    description: `
-      Nombre en Inglés: ${card.name}.
-      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: ""}
-      Tipo: ${card.typeLine}.
-      Texto: ${card.oracleText || cardFaceOracleText}.
-      Edición: ${card.setName}.
-      Color: ${card.colors?.join(', ') || cardFacesColors}.
-      Rareza: ${rarity}.
-      Artista: ${card.artist}.
-      Habilidades: ${card.keywords?.join(', ') || ''}.
-      Legal en: ${Object.entries(card.legalities || {})
-        .filter(([, v]) => v === 'legal')
-        .map(([f]) => f)
-        .join(', ') || 'No legal'}.
-    `,
+    description: [
+    `Nombre en Inglés: ${card.name}.`,
+    translatedNameLine, 
+    `Tipo: ${card.typeLine}.`,
+    `Texto: ${card.oracleText}.`,
+    `Edición: ${card.setName}.`,
+    `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+    `Rareza: ${rarity}.`,
+    `Artista: ${card.artist}.`,
+    `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+    `Legal en: ${Object.entries(card.legalities || {})
+      .filter(([, v]) => v === 'legal')
+      .map(([f]) => f)
+      .join(', ') || 'No legal'}.`,
+  ].filter(Boolean).join('\n'),
     price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
@@ -102,25 +107,28 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     default: rarity = 'Desconocida'; break;
   }
 
-  //TODO: ARREGLAR NOMBRE EN OTRO IDIOMA
+  const translatedNameLine = card.lang !== "en" && card.printedName
+  ? `Nombre en ${translatedlang}: ${card.printedName}.`
+  : "";
+
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
     name: card.name || '',
-    description: `
-      Nombre en Inglés: ${card.name}.
-      ${card.lang !== "en"? `Nombre en ${translatedlang}: ${card.printedName}`: ""}
-      Tipo: ${card.typeLine}.
-      Texto: ${card.oracleText}.
-      Edición: ${card.setName}.
-      Color: ${card.colors?.join(', ') || cardFacesColors}.
-      Rareza: ${rarity}.
-      Artista: ${card.artist}.
-      Habilidades: ${card.keywords?.join(', ') || ''}.
-      Legal en: ${Object.entries(card.legalities || {})
-        .filter(([, v]) => v === 'legal')
-        .map(([f]) => f)
-        .join(', ') || 'No legal'}.
-    `,
+     description: [
+    `Nombre en Inglés: ${card.name}.`,
+    translatedNameLine, // si está vacío, no se agrega línea vacía
+    `Tipo: ${card.typeLine}.`,
+    `Texto: ${card.oracleText}.`,
+    `Edición: ${card.setName}.`,
+    `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+    `Rareza: ${rarity}.`,
+    `Artista: ${card.artist}.`,
+    `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+    `Legal en: ${Object.entries(card.legalities || {})
+      .filter(([, v]) => v === 'legal')
+      .map(([f]) => f)
+      .join(', ') || 'No legal'}.`,
+  ].filter(Boolean).join('\n'),
     price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${ collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
@@ -175,20 +183,11 @@ export function mapVariantsToJumpseller(
     { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
-
-  const conditions = [
-    { key: 'Near Mint', name: 'Como nueva', suffix: 'NM', available: card.condition?.includes(EnumCondition.NearMint) },
-    { key: 'Lightly Played', name: 'Poco jugada', suffix: 'LP', available: card.condition?.includes(EnumCondition.LightlyPlayed) },
-    { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: 'MP', available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
-    { key: 'Heavily Played', name: 'Muy jugada', suffix: 'HP', available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
-    { key: 'Damaged', name: 'Dañada', suffix: 'D', available: card.condition?.includes(EnumCondition.Damaged) },
-  ];
   
   const variants: JumpsellerCreateVariantRequest[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
-      for (const condition of conditions) {
         if (!finish.available) continue;
         const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
         const baseCollectorNumber = collectorNumberToUpperCase
@@ -198,7 +197,7 @@ export function mapVariantsToJumpseller(
             : '';
         // const baseSet = card.set? ;
 
-        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == EnumCondition.NearMint ? "" : "-"+ condition.suffix}` : ''}`;
+        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix} ` : ''}`;
         variants.push({
           variant: {
             sku,
@@ -206,13 +205,64 @@ export function mapVariantsToJumpseller(
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
-              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition.name },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: "NM" },
             ],
           },
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
-          condition: condition.suffix,
+          condition: "NM",
         });
-      }
+    }
+  }
+  return variants;
+}
+
+//mapeo de variantes para el caso de crear una carta nueva a partir de una ya existente
+export function mapVariantFromNewCardToJumpseller(
+  card: MappedMagicCard,
+  languages: Language[],
+  condition: EnumCondition,
+): JumpsellerCreateVariantRequest[] {
+     
+  const finishes = [
+    { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
+    { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
+    { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
+  ];
+
+  // const conditions = [
+  //   { key: 'Near Mint', name: 'Como nueva', suffix: EnumCondition.NearMint, available: card.condition?.includes(EnumCondition.NearMint) },
+  //   { key: 'Lightly Played', name: 'Poco jugada', suffix: EnumCondition.LightlyPlayed, available: card.condition?.includes(EnumCondition.LightlyPlayed) },
+  //   { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: EnumCondition.ModeratelyPlayed, available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
+  //   { key: 'Heavily Played', name: 'Muy jugada', suffix: EnumCondition.HeavilyPlayed, available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
+  //   { key: 'Damaged', name: 'Dañada', suffix: EnumCondition.Damaged, available: card.condition?.includes(EnumCondition.Damaged) },
+  // ];
+  
+  const variants: JumpsellerCreateVariantRequest[] = [];
+
+  for (const lang of languages) {
+    for (const finish of finishes) {
+        if (!finish.available) continue;
+        const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
+        const baseCollectorNumber = collectorNumberToUpperCase
+            ? (collectorNumberToUpperCase.length <= 4
+                ? collectorNumberToUpperCase.padStart(4, '0')
+                : collectorNumberToUpperCase)
+            : '';
+        // const baseSet = card.set? ;
+
+        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition == EnumCondition.NearMint ? "" : "-"+ condition}` : ''}`;
+        variants.push({
+          variant: {
+            sku,
+            price: 0, 
+            options: [
+              { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
+              { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition },
+            ],
+          },
+          finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
+        });
     }
   }
   return variants;

@@ -21,6 +21,7 @@ export class ScryfallService {
       // Construir manualmente la cadena de consulta de idioma
       let queryString = new URLSearchParams(params as any).toString() + `&q=${lang}`;
       if(oracle_id){
+        //TODO: filtrar tambien por SET
         queryString= new URLSearchParams(params as any).toString() + `&q=${lang}+oracle_id:${oracle_id}`;
       }
       const { data } = await axios.get(`${url}?${queryString}`);

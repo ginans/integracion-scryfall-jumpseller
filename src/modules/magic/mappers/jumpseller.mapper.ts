@@ -12,7 +12,7 @@ export type Language = {
   name: string;
 };
 
-const translatedLanguages = (langInput: string): string  => {
+export const translatedLanguages = (langInput: string): string  => {
   let translatedLang = langInput; // Usar una nueva variable para la traducción 
   switch (langInput) {
     case EnumLanguage.ESPAÑOL: translatedLang = 'Español'; break;
@@ -220,6 +220,7 @@ export function mapVariantsToJumpseller(
 export function mapVariantFromNewCardToJumpseller(
   card: MappedMagicCard,
   languages: Language[],
+  condition: EnumCondition,
 ): JumpsellerCreateVariantRequest[] {
      
   const finishes = [
@@ -228,19 +229,18 @@ export function mapVariantFromNewCardToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
 
-  const conditions = [
-    { key: 'Near Mint', name: 'Como nueva', suffix: 'NM', available: card.condition?.includes(EnumCondition.NearMint) },
-    { key: 'Lightly Played', name: 'Poco jugada', suffix: 'LP', available: card.condition?.includes(EnumCondition.LightlyPlayed) },
-    { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: 'MP', available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
-    { key: 'Heavily Played', name: 'Muy jugada', suffix: 'HP', available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
-    { key: 'Damaged', name: 'Dañada', suffix: 'D', available: card.condition?.includes(EnumCondition.Damaged) },
-  ];
+  // const conditions = [
+  //   { key: 'Near Mint', name: 'Como nueva', suffix: EnumCondition.NearMint, available: card.condition?.includes(EnumCondition.NearMint) },
+  //   { key: 'Lightly Played', name: 'Poco jugada', suffix: EnumCondition.LightlyPlayed, available: card.condition?.includes(EnumCondition.LightlyPlayed) },
+  //   { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: EnumCondition.ModeratelyPlayed, available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
+  //   { key: 'Heavily Played', name: 'Muy jugada', suffix: EnumCondition.HeavilyPlayed, available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
+  //   { key: 'Damaged', name: 'Dañada', suffix: EnumCondition.Damaged, available: card.condition?.includes(EnumCondition.Damaged) },
+  // ];
   
   const variants: JumpsellerCreateVariantRequest[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
-      for (const condition of conditions) {
         if (!finish.available) continue;
         const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
         const baseCollectorNumber = collectorNumberToUpperCase
@@ -250,7 +250,7 @@ export function mapVariantFromNewCardToJumpseller(
             : '';
         // const baseSet = card.set? ;
 
-        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition.suffix == EnumCondition.NearMint ? "" : "-"+ condition.suffix}` : ''}`;
+        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition == EnumCondition.NearMint ? "" : "-"+ condition}` : ''}`;
         variants.push({
           variant: {
             sku,
@@ -258,13 +258,11 @@ export function mapVariantFromNewCardToJumpseller(
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
-              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition.name },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition },
             ],
           },
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
-          condition: condition.suffix,
         });
-      }
     }
   }
   return variants;

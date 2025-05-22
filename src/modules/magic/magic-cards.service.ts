@@ -28,9 +28,6 @@ import { IStagingProductVariant } from '../products/staging-product-variant/inte
 import { StagingProductVariant, StagingProductVariantDocument, StagingProductVariantSchema } from '../products/staging-product-variant/entities/staging-product-variant.entity';
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
-import { all } from 'axios';
-import { ObjectId } from 'typeorm';
-import { exist } from 'joi';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 
 @Injectable()
@@ -521,12 +518,11 @@ export class MagicCardsService {
 
         const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
           scryfallCard.oracle_id === existingCard.oracleId &&
-          scryfallCard.set?.toLowerCase() === existingCard.set &&
           scryfallCard.lang?.toLowerCase() === form.lenguaje?.toLowerCase() &&
           (form.collectorNumber ? scryfallCard.collector_number?.toLowerCase() === form.collectorNumber?.toLowerCase() : true)
         );
   
-        if (!filteredBySet.length) {
+        if (filteredBySet.length == 0) {
           throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
         }
         return filteredBySet;

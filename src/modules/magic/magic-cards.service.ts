@@ -501,11 +501,13 @@ export class MagicCardsService {
           throw new NotFoundException(`No se encontró la carta con id: ${_id}`);
         }
         //busco por el oracleId de la carta que ya existe en base de datos
+    
         const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
           //consulto con lo que me trajo la busqueda por id porque necesito el oracleId
           existingCard.oracleId,
           form.lenguaje,
         );
+      
 
         if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {
           throw new NotFoundException(`No se encontraron cartas para oracleId: ${existingCard.oracleId} y lang: ${form.lenguaje}`);
@@ -513,14 +515,16 @@ export class MagicCardsService {
 
         const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
           scryfallCard.oracle_id === existingCard.oracleId &&
-          scryfallCard.lang?.toLowerCase() === form.lenguaje?.toLowerCase() &&
+          (form.lenguaje ? scryfallCard.lang?.toLowerCase() === form.lenguaje?.toLowerCase(): true) &&
           (form.collectorNumber ? scryfallCard.collector_number?.toLowerCase() === form.collectorNumber?.toLowerCase() : true)
         );
-  
+        
+        this.logger.log(`Se trajeron ${filteredBySet.length} cartas ${filteredBySet.length < 10? "😎": "💀"} de scryfall`);
         if (filteredBySet.length == 0) {
           throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
         }
         return filteredBySet;
+
         
     } catch (error) {
       this.logger.error(`Error al buscar carta: ${error.message}`);

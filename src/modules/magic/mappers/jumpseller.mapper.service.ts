@@ -6,14 +6,28 @@ import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/module
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { EnumGame } from 'src/common/enums/game.enum';
 import { EnumCondition } from '../enums/condition.enum';
+import { Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { MagicCard, magicCardDocument } from '../entities/magic-card.entity';
+import { Model } from 'mongoose';
+
+// If you need to use magicCardModel, define it inside a service or class like this:
+import { Injectable } from '@nestjs/common';
 
 export type Language = {
   code: EnumLanguage; 
   name: string;
 };
 
-export const translatedLanguages = (langInput: string): string  => {
-  let translatedLang = langInput; // Usar una nueva variable para la traducción 
+@Injectable()
+export class JumpsellerMapperService {
+  private readonly logger = new Logger(JumpsellerMapperService.name);
+  constructor(
+    @InjectModel(MagicCard.name) private readonly magicCardModel: Model<magicCardDocument>,
+  ) {}
+
+async translatedLanguages(langInput: string): Promise<string> {
+  let translatedLang = langInput;
   switch (langInput) {
     case EnumLanguage.ESPAÑOL: translatedLang = 'Español'; break;
     case EnumLanguage.PORTUGUES: translatedLang = 'Portugués'; break;
@@ -38,8 +52,8 @@ export const translatedLanguages = (langInput: string): string  => {
 }
 
 
-export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProductRequest {
-  const translatedlang = translatedLanguages(card.lang)
+async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
+  const translatedlang = await this.translatedLanguages(card.lang);
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   const cardFaceOracleText = card.oracleText
     || card.cardFaces?.map(f => f.oracleText).join('. ')
@@ -52,10 +66,16 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
-
-  const translatedNameLine = card.lang !== "en" && card.printedName
-  ? `Nombre en ${translatedlang}: ${card.printedName}.`
-  : "";
+  // Busca cartas con el mismo oracleId y set, pero en idioma diferente de inglés
+const findAnotherLangCard = await this.magicCardModel.findOne({
+  oracleId: card.oracleId, 
+  set: card.set, 
+  lang: { $ne: "en" }
+});
+this.logger.log(`❤️ voy a crear una descripcion en ${(await this.translatedLanguages(findAnotherLangCard.lang)).toString()}❤️`);
+  const translatedNameLine = findAnotherLangCard && card.lang !== "en" && findAnotherLangCard.lang === card.lang && card.printedName
+    ? `Nombre en ${translatedlang}: ${card.printedName}.`
+    : "";
 
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
   const product = {
@@ -93,11 +113,11 @@ export function mapDBProductToJumpseller(card: MappedMagicCard): JumpsellerProdu
   return product;
 }
 
-export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): JumpsellerUpdateProductRequest {
+async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   let rarity = card.rarity;
 
-  const translatedlang = translatedLanguages(card.lang)
+  const translatedlang = await this.translatedLanguages(card.lang);
 
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -106,29 +126,33 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+  const findAnotherLangCard = await this.magicCardModel.findOne({
+  oracleId: card.oracleId, 
+  set: card.set, 
+  lang: { $ne: "en" }
+});
+  const translatedNameLine = findAnotherLangCard && card.lang !== "en" && findAnotherLangCard.lang === card.lang && card.printedName
+    ? `Nombre en ${translatedlang}: ${card.printedName}.`
+    : "";
 
-  const translatedNameLine = card.lang !== "en" && card.printedName
-  ? `Nombre en ${translatedlang}: ${card.printedName}.`
-  : "";
-
-  const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
+  const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
   const product = {
     name: card.name || '',
-     description: [
-    `Nombre en Inglés: ${card.name}.`,
-    translatedNameLine, // si está vacío, no se agrega línea vacía
-    `Tipo: ${card.typeLine}.`,
-    `Texto: ${card.oracleText}.`,
-    `Edición: ${card.setName}.`,
-    `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
-    `Rareza: ${rarity}.`,
-    `Artista: ${card.artist}.`,
-    `Habilidades: ${card.keywords?.join(', ') || ''}.`,
-    `Legal en: ${Object.entries(card.legalities || {})
-      .filter(([, v]) => v === 'legal')
-      .map(([f]) => f)
-      .join(', ') || 'No legal'}.`,
-  ].filter(Boolean).join('\n'),
+    description: [
+      `Nombre en Inglés: ${card.name}.`,
+      translatedNameLine, 
+      `Tipo: ${card.typeLine}.`,
+      `Texto: ${card.oracleText}.`,
+      `Edición: ${card.setName}.`,
+      `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+      `Rareza: ${rarity}.`,
+      `Artista: ${card.artist}.`,
+      `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+      `Legal en: ${Object.entries(card.legalities || {})
+        .filter(([, v]) => v === 'legal')
+        .map(([f]) => f)
+        .join(', ') || 'No legal'}.`,
+    ].filter(Boolean).join('\n'),
     price: 0,
     sku: `M-${card.set?.toUpperCase() || ''}${ collectorNumberToUpperCase
       ? (collectorNumberToUpperCase.length <= 4
@@ -147,7 +171,7 @@ export function mapDBUpdateProductToJumpseller(card: MappedMagicCard): Jumpselle
   return { product };
 }
 
-export function mapImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest | null {
+async mapImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
   if (!card.imageUris || !card.imageUris.large) {
     console.warn(`⚠️ Carta sin imagen: ${card.name}`);
     return null;
@@ -155,16 +179,17 @@ export function mapImageToJumpseller(card: MappedMagicCard): JumpsellerCreateIma
   return { image: { url: card.imageUris.large, position: 0 } };
 }
 
-export function mapCardFace1ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest | null {
-  if (!card.cardFaces || !card.cardFaces[0] || !card.cardFaces[0].imageUris || !card.cardFaces[0].imageUris.large) {
-    console.warn(`⚠️ Carta sin imagen para la primera cara: ${card.name}`);
-    return null;
+  async mapCardFace1ImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
+    if (!card.cardFaces || !card.cardFaces[0] || !card.cardFaces[0].imageUris || !card.cardFaces[0].imageUris.large) {
+      console.warn(`⚠️ Carta sin imagen para la primera cara: ${card.name}`);
+      return null;
+    }
+    
+    return { image: { url: card.cardFaces[0].imageUris.large, position: 0 } };
   }
-  
-  return { image: { url: card.cardFaces[0].imageUris.large, position: 0 } };
-}
 
-export function mapCardFace2ImageToJumpseller(card: MappedMagicCard): JumpsellerCreateImageRequest | null {
+
+async mapCardFace2ImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
   if (!card.cardFaces || !card.cardFaces[1] || !card.cardFaces[1].imageUris || !card.cardFaces[1].imageUris.large) {
     console.warn(`⚠️ Carta sin imagen para la segunda cara: ${card.name}`);
     return null;
@@ -173,10 +198,10 @@ export function mapCardFace2ImageToJumpseller(card: MappedMagicCard): Jumpseller
   return { image: { url: card.cardFaces[1].imageUris.large, position: 0 } };
 }
 
-export function mapVariantsToJumpseller(
+async mapVariantsToJumpseller(
   card: MappedMagicCard,
   languages: Language[],
-): JumpsellerCreateVariantRequest[] {
+): Promise<JumpsellerCreateVariantRequest[]> {
      
   const finishes = [
     { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
@@ -217,11 +242,11 @@ export function mapVariantsToJumpseller(
 }
 
 //mapeo de variantes para el caso de crear una carta nueva a partir de una ya existente
-export function mapVariantFromNewCardToJumpseller(
+async mapVariantFromNewCardToJumpseller(
   card: MappedMagicCard,
   languages: Language[],
   condition: EnumCondition,
-): JumpsellerCreateVariantRequest[] {
+): Promise<JumpsellerCreateVariantRequest[]> {
      
   const finishes = [
     { key: 'Non-Foil', name: 'No Foil', suffix: 'NF', available: card.nonfoil },
@@ -266,4 +291,5 @@ export function mapVariantFromNewCardToJumpseller(
     }
   }
   return variants;
+}
 }

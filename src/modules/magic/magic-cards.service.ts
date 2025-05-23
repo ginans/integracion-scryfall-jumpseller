@@ -15,15 +15,6 @@ import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { UsdPrice, UsdPriceDocument } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { BasePrice, BasePriceDocument } from 'src/modules/prices/base-prices/entities/base-price.entity';
 import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
-import {
-  mapDBProductToJumpseller,
-  mapImageToJumpseller,
-  mapCardFace1ImageToJumpseller,
-  mapCardFace2ImageToJumpseller,
-  mapVariantsToJumpseller,
-  mapVariantFromNewCardToJumpseller,
-  translatedLanguages
-} from './mappers/jumpseller.mapper';
 import { EnumLanguage } from './enums/lang.enum';
 import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
 import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
@@ -31,6 +22,7 @@ import { StagingProductVariant, StagingProductVariantDocument, StagingProductVar
 import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
+import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -48,6 +40,7 @@ export class MagicCardsService {
     private readonly scryfallService: ScryfallService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
+    private readonly jumpsellerMapperService: JumpsellerMapperService,
   ) {}
 
   // helper para pausar entre llamadas
@@ -56,7 +49,7 @@ export class MagicCardsService {
   }
 
   //procesar cada carta magic
-  async procesarCardMagic(cards: ScryfallCardResponse): Promise<void> {
+  async procesarCardMagic(cards: ScryfallCardResponse, lg: IenumURLLang): Promise<void> {
     try {
       // 1. guardar en BD todas las versiones (fetchAndCreateCards)
       const versions: MappedMagicCard[] = [];
@@ -84,7 +77,7 @@ export class MagicCardsService {
       // 2. crear producto base en Jumpseller (versión en inglés)
       const enCard = versions.find(v => v.lang?.toLowerCase() === 'en');
       if (enCard && !enCard.idJumpSeller) {
-        const baseReq = mapDBProductToJumpseller(enCard);
+        const baseReq = await this.jumpsellerMapperService.mapDBProductToJumpseller(enCard);
         const baseRes = await this.jumpsellerService.createJumpsellerProducts(baseReq);
         await this.delay(300);
         enCard.idJumpSeller = baseRes.product?.id;
@@ -110,7 +103,7 @@ export class MagicCardsService {
           return { code, name };
         });
       // generar todas las variantes de una vez
-      const variantReqs = mapVariantsToJumpseller(enCard, langs);
+      const variantReqs = await this.jumpsellerMapperService.mapVariantsToJumpseller(enCard, langs);
       for (const { variant, finish, condition } of variantReqs) {
         if (enCard.idJumpSeller ) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
@@ -186,7 +179,7 @@ export class MagicCardsService {
       // 6. insertar imágenes
       if (enCard.idJumpSeller) {
         // Subir imagen principal solo si existe
-        const imgReq = mapImageToJumpseller(enCard);
+        const imgReq = await this.jumpsellerMapperService.mapImageToJumpseller(enCard);
         if (imgReq) {
           try {
             await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, imgReq);
@@ -200,7 +193,7 @@ export class MagicCardsService {
         // Verificar si es una carta de doble cara y procesar imágenes de ambas caras
         if (enCard.cardFaces && enCard.cardFaces.length >= 2) {
           // Subir imagen cara 1 si existe
-          const mappedCardFace1Image = mapCardFace1ImageToJumpseller(enCard);
+          const mappedCardFace1Image = await this.jumpsellerMapperService.mapCardFace1ImageToJumpseller(enCard);
           if (mappedCardFace1Image) {
             try {
               await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace1Image);
@@ -212,7 +205,7 @@ export class MagicCardsService {
           }
           
           // Subir imagen cara 2 si existe
-          const mappedCardFace2Image = mapCardFace2ImageToJumpseller(enCard);
+          const mappedCardFace2Image = await this.jumpsellerMapperService.mapCardFace2ImageToJumpseller(enCard);
           if (mappedCardFace2Image) {
             try {
               await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace2Image);
@@ -552,10 +545,10 @@ export class MagicCardsService {
     const baseCard = await this.model.findOne({ oracleId: mappedCardData.oracleId });
 
     if (baseCard && baseCard.idJumpSeller) {
-      const variantReq = mapVariantFromNewCardToJumpseller(
+      const variantReq = await this.jumpsellerMapperService.mapVariantFromNewCardToJumpseller(
         baseCard,
         [
-          { code: mappedCardData.lang as EnumLanguage, name: translatedLanguages(mappedCardData.lang) },
+          { code: mappedCardData.lang as EnumLanguage, name: await this.jumpsellerMapperService.translatedLanguages(mappedCardData.lang) },
         ],
         condition
       );

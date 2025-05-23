@@ -53,11 +53,11 @@ async translatedLanguages(langInput: string): Promise<string> {
 
 
 async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
-  const translatedlang = await this.translatedLanguages(card.lang);
+  //por aca nunca va a pasar un a carta en ESPAÑOL
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   const cardFaceOracleText = card.oracleText
-    || card.cardFaces?.map(f => f.oracleText).join('. ')
-    || '';
+  || card.cardFaces?.map(f => f.oracleText).join('. ')
+  || '';
   let rarity = card.rarity;
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -67,57 +67,64 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
     default: rarity = 'Desconocida'; break;
   }
   // Busca cartas con el mismo oracleId y set, pero en idioma diferente de inglés
-const findAnotherLangCard = await this.magicCardModel.findOne({
-  oracleId: card.oracleId, 
-  set: card.set, 
-  lang: { $ne: "en" }
-});
-this.logger.log(`❤️ voy a crear una descripcion en ${(await this.translatedLanguages(findAnotherLangCard.lang)).toString()}❤️`);
-  const translatedNameLine = findAnotherLangCard && card.lang !== "en" && findAnotherLangCard.lang === card.lang && card.printedName
-    ? `Nombre en ${translatedlang}: ${card.printedName}.`
-    : "";
+  const findAnotherLangCard = await this.magicCardModel.findOne({
+    oracleId: card.oracleId, 
+    set: card.set, 
+    lang: { $ne: "en" }
+  });
+  if (!findAnotherLangCard) {
+    this.logger.log(`No se encontró una carta en otro idioma para ${card.name}`);
+  }
+    const translatedlang = await this.translatedLanguages(findAnotherLangCard.lang);
+    this.logger.log(`❤️ voy a crear una descripcion en ${translatedlang}❤️`);
+    const translatedName = findAnotherLangCard.printedName;
+    if (!translatedName) {
+      this.logger.log(`No se encontró el nombre traducido para ${card.name}`);
+    }
+    const translatedNameLine = findAnotherLangCard && findAnotherLangCard.printedName 
+      ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
+      : ""
 
-  const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
-  const product = {
-    name: card.name || '',
-    description: [
-    `Nombre en Inglés: ${card.name}.`,
-    translatedNameLine, 
-    `Tipo: ${card.typeLine}.`,
-    `Texto: ${card.oracleText}.`,
-    `Edición: ${card.setName}.`,
-    `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
-    `Rareza: ${rarity}.`,
-    `Artista: ${card.artist}.`,
-    `Habilidades: ${card.keywords?.join(', ') || ''}.`,
-    `Legal en: ${Object.entries(card.legalities || {})
-      .filter(([, v]) => v === 'legal')
-      .map(([f]) => f)
-      .join(', ') || 'No legal'}.`,
-  ].filter(Boolean).join('\n'),
-    price: 0,
-    sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
-      ? (collectorNumberToUpperCase.length <= 4
-        ? collectorNumberToUpperCase.padStart(4, '0')
-        : collectorNumberToUpperCase)
-      : ''}`,
-    stock: null,
-    stockUnlimited: false,
-    status: JumpsellerStatus.AVALIABLE,
-    weight: 2,
-    width: 6.35,
-    height: 8.89,
-    brand: EnumGame.MAGIC,
-    categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
-  };
+    const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
+    const product = {
+      name: card.name || '',
+      description: [
+      `Nombre en Inglés: ${card.name}.`,
+      translatedNameLine, 
+      `Tipo: ${card.typeLine}.`,
+      `Texto: ${card.oracleText}.`,
+      `Edición: ${card.setName}.`,
+      `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+      `Rareza: ${rarity}.`,
+      `Artista: ${card.artist}.`,
+      `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+      `Legal en: ${Object.entries(card.legalities || {})
+        .filter(([, v]) => v === 'legal')
+        .map(([f]) => f)
+        .join(', ') || 'No legal'}.`,
+    ].filter(Boolean).join('\n'),
+      price: 0,
+      sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
+        ? (collectorNumberToUpperCase.length <= 4
+          ? collectorNumberToUpperCase.padStart(4, '0')
+          : collectorNumberToUpperCase)
+        : ''}`,
+      stock: null,
+      stockUnlimited: false,
+      status: JumpsellerStatus.AVALIABLE,
+      weight: 2,
+      width: 6.35,
+      height: 8.89,
+      brand: EnumGame.MAGIC,
+      categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
+    };
+
   return product;
 }
 
 async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   let rarity = card.rarity;
-
-  const translatedlang = await this.translatedLanguages(card.lang);
 
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -126,14 +133,24 @@ async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerU
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+  
   const findAnotherLangCard = await this.magicCardModel.findOne({
-  oracleId: card.oracleId, 
-  set: card.set, 
-  lang: { $ne: "en" }
-});
-  const translatedNameLine = findAnotherLangCard && card.lang !== "en" && findAnotherLangCard.lang === card.lang && card.printedName
-    ? `Nombre en ${translatedlang}: ${card.printedName}.`
-    : "";
+    oracleId: card.oracleId, 
+    set: card.set, 
+    lang: { $ne: "en" }
+  });
+  if (!findAnotherLangCard) {
+    this.logger.log(`No se encontró una carta en otro idioma para ${card.name}`);
+  }
+    const translatedlang = await this.translatedLanguages(findAnotherLangCard.lang);
+    this.logger.log(`❤️ voy a crear una descripcion en ${translatedlang}❤️`);
+    const translatedName = findAnotherLangCard.printedName;
+    if (!translatedName) {
+      this.logger.log(`No se encontró el nombre traducido para ${card.name}`);
+    }
+    const translatedNameLine = findAnotherLangCard && findAnotherLangCard.printedName 
+      ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
+      : ""
 
   const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
   const product = {

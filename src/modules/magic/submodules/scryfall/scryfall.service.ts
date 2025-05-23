@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { IresponseSryfall } from './interfaces/scryfall.interface';
+import { IresponseSryfall, ScryfallCardResponse } from './interfaces/scryfall.interface';
 import { IenumURLLang } from './enums/lang.enum';
 
 @Injectable()
@@ -47,20 +47,42 @@ export class ScryfallService {
     const url = "https://api.scryfall.com/cards/search";
     const params = {
       format: 'json',
-      // include_extras: true,
+      include_extras: true,
       include_multilingual: true,
-      // include_variations: true,
-      unique: 'prints'
+      include_variations: true,
+      unique: 'prints',
     };
     // Construir manualmente la cadena de consulta de idioma
-    const queryString = new URLSearchParams(params as any).toString() + `&q=lang:${lang}+oracle_id:${oracle_id}`;
+    //consultar solo por oracle_id si no se pasa el lang
+    let cards = []
     
-    
+    let queryString = new URLSearchParams(params as any).toString() + `&q=oracle_id:${oracle_id}`;
+
+    if(lang){
+     queryString = new URLSearchParams(params as any).toString() + `&q=lang:${lang}+oracle_id:${oracle_id}`;
+    }
     try {
-      const { data } = await axios.get(`${url}?${queryString}`);
+      let page = 1;
+      let has_more = true;
+      let allData: ScryfallCardResponse[] = [];
+      let responseData: any = null;
+
+      do {
+        const response = await axios.get(`${url}?${queryString}&page=${page}`);
+        const { data } = response;
+        if (!responseData) {
+          responseData = { ...data, data: undefined }; 
+        }
+        if (Array.isArray(data.data)) {
+          allData = allData.concat(data.data);
+        }
+        has_more = data.has_more;
+        page++;
+      } while (has_more);
+
       //url consultada
       this.logger.log(`url consultada: ${url}?${queryString}`);
-      return data;
+      return { ...responseData, data: allData };
     } catch (error) {
       //url consultada
       this.logger.log(`url consultada: ${url}?${queryString}`);

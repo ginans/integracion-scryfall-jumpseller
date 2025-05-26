@@ -13,6 +13,7 @@ import { Model } from 'mongoose';
 
 // If you need to use magicCardModel, define it inside a service or class like this:
 import { Injectable } from '@nestjs/common';
+import { find } from 'rxjs';
 
 export type Language = {
   code: EnumLanguage; 
@@ -46,7 +47,7 @@ async translatedLanguages(langInput: string): Promise<string> {
     case EnumLanguage.PHYREXIAN: translatedLang = 'Pyrexiano'; break;
     case EnumLanguage.QUENYA: translatedLang = 'Quenya'; break;
     case EnumLanguage.SANSCRITO: translatedLang = 'Sánscrito'; break;
-    default: translatedLang = "Desconocido"; break;
+    default: translatedLang = langInput; break;
   }
   return translatedLang;
 }
@@ -55,9 +56,6 @@ async translatedLanguages(langInput: string): Promise<string> {
 async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
   //por aca nunca va a pasar un a carta en ESPAÑOL
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
-  const cardFaceOracleText = card.oracleText
-  || card.cardFaces?.map(f => f.oracleText).join('. ')
-  || '';
   let rarity = card.rarity;
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -72,32 +70,29 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
     set: card.set, 
     lang: { $ne: "en" }
   });
-  if (!findAnotherLangCard) {
-    this.logger.log(`No se encontró una carta en otro idioma para ${card.name}`);
-  }
-    const translatedlang = await this.translatedLanguages(findAnotherLangCard.lang);
-    this.logger.log(`❤️ voy a crear una descripcion en ${translatedlang}❤️`);
-    const translatedName = findAnotherLangCard.printedName;
-    if (!translatedName) {
-      this.logger.log(`No se encontró el nombre traducido para ${card.name}`);
-    }
-    const translatedNameLine = findAnotherLangCard && findAnotherLangCard.printedName 
-      ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
-      : ""
 
-    const collectorNumberToUpperCase = card.collectorNumber.toUpperCase()
+    let translatedName: string = ""
+    if(findAnotherLangCard) {
+      console.log("POZOLE", findAnotherLangCard);
+      const translatedlang = await this.translatedLanguages(findAnotherLangCard?.lang || "No encontrado");
+      translatedName = findAnotherLangCard.printedName 
+        ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
+        : translatedName
+    }
+
+    const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase()
     const product = {
       name: card.name || '',
       description: [
       `Nombre en Inglés: ${card.name}.`,
-      translatedNameLine, 
+      translatedName, 
       `Tipo: ${card.typeLine}.`,
       `Texto: ${card.oracleText}.`,
       `Edición: ${card.setName}.`,
       `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
       `Rareza: ${rarity}.`,
       `Artista: ${card.artist}.`,
-      `Habilidades: ${card.keywords?.join(', ') || ''}.`,
+      `Habilidades: ${card.keywords?.join(', ') || ''}`,
       `Legal en: ${Object.entries(card.legalities || {})
         .filter(([, v]) => v === 'legal')
         .map(([f]) => f)
@@ -139,15 +134,9 @@ async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerU
     set: card.set, 
     lang: { $ne: "en" }
   });
-  if (!findAnotherLangCard) {
-    this.logger.log(`No se encontró una carta en otro idioma para ${card.name}`);
-  }
-    const translatedlang = await this.translatedLanguages(findAnotherLangCard.lang);
+    const translatedlang = await this.translatedLanguages(findAnotherLangCard?.lang || null);
     this.logger.log(`❤️ voy a crear una descripcion en ${translatedlang}❤️`);
-    const translatedName = findAnotherLangCard.printedName;
-    if (!translatedName) {
-      this.logger.log(`No se encontró el nombre traducido para ${card.name}`);
-    }
+
     const translatedNameLine = findAnotherLangCard && findAnotherLangCard.printedName 
       ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
       : ""
@@ -215,9 +204,11 @@ async mapCardFace2ImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCr
   return { image: { url: card.cardFaces[1].imageUris.large, position: 0 } };
 }
 
+//TODO ARREGLAR CONDITIONS
 async mapVariantsToJumpseller(
   card: MappedMagicCard,
   languages: Language[],
+  condition: EnumCondition = EnumCondition.NearMint
 ): Promise<JumpsellerCreateVariantRequest[]> {
      
   const finishes = [
@@ -247,7 +238,7 @@ async mapVariantsToJumpseller(
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
-              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: "NM" },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition },
             ],
           },
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",

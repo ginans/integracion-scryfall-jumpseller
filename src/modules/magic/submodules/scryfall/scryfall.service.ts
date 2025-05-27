@@ -19,23 +19,12 @@ export class ScryfallService {
         unique: 'prints'
       };
       // Construir manualmente la cadena de consulta de idioma
-      let queryString = new URLSearchParams(params as any).toString() + `&q=${lang}`;
+      let queryString = new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper`;
       if(oracle_id){
-        //TODO: filtrar tambien por SET
-        queryString= new URLSearchParams(params as any).toString() + `&q=${lang}+oracle_id:${oracle_id}`;
+        queryString= new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper+oracle_id:${oracle_id}`;
       }
       const { data } = await axios.get(`${url}?${queryString}`);
       
-      // filtrar para obtener todas las cartas en paper
-      if (data.data && Array.isArray(data.data)) {
-        const paperCards = data.data.filter(card => card.games && card.games.includes('paper'));
-        return {
-          ...data,
-          data: paperCards
-        };
-      }
-      
-      // Si no hay estructura .data, devolver la respuesta completa
       return data;
       
     } catch (error) {

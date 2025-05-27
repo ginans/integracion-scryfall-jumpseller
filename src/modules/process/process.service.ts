@@ -57,14 +57,10 @@ export class ProcessService {
       // agregar colas con data obtenidad 
       console.log(data.length);
       
-      // for(let row of data){
-      //   await this.queuesMagic.add(lg,row);
-       
-      // }
-      // for(let row of data){
-        await this.queuesMagic.add(lg,data[0]);
-       
-      // }
+      for(let row of data){
+        await this.queuesMagic.add(lg, row);
+      }
+      
       this.logger.warn(`procesando pagina queues-magic ${page}`);
       //detener proceso si has_more es false
       // process = has_more;

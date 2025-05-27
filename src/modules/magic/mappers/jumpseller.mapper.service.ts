@@ -52,6 +52,48 @@ async translatedLanguages(langInput: string): Promise<string> {
   return translatedLang;
 }
 
+createSku (card: MappedMagicCard, lang?: Language, finish?: string, condition?: string): string {
+  let formattedSet = ""
+    const regPromo = /promos?/i;
+    const regToken = /tokens?/i;
+    const regArt = /arts?/i;
+    if (
+      regToken.test(card.setName)
+    ) {
+      formattedSet = card.set.slice(1)
+    }else if (
+     regPromo.test(card.setName) 
+    ) {
+      formattedSet = card.set.slice(1)
+    }else if (
+     regArt.test(card.setName) 
+    ) {
+      formattedSet = card.set.slice(1)
+    }else if (
+     card.setName === "The List"
+    ) {
+      formattedSet = card.set.slice(0, 4)
+    }else {
+      formattedSet = card.set
+    }
+
+  const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase();
+  const baseCollectorNumber = collectorNumberToUpperCase
+    ? (collectorNumberToUpperCase.length <= 4
+      ? collectorNumberToUpperCase.padStart(4, '0')
+      : collectorNumberToUpperCase)
+    : '';
+  return `M-${formattedSet?.toUpperCase() || ''}${baseCollectorNumber}${
+    card.setName
+      ? (regToken.test(card.setName) || regPromo.test(card.setName) || regArt.test(card.setName))
+        ? (card.set ? card.set[0].toUpperCase() : '')
+        : ''
+      : (card.setName === "The List")
+        ? `TL`
+        : ''
+  }${lang ? ("-" + lang.code.toUpperCase()) : ''}${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
+}
+
 
 async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
   //por aca nunca va a pasar un a carta en ESPAÑOL
@@ -73,17 +115,20 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
 
     let translatedName: string = ""
     if(findAnotherLangCard) {
-      console.log("POZOLE", findAnotherLangCard);
       const translatedlang = await this.translatedLanguages(findAnotherLangCard?.lang || "No encontrado");
       translatedName = findAnotherLangCard.printedName 
         ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
         : translatedName
     }
-
-    const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase()
+    let artDescription = ""
+    const regArt = /arts?/i;
+    if (card.setName && regArt.test(card.setName)) {
+      artDescription = `CARTA DE ARTE COLECCIONABLE NO VÁLIDA PARA JUGAR`
+    }
     const product = {
       name: card.name || '',
       description: [
+      artDescription,
       `Nombre en Inglés: ${card.name}.`,
       translatedName, 
       `Tipo: ${card.typeLine}.`,
@@ -99,11 +144,7 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
         .join(', ') || 'No legal'}.`,
     ].filter(Boolean).join('\n'),
       price: 0,
-      sku: `M-${card.set?.toUpperCase() || ''}${collectorNumberToUpperCase
-        ? (collectorNumberToUpperCase.length <= 4
-          ? collectorNumberToUpperCase.padStart(4, '0')
-          : collectorNumberToUpperCase)
-        : ''}`,
+      sku: this.createSku(card),
       stock: null,
       stockUnlimited: false,
       status: JumpsellerStatus.AVALIABLE,
@@ -114,67 +155,72 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
       categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
     };
 
-  return product;
+  return { product };
 }
 
 async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
-  const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
-  let rarity = card.rarity;
-
-  switch (card.rarity) {
-    case 'mythic': rarity = 'Mitica'; break;
-    case 'rare': rarity = 'Rara'; break;
-    case 'uncommon': rarity = 'Infrecuente'; break;
-    case 'common': rarity = 'Común'; break;
-    default: rarity = 'Desconocida'; break;
-  }
+    //por aca nunca va a pasar un a carta en ESPAÑOL
+    const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
+    let rarity = card.rarity;
+    switch (card.rarity) {
+      case 'mythic': rarity = 'Mitica'; break;
+      case 'rare': rarity = 'Rara'; break;
+      case 'uncommon': rarity = 'Infrecuente'; break;
+      case 'common': rarity = 'Común'; break;
+      default: rarity = 'Desconocida'; break;
+    }
+    // Busca cartas con el mismo oracleId y set, pero en idioma diferente de inglés
+    const findAnotherLangCard = await this.magicCardModel.findOne({
+      oracleId: card.oracleId, 
+      set: card.set, 
+      lang: { $ne: "en" }
+    });
   
-  const findAnotherLangCard = await this.magicCardModel.findOne({
-    oracleId: card.oracleId, 
-    set: card.set, 
-    lang: { $ne: "en" }
-  });
-    const translatedlang = await this.translatedLanguages(findAnotherLangCard?.lang || null);
-    this.logger.log(`❤️ voy a crear una descripcion en ${translatedlang}❤️`);
-
-    const translatedNameLine = findAnotherLangCard && findAnotherLangCard.printedName 
-      ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
-      : ""
-
-  const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
-  const product = {
-    name: card.name || '',
-    description: [
-      `Nombre en Inglés: ${card.name}.`,
-      translatedNameLine, 
-      `Tipo: ${card.typeLine}.`,
-      `Texto: ${card.oracleText}.`,
-      `Edición: ${card.setName}.`,
-      `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
-      `Rareza: ${rarity}.`,
-      `Artista: ${card.artist}.`,
-      `Habilidades: ${card.keywords?.join(', ') || ''}.`,
-      `Legal en: ${Object.entries(card.legalities || {})
-        .filter(([, v]) => v === 'legal')
-        .map(([f]) => f)
-        .join(', ') || 'No legal'}.`,
-    ].filter(Boolean).join('\n'),
-    price: 0,
-    sku: `M-${card.set?.toUpperCase() || ''}${ collectorNumberToUpperCase
-      ? (collectorNumberToUpperCase.length <= 4
-        ? collectorNumberToUpperCase.padStart(4, '0')
-        : collectorNumberToUpperCase)
-      : ''}`,
-    stock: null,
-    stockUnlimited: false,
-    status: JumpsellerStatus.AVALIABLE,
-    weight: 2,
-    width: 6.35,
-    height: 8.89,
-    brand: EnumGame.MAGIC,
-    categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
-  };
-  return { product };
+      let translatedName: string = ""
+      if(findAnotherLangCard) {
+        const translatedlang = await this.translatedLanguages(findAnotherLangCard?.lang || "No encontrado");
+        translatedName = findAnotherLangCard.printedName 
+          ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
+          : translatedName
+      }
+  
+    
+      let artDescription = ""
+      const regArt = /arts?/i;
+      if (card.setName && regArt.test(card.setName)) {
+        artDescription = `CARTA DE ARTE COLECCIONABLE NO VÁLIDA PARA JUGAR`
+      }
+      const product = {
+        name: card.name || '',
+        description: [
+        artDescription,
+        `Nombre en Inglés: ${card.name}.`,
+        translatedName, 
+        `Tipo: ${card.typeLine}.`,
+        `Texto: ${card.oracleText}.`,
+        `Edición: ${card.setName}.`,
+        `Color: ${card.colors?.join(', ') || cardFacesColors}.`,
+        `Rareza: ${rarity}.`,
+        `Artista: ${card.artist}.`,
+        `Habilidades: ${card.keywords?.join(', ') || ''}`,
+        `Legal en: ${Object.entries(card.legalities || {})
+          .filter(([, v]) => v === 'legal')
+          .map(([f]) => f)
+          .join(', ') || 'No legal'}.`,
+      ].filter(Boolean).join('\n'),
+        price: 0,
+        sku: this.createSku(card),
+        stock: null,
+        stockUnlimited: false,
+        status: JumpsellerStatus.AVALIABLE,
+        weight: 2,
+        width: 6.35,
+        height: 8.89,
+        brand: EnumGame.MAGIC,
+        categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
+      };
+  
+    return {product};
 }
 
 async mapImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
@@ -222,18 +268,11 @@ async mapVariantsToJumpseller(
   for (const lang of languages) {
     for (const finish of finishes) {
         if (!finish.available) continue;
-        const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
-        const baseCollectorNumber = collectorNumberToUpperCase
-            ? (collectorNumberToUpperCase.length <= 4
-                ? collectorNumberToUpperCase.padStart(4, '0')
-                : collectorNumberToUpperCase)
-            : '';
-        // const baseSet = card.set? ;
-
-        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix} ` : ''}`;
+        
+       
         variants.push({
           variant: {
-            sku,
+            sku: this.createSku(card, lang, finish.suffix),
             price: 0, 
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
@@ -261,32 +300,15 @@ async mapVariantFromNewCardToJumpseller(
     { key: 'Foil', name: 'Foil', suffix: 'F', available: card.foil },
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
-
-  // const conditions = [
-  //   { key: 'Near Mint', name: 'Como nueva', suffix: EnumCondition.NearMint, available: card.condition?.includes(EnumCondition.NearMint) },
-  //   { key: 'Lightly Played', name: 'Poco jugada', suffix: EnumCondition.LightlyPlayed, available: card.condition?.includes(EnumCondition.LightlyPlayed) },
-  //   { key: 'Moderately Played', name: 'Moderadamente jugada', suffix: EnumCondition.ModeratelyPlayed, available: card.condition?.includes(EnumCondition.ModeratelyPlayed) },
-  //   { key: 'Heavily Played', name: 'Muy jugada', suffix: EnumCondition.HeavilyPlayed, available: card.condition?.includes(EnumCondition.HeavilyPlayed) },
-  //   { key: 'Damaged', name: 'Dañada', suffix: EnumCondition.Damaged, available: card.condition?.includes(EnumCondition.Damaged) },
-  // ];
   
   const variants: JumpsellerCreateVariantRequest[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
         if (!finish.available) continue;
-        const collectorNumberToUpperCase = card.collectorNumber.toUpperCase();
-        const baseCollectorNumber = collectorNumberToUpperCase
-            ? (collectorNumberToUpperCase.length <= 4
-                ? collectorNumberToUpperCase.padStart(4, '0')
-                : collectorNumberToUpperCase)
-            : '';
-        // const baseSet = card.set? ;
-
-        const sku = `M-${card.set?.toUpperCase() || ''}${baseCollectorNumber ? baseCollectorNumber + `-${lang.code.toUpperCase()}-${finish.suffix}${condition == EnumCondition.NearMint ? "" : "-"+ condition}` : ''}`;
         variants.push({
           variant: {
-            sku,
+            sku: this.createSku(card, lang, finish.suffix, condition),
             price: 0, 
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },

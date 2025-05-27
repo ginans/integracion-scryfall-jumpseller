@@ -24,7 +24,7 @@ export class ScryfallService {
         queryString= new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper+oracle_id:${oracle_id}`;
       }
       const { data } = await axios.get(`${url}?${queryString}`);
-      
+
       return data;
       
     } catch (error) {
@@ -45,10 +45,10 @@ export class ScryfallService {
     //consultar solo por oracle_id si no se pasa el lang
     let cards = []
     
-    let queryString = new URLSearchParams(params as any).toString() + `&q=oracle_id:${oracle_id}`;
+    let queryString = new URLSearchParams(params as any).toString() + `&q=oracle_id:${oracle_id}+game%3Apaper`;
 
     if(lang){
-     queryString = new URLSearchParams(params as any).toString() + `&q=lang:${lang}+oracle_id:${oracle_id}`;
+     queryString = new URLSearchParams(params as any).toString() + `&q=lang:${lang}+oracle_id:${oracle_id}+game%3Apaper`;
     }
     try {
       let page = 1;

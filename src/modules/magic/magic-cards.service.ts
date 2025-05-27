@@ -55,12 +55,14 @@ export class MagicCardsService {
       const versions: MappedMagicCard[] = [];
       
       // Guardar la carta original
+      //TODO:CAMBIAR A card
       const originalCard = await this.createMagicCards(cards);
       versions.push(originalCard);
-      
+      //TODO: REVISAR
       // Verificación de seguridad: si la carta no está en inglés, buscarla 
       if (originalCard.lang?.toLowerCase() !== 'en') {
         this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
+        //TODO: revisar paginacion
         const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
         await this.delay(300);
         if (versionEN?.data?.length) {
@@ -79,27 +81,24 @@ export class MagicCardsService {
       if (enCard && !enCard.idJumpSeller) {
         const baseReq = await this.jumpsellerMapperService.mapDBProductToJumpseller(enCard);
         const baseRes = await this.jumpsellerService.createJumpsellerProducts(baseReq);
-        await this.delay(300);
         enCard.idJumpSeller = baseRes.product?.id;
         await this.updateByStatus(enCard.id, { idJumpSeller: enCard.idJumpSeller });
+        //TODO: REVISAR USO DE PRODUCT
         await this.productsService.createOrUpdateProduct({ oracleId: enCard.oracleId, ...baseRes.product });
         await this.delay(300);
       }
-
-      // // 3. calcular precios en BD
-      // await this.calculatePricesForAllCards();
       await this.delay(300);
 
       // 4. crear variantes para idiomas != 'en'
       this.logger.log(`👽 Creando variantes para idiomas diferentes a 'en'`);
       // construir array de todos los idiomas
       const langs = versions
-        .map(v => {
-          const code = v.lang! as EnumLanguage;
+        .map(version => {
+          const code = version.lang! as EnumLanguage;
           const key = Object.entries(EnumLanguage).find(([, val]) => val === code)?.[0];
           const name = key
             ? key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')
-            : v.lang!;
+            : version.lang!;
           return { code, name };
         });
       // generar todas las variantes de una vez
@@ -324,6 +323,7 @@ export class MagicCardsService {
 
   //buscar actualizar o crear magic card
   async createMagicCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
+    //TODO: pasar cards a card
     const mappedCardData: MappedMagicCard = this.mapCardData(cards);
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {

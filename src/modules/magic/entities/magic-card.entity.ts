@@ -174,15 +174,6 @@ export class MagicCard implements MappedMagicCard{
     default: EnumStatus.PENDING,
   })
   status: EnumStatus;
-
-@Prop({ default:[
-  EnumCondition.NearMint,  
-  EnumCondition.LightlyPlayed, 
-  EnumCondition.ModeratelyPlayed, 
-  EnumCondition.HeavilyPlayed, 
-  EnumCondition.Damaged] })
-condition: string[];
-
 }
 
 

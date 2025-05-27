@@ -1,8 +1,18 @@
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { UpdateCustomFieldRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
+import { JumpsellerMapperService } from './jumpseller.mapper.service';
+import { Injectable, Logger } from '@nestjs/common';
 //crear manualmente y luego me traigo los creados con el el get
 // crear custom fields con un valor string 
-export function mapCMCCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+
+@Injectable()
+export class CustomFieldsMapperService {
+  private readonly logger = new Logger(CustomFieldsMapperService.name);
+  constructor(
+   
+  ) {}
+
+async mapCMCCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "CMC",
@@ -13,7 +23,7 @@ export function mapCMCCustomField(card: MappedMagicCard): UpdateCustomFieldReque
   };
 }
 
-export function mapTypeLineCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapTypeLineCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "Tipo",
@@ -24,7 +34,7 @@ export function mapTypeLineCustomField(card: MappedMagicCard): UpdateCustomField
   };
 }
 
-export function mapColorCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapColorCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "Color",
@@ -35,7 +45,7 @@ export function mapColorCustomField(card: MappedMagicCard): UpdateCustomFieldReq
   };
 }
 
-export function mapColorIdentityCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapColorIdentityCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "Color Identity",
@@ -46,7 +56,7 @@ export function mapColorIdentityCustomField(card: MappedMagicCard): UpdateCustom
   };
 }
 
-export function mapKeywordsCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapKeywordsCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "Habilidades",
@@ -57,7 +67,7 @@ export function mapKeywordsCustomField(card: MappedMagicCard): UpdateCustomField
   };
 }
 
-export function mapLegalitiesCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapLegalitiesCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   const legalities = Object.entries(card.legalities || {})
     .filter(([, v]) => v === 'legal')
     .map(([f]) => f)
@@ -72,7 +82,7 @@ export function mapLegalitiesCustomField(card: MappedMagicCard): UpdateCustomFie
   };
 }
 
-export function mapGameChangerCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapGameChangerCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "Game Changer",
@@ -83,7 +93,7 @@ export function mapGameChangerCustomField(card: MappedMagicCard): UpdateCustomFi
   };
 }
 
-export function mapRarityCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapRarityCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   let rarity = card.rarity;
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -101,7 +111,7 @@ export function mapRarityCustomField(card: MappedMagicCard): UpdateCustomFieldRe
   };
 }
 
-export function mapArtistCustomField(card: MappedMagicCard): UpdateCustomFieldRequest {
+async mapArtistCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
   return {
     custom_field: {
       label: "Artista",
@@ -110,4 +120,5 @@ export function mapArtistCustomField(card: MappedMagicCard): UpdateCustomFieldRe
       product_visibility: true,
     },
   };
+}
 }

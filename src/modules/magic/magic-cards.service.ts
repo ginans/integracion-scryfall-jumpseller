@@ -506,24 +506,18 @@ export class MagicCardsService {
           //consulto con lo que me trajo la busqueda por id porque necesito el oracleId
           existingCard.oracleId,
           form.lenguaje,
+          form.collectorNumber
         );
       
-
         if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {
           throw new NotFoundException(`No se encontraron cartas para oracleId: ${existingCard.oracleId} y lang: ${form.lenguaje}`);
         }
-
-        const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
-          scryfallCard.oracle_id === existingCard.oracleId &&
-          (form.lenguaje ? scryfallCard.lang?.toLowerCase() === form.lenguaje?.toLowerCase(): true) &&
-          (form.collectorNumber ? scryfallCard.collector_number?.toLowerCase() === form.collectorNumber?.toLowerCase() : true)
-        );
         
-        this.logger.log(`Se trajeron ${filteredBySet.length} cartas ${filteredBySet.length < 10? "😎": "💀"} de scryfall`);
-        if (filteredBySet.length == 0) {
+        this.logger.log(`Se trajeron ${scryfallResponse.data.length} cartas ${scryfallResponse.data.length < 10? "😎": "💀"} de scryfall`);
+        if (scryfallResponse.data.length == 0) {
           throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
         }
-        return filteredBySet;
+        return scryfallResponse.data;
 
         
     } catch (error) {

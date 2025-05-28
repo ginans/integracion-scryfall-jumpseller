@@ -8,8 +8,8 @@ export class findByCollectorNumberAndLangDto {
     })
     collectorNumber: string;
     
-    @IsNotEmpty({
-        message: 'lenguaje no puede estar vacio',
+    @IsOptional({
+        // message: 'lenguaje no puede estar vacio',
     })
     @IsString({
         message: 'lenguaje tiene que ser de Tipo String',

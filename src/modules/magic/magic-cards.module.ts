@@ -9,6 +9,8 @@ import { ProductsModule } from 'src/modules/products/products.module';
 import { UsdPricesModule } from 'src/modules/prices/usd-prices/usd-prices.module';
 import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.module';
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
+import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
+import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { StagingProductVariantModule } from '../products/staging-product-variant
     forwardRef(() => StagingProductVariantModule), 
   ],
   controllers: [MagicCardsController],
-  providers: [MagicCardsService],
+  providers: [MagicCardsService, JumpsellerMapperService, CustomFieldsMapperService],
   exports:[ScryfallModule, MagicCardsService, MongooseModule]
 })
 export class MagicCardsModule {}

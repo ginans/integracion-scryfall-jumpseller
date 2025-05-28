@@ -69,9 +69,7 @@ export class StagingProductVariant implements IStagingProductVariant {
     };
 
     @Prop({ 
-        default: function () {
-            return this.variantPrice === 0 ? EnumPriceAndStockState.PENDING : EnumPriceAndStockState.COMPLETED;;
-        }
+        default: EnumPriceAndStockState.COMPLETED
      })
     priceUpdateStatus: EnumPriceAndStockState;
 
@@ -79,9 +77,7 @@ export class StagingProductVariant implements IStagingProductVariant {
     priceUpdateError: string;
 
     @Prop({ 
-        default: function () {
-            return this.variantStock === 0 ? EnumPriceAndStockState.PENDING : EnumPriceAndStockState.COMPLETED;
-        }
+        default: EnumPriceAndStockState.COMPLETED
      })
     stockUpdateStatus: EnumPriceAndStockState;
 

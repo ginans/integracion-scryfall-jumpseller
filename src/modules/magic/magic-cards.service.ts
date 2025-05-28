@@ -15,23 +15,14 @@ import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { UsdPrice, UsdPriceDocument } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { BasePrice, BasePriceDocument } from 'src/modules/prices/base-prices/entities/base-price.entity';
 import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
-import {
-  mapDBProductToJumpseller,
-  mapImageToJumpseller,
-  mapCardFace1ImageToJumpseller,
-  mapCardFace2ImageToJumpseller,
-  mapVariantsToJumpseller,
-} from './mappers/jumpseller.mapper';
 import { EnumLanguage } from './enums/lang.enum';
 import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
 import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
 import { StagingProductVariant, StagingProductVariantDocument, StagingProductVariantSchema } from '../products/staging-product-variant/entities/staging-product-variant.entity';
-import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
 import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
-import { all } from 'axios';
-import { ObjectId } from 'typeorm';
-import { exist } from 'joi';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
+import { EnumCondition } from './enums/condition.enum';
+import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -49,6 +40,7 @@ export class MagicCardsService {
     private readonly scryfallService: ScryfallService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
+    private readonly jumpsellerMapperService: JumpsellerMapperService,
   ) {}
 
   // helper para pausar entre llamadas
@@ -57,18 +49,20 @@ export class MagicCardsService {
   }
 
   //procesar cada carta magic
-  async procesarCardMagic(cards: ScryfallCardResponse): Promise<void> {
+  async procesarCardMagic(cards: ScryfallCardResponse, lg: IenumURLLang): Promise<void> {
     try {
       // 1. guardar en BD todas las versiones (fetchAndCreateCards)
       const versions: MappedMagicCard[] = [];
       
       // Guardar la carta original
+      //TODO:CAMBIAR A card
       const originalCard = await this.createMagicCards(cards);
       versions.push(originalCard);
-      
+      //TODO: REVISAR
       // Verificación de seguridad: si la carta no está en inglés, buscarla 
       if (originalCard.lang?.toLowerCase() !== 'en') {
         this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
+        //TODO: revisar paginacion
         const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
         await this.delay(300);
         if (versionEN?.data?.length) {
@@ -85,33 +79,30 @@ export class MagicCardsService {
       // 2. crear producto base en Jumpseller (versión en inglés)
       const enCard = versions.find(v => v.lang?.toLowerCase() === 'en');
       if (enCard && !enCard.idJumpSeller) {
-        const baseReq = mapDBProductToJumpseller(enCard);
+        const baseReq = await this.jumpsellerMapperService.mapDBProductToJumpseller(enCard);
         const baseRes = await this.jumpsellerService.createJumpsellerProducts(baseReq);
-        await this.delay(300);
         enCard.idJumpSeller = baseRes.product?.id;
         await this.updateByStatus(enCard.id, { idJumpSeller: enCard.idJumpSeller });
+        //TODO: REVISAR USO DE PRODUCT
         await this.productsService.createOrUpdateProduct({ oracleId: enCard.oracleId, ...baseRes.product });
         await this.delay(300);
       }
-
-      // // 3. calcular precios en BD
-      // await this.calculatePricesForAllCards();
       await this.delay(300);
 
       // 4. crear variantes para idiomas != 'en'
       this.logger.log(`👽 Creando variantes para idiomas diferentes a 'en'`);
       // construir array de todos los idiomas
       const langs = versions
-        .map(v => {
-          const code = v.lang! as EnumLanguage;
+        .map(version => {
+          const code = version.lang! as EnumLanguage;
           const key = Object.entries(EnumLanguage).find(([, val]) => val === code)?.[0];
           const name = key
             ? key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')
-            : v.lang!;
+            : version.lang!;
           return { code, name };
         });
       // generar todas las variantes de una vez
-      const variantReqs = mapVariantsToJumpseller(enCard, langs);
+      const variantReqs = await this.jumpsellerMapperService.mapVariantsToJumpseller(enCard, langs);
       for (const { variant, finish, condition } of variantReqs) {
         if (enCard.idJumpSeller ) {
           const varRes = await this.jumpsellerService.createJumpsellerVariant(
@@ -187,7 +178,7 @@ export class MagicCardsService {
       // 6. insertar imágenes
       if (enCard.idJumpSeller) {
         // Subir imagen principal solo si existe
-        const imgReq = mapImageToJumpseller(enCard);
+        const imgReq = await this.jumpsellerMapperService.mapImageToJumpseller(enCard);
         if (imgReq) {
           try {
             await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, imgReq);
@@ -201,7 +192,7 @@ export class MagicCardsService {
         // Verificar si es una carta de doble cara y procesar imágenes de ambas caras
         if (enCard.cardFaces && enCard.cardFaces.length >= 2) {
           // Subir imagen cara 1 si existe
-          const mappedCardFace1Image = mapCardFace1ImageToJumpseller(enCard);
+          const mappedCardFace1Image = await this.jumpsellerMapperService.mapCardFace1ImageToJumpseller(enCard);
           if (mappedCardFace1Image) {
             try {
               await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace1Image);
@@ -213,7 +204,7 @@ export class MagicCardsService {
           }
           
           // Subir imagen cara 2 si existe
-          const mappedCardFace2Image = mapCardFace2ImageToJumpseller(enCard);
+          const mappedCardFace2Image = await this.jumpsellerMapperService.mapCardFace2ImageToJumpseller(enCard);
           if (mappedCardFace2Image) {
             try {
               await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace2Image);
@@ -332,6 +323,7 @@ export class MagicCardsService {
 
   //buscar actualizar o crear magic card
   async createMagicCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
+    //TODO: pasar cards a card
     const mappedCardData: MappedMagicCard = this.mapCardData(cards);
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
@@ -493,7 +485,7 @@ export class MagicCardsService {
     );
   }
 //endpoint para buscar en bd y traer si no existe en scryfall
-  async findByCollectorNumberAndLang( form: findByCollectorNumberAndLangDto, _id: string ) : Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
+  async findByCollectorNumberAndLang( form: findByCollectorNumberAndLangDto, _id: string ) : Promise<{ oracleId: string; message: string } | ScryfallCardResponse[]> {
     try {
       //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
       const existingCardByColNumberAndLang = await this.model.findOne({ collectorNumber: form.collectorNumber, lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
@@ -509,32 +501,103 @@ export class MagicCardsService {
           throw new NotFoundException(`No se encontró la carta con id: ${_id}`);
         }
         //busco por el oracleId de la carta que ya existe en base de datos
+    
         const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
           //consulto con lo que me trajo la busqueda por id porque necesito el oracleId
           existingCard.oracleId,
           form.lenguaje,
+          form.collectorNumber
         );
-
+      
         if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {
           throw new NotFoundException(`No se encontraron cartas para oracleId: ${existingCard.oracleId} y lang: ${form.lenguaje}`);
         }
-
-        const filteredBySet = scryfallResponse.data.filter(scryfallCard =>
-          scryfallCard.oracle_id === existingCard.oracleId &&
-          scryfallCard.set?.toLowerCase() === existingCard.set &&
-          scryfallCard.lang?.toLowerCase() === form.lenguaje?.toLowerCase() &&
-          (form.collectorNumber ? scryfallCard.collector_number?.toLowerCase() === form.collectorNumber?.toLowerCase() : true)
-        );
-  
-        if (!filteredBySet.length) {
+        
+        this.logger.log(`Se trajeron ${scryfallResponse.data.length} cartas ${scryfallResponse.data.length < 10? "😎": "💀"} de scryfall`);
+        if (scryfallResponse.data.length == 0) {
           throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
         }
-        return filteredBySet;
+        return scryfallResponse.data;
+
         
     } catch (error) {
       this.logger.error(`Error al buscar carta: ${error.message}`);
       throw new InternalServerErrorException(`Error al buscar carta: ${error.message}`);
     }
+  }
+
+  async createNewMagicCardAndVariantToJumpseller(cards: ScryfallCardResponse, condition: EnumCondition ): Promise<MappedMagicCard> {
+    const mappedCardData: MappedMagicCard = this.mapCardData(cards);
+    const existingCard = await this.model.findOne({ id: mappedCardData.id });
+    if (existingCard) {
+      this.logger.log(`actualizar id ${mappedCardData.id}`);
+      await this.model.updateOne(
+        { id: mappedCardData.id },
+        { $set: { ...mappedCardData } }
+      );
+    } else {
+      this.logger.log(`crear card magic ${mappedCardData.id}`);
+      await this.model.create({ ...mappedCardData });
+    }
+    //enviar carta a jumpseller como variante de la carta original
+    const baseCard = await this.model.findOne({ oracleId: mappedCardData.oracleId });
+
+    if (baseCard && baseCard.idJumpSeller) {
+      const variantReq = await this.jumpsellerMapperService.mapVariantFromNewCardToJumpseller(
+        baseCard,
+        [
+          { code: mappedCardData.lang as EnumLanguage, name: await this.jumpsellerMapperService.translatedLanguages(mappedCardData.lang) },
+        ],
+        condition
+      );
+      const varRes = await this.jumpsellerService.createJumpsellerVariant(
+        baseCard.idJumpSeller,
+        { variant: variantReq[0].variant }
+      );
+      await this.delay(300);
+      //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
+      const cardWithStock : IStagingProductVariant = await this.stagingProductVariantModel.findOne({
+        productId: baseCard.idJumpSeller,
+        sku: varRes.variant.sku
+      });
+      
+      if (!cardWithStock) {
+        this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
+        await this.stagingProductVariantModel.create(
+          {
+            productId: baseCard.idJumpSeller,
+            variantId: varRes.variant.id,
+            name: baseCard.name || "",
+            anotherLangName: baseCard.printedName || "",
+            sku: varRes.variant.sku,
+            finish: "",
+            rarity: baseCard.rarity || "",
+            condition: condition || "",
+            game: EnumGame.MAGIC,
+            imageUrl: {
+              large: baseCard.imageUris?.large || null,
+              cardFacelarge1: baseCard.cardFaces?.[0]?.imageUris?.large || null,
+              cardFacelarge2: baseCard.cardFaces?.[1]?.imageUris?.large || null,
+              small: baseCard.imageUris?.small || null,
+              cardFaceSmall1: baseCard.cardFaces?.[0]?.imageUris?.small || null,
+              cardFaceSmall2: baseCard.cardFaces?.[1]?.imageUris?.small || null,
+            },
+            fatherProduct: {
+              oracleId: baseCard.oracleId,
+              description: baseCard.oracleText || "",
+              setName: baseCard.setName || "",
+              setId: baseCard.setId || "",
+              set: baseCard.set || "",
+            },
+          }
+        );
+      } else {
+        this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
+      }
+    }
+
+    return { ...mappedCardData, idJumpSeller: existingCard?.idJumpSeller || null }; //enviar carta a jumpseller como variante de la carta original
+   
   }
 
 }

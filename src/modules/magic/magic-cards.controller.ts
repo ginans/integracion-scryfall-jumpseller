@@ -7,6 +7,7 @@ import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.
 import { MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
 import { ObjectId } from 'mongoose';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
+import { EnumCondition } from './enums/condition.enum';
 
 @Controller('magic-cards')
 export class MagicCardsController {
@@ -31,23 +32,32 @@ export class MagicCardsController {
   async findByCollectorNumberAndLang(
     @Param('_id') _id: string,
     @Body() form: findByCollectorNumberAndLangDto
-  ): Promise<ScryfallCardResponse[] | { oracleId: string; message: string }> {
+  ): Promise< ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
       return this.magicCardsService.findByCollectorNumberAndLang(form, _id);
     } catch (error) {
       throw error;
     }
   }
-
+  
   @Get('by-id/:id')
   async findOne(@Param('id') _id: string): Promise<MagicCard | null> {
     return this.magicCardsService.findOneCard(_id);
   }
-
+  
   @Get('by-oracle-id/:id')
   async findCardByOracleId(@Param('id') oracleId: string) {
     return this.magicCardsService.findCardByOracleId(oracleId);
   }
+  
+  @Post("createNewCardAndVariant")
+  async createNewCardAndVariant(
+    @Body() body: { card: ScryfallCardResponse; condition: EnumCondition }
+  ): Promise<MappedMagicCard>  {
+    const { card, condition } = body;
+    return this.magicCardsService.createNewMagicCardAndVariantToJumpseller(card, condition); 
+  }
+  
   
   // @Get('test-precio/:oracleId')
   // async testPrecio(@Param('oracleId') oracleId: string) {

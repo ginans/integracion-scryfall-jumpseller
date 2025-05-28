@@ -350,9 +350,6 @@ export class StagingProductVariantService {
 
       let updatedCount = 0;
 
-
-     
-      // for (const variante of variantes) {
         try {
           const matchingCard = await this.magicCardModel.findOne(
             { idJumpSeller: productId })

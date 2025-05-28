@@ -15,10 +15,10 @@ import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpsel
 import { JumpsellerGetAllProductResponse } from './interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
 import { UpdateCustomFieldRequest } from './interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
 import { UpdateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/updateCustomFieldResponse.interface';
-import { CustomFieldResponse, GetAllCustomFieldResponse } from './interfaces/jumpselllerCustomFields/getAllCustomFieldResponse.interface';
 import { StockJumpsellerRequest } from './interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerUpdateVariantRequest } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
 import { JumpsellerUpdateVariantResponse, JumpsellerUpdateVariantResponseError } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantResponse.interface';
+import { GetAllCustomFieldResponse } from './interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
 
 @Injectable()
 export class JumpsellerService {  
@@ -231,15 +231,15 @@ export class JumpsellerService {
       }
     }
 
-    //obtener todos los custom fields de jumpseller
-    async getAllJumpsellerCustomFields(): Promise<CustomFieldResponse[]> {
+    //obtener todos los custom fields de la tienda d
+    async getAllJumpsellerCustomFields(): Promise<GetAllCustomFieldResponse> {
       const jumpsellerApiUrl = `https://api.jumpseller.com/v1/custom_fields.json`;
       const login = process.env.JUMPSELLER_LOGIN
       const authtoken = process.env.JUMPSELLER_AUTHTOKEN
       const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
       try {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        const {data}= await axios.get<CustomFieldResponse[]>(
+        const {data}= await axios.get<GetAllCustomFieldResponse>(
           jumpsellerApiUrl,
           { 
             headers: {
@@ -248,7 +248,8 @@ export class JumpsellerService {
             },
           }
         );
-        return data as CustomFieldResponse[];
+
+        return data;
       } catch (error) {
         this.logger.error(`❌ Error al obtener campos personalizados en Jumpseller: ${error.message}`);
         if (error.response) {

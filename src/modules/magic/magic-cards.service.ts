@@ -23,6 +23,8 @@ import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
+import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
+import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -41,6 +43,7 @@ export class MagicCardsService {
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
     private readonly jumpsellerMapperService: JumpsellerMapperService,
+    private readonly customFieldsMapperService: CustomFieldsMapperService,
   ) {}
 
   // helper para pausar entre llamadas
@@ -109,6 +112,7 @@ export class MagicCardsService {
             enCard.idJumpSeller,
             {variant}
           );
+          // await this.updateByStatus(id de variante, { idJumpSeller: enCard.idJumpSeller });
           await this.delay(300);
           
           //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
@@ -214,16 +218,30 @@ export class MagicCardsService {
             }
             await this.delay(300);
           }
+
         }
       }
 
-      // 7. obtener respuesta final y guardar en products
+      // 7. enviar custom fields
       if (enCard.idJumpSeller) {
-        const finalRes = await this.jumpsellerService.getJumpsellerProductById(enCard.idJumpSeller);
-        await this.productsService.createOrUpdateProduct({ oracleId: enCard.oracleId, ...finalRes.product });
-        await this.delay(300);
-      }
+        const customFields = await this.getAllCustomFields();
+        const mappedCFields = await this.customFieldsMapperService.mappedCustomFields(enCard, customFields)
 
+        for (const customField of mappedCFields) {
+          try {
+            await this.jumpsellerService.addAnExistingCustomFieldToAProduct(
+              enCard.idJumpSeller,
+              customField
+            );
+            await this.delay(300);
+            this.logger.log(`✅ Custom field ${customField.field.id} agregado a la carta ${enCard.name}`);
+          } catch (error) {
+            this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
+          }
+        }
+        
+      }
+      await this.delay(300);
       // 8. completar flujo
       await this.updateByStatus(enCard.id, { status: 'completed' });
       this.logger.log(`✅ Proceso completo para carta ${enCard.oracleId}`);
@@ -599,5 +617,15 @@ export class MagicCardsService {
     return { ...mappedCardData, idJumpSeller: existingCard?.idJumpSeller || null }; //enviar carta a jumpseller como variante de la carta original
    
   }
+
+   async getAllCustomFields(): Promise<JumpsellerCustomField[]> {
+      try{
+        const response = await this.jumpsellerService.getAllJumpsellerCustomFields();
+        return response.custom_fields;
+      }catch (error) {
+        this.logger.error('Error trayendo los custom fields', error);
+        throw error;
+      }
+    }
 
 }

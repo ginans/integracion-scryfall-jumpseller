@@ -1,124 +1,76 @@
-import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
-import { UpdateCustomFieldRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
-import { JumpsellerMapperService } from './jumpseller.mapper.service';
 import { Injectable, Logger } from '@nestjs/common';
-//crear manualmente y luego me traigo los creados con el el get
-// crear custom fields con un valor string 
+import { JumpsellerService } from '../../jumpseller/jumpseller.service';
+import { GetAllCustomFieldResponse, JumpsellerCustomField } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
+import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
+import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
+import { custom } from 'joi';
+import { all } from 'axios';
+
 
 @Injectable()
 export class CustomFieldsMapperService {
   private readonly logger = new Logger(CustomFieldsMapperService.name);
   constructor(
-   
+    private readonly jumpsellerService: JumpsellerService
+    
   ) {}
+  
 
-async mapCMCCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "CMC",
-      type: "selection",
-      values: [card.cmc.toString()],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapTypeLineCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Tipo",
-      type: "selection",
-      values: [card.typeLine],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapColorCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Color",
-      type: "selection",
-      values: [card.colors.join(', ')],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapColorIdentityCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Color Identity",
-      type: "selection",
-      values: [card.colorIdentity.join(', ')],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapKeywordsCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Habilidades",
-      type: "selection",
-      values: [card.keywords.join(', ')],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapLegalitiesCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  const legalities = Object.entries(card.legalities || {})
-    .filter(([, v]) => v === 'legal')
-    .map(([f]) => f)
-    .join(', ');
-  return {
-    custom_field: {
-      label: "Legalidades",
-      type: "selection",
-      values: [legalities],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapGameChangerCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Game Changer",
-      type: "selection",
-      values: [card.gameChanger ? "Si" : "No"],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapRarityCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  let rarity = card.rarity;
-  switch (card.rarity) {
-    case 'mythic': rarity = 'Mitica'; break;
-    case 'rare': rarity = 'Rara'; break;
-    case 'uncommon': rarity = 'Infrecuente'; break;
-    case 'common': rarity = 'Común'; break;
+  async mappedCustomFields(
+    card: MappedMagicCard, 
+    customFields: JumpsellerCustomField[], 
+  ): Promise<AddAnExistingCustomFieldToAProductRequest[]> {
+    return customFields.map(customField => ({
+      field: {
+        id: customField.id,
+        value: String(this.customFieldsLabelsToValue(card, customField.label)),
+        variants: []
+      }
+    }));
   }
-  return {
-    custom_field: {
-      label: "Rareza",
-      type: "selection",
-      values: [rarity],
-      product_visibility: true,
-    },
-  };
-}
 
-async mapArtistCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Artista",
-      type: "selection",
-      values: [card.artist],
-      product_visibility: true,
-    },
-  };
-}
+  customFieldsLabelsToValue(card: MappedMagicCard, customFieldLabel: string){
+    const legalFormats = Object.entries(card.finishes) // convierte en array de pares [key, value]
+    .filter(([_, value]) => value === "legal")         // filtra los que tengan valor 'legal'
+    .map(([key]) => key)                               // extrae solo las keys y los mete en un array
+    .join(", ");                                       // une en un string separando por comas
+  
+    switch (customFieldLabel) {
+      case "Color":
+        return card.colors && card.colors.length > 0 ? card.colors.join(', ') : 'Sin color';
+      case "Game Changer":
+        return card.gameChanger ? 'Sí' : 'No';
+      case "Rareza":
+        return card.rarity;
+      case "Edición":
+        return card.setName;
+      case "Tipo de edición":
+        return card.setType;
+      case "Coste de maná":
+        return card.manaCost ? card.manaCost : 'Sin coste de maná';
+      case "Coste de maná convertido":
+        return card.cmc ? card.cmc.toString() : 'Sin coste de maná convertido';
+      case "Poder":
+        return card.power;
+      case "Resistencia":
+        return card.toughness;
+      case "Identidad":
+        return card.colorIdentity ? card.colorIdentity.join(', ') : 'Sin identidad';
+      case "Palabras claves":
+        return card.keywords ? card.keywords.join(', '): 'Sin palabras claves';
+      case "Legal en":
+        return card.legalities ? legalFormats : "No legal" ;
+      case "Dibujante":
+        return card.artist;
+      case "Color de borde":
+        return card.borderColor;
+      case "Sin texto":
+        return card.textless ? 'Sí' : 'No';
+      case "Ilustración grande":
+        return card.fullArt ? 'Sí' : 'No';    
+      default:
+        return null;
+    }
+  
+  }
 }

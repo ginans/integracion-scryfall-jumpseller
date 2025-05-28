@@ -5,13 +5,17 @@ import { PaginatedResponse } from 'src/common/interfaces/paginated-response.inte
 import { MagicCard } from './entities/magic-card.entity';
 import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 import { MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
-import { ObjectId } from 'mongoose';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
+import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
+import { GetAllCustomFieldResponse, JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
 
 @Controller('magic-cards')
 export class MagicCardsController {
-  constructor(private readonly magicCardsService: MagicCardsService) {}
+  constructor(
+    private readonly magicCardsService: MagicCardsService,
+    private readonly customFieldsService: CustomFieldsMapperService
+  ) {}
 
   @Post("create")
   async create(@Body() cards: ScryfallCardResponse): Promise<MappedMagicCard>  {
@@ -56,6 +60,11 @@ export class MagicCardsController {
   ): Promise<MappedMagicCard>  {
     const { card, condition } = body;
     return this.magicCardsService.createNewMagicCardAndVariantToJumpseller(card, condition); 
+  }
+
+  @Get('test/getAllCustomFields')
+  async getAllCustomFields() : Promise<JumpsellerCustomField[]> {
+    return this.customFieldsService.getAllCustomFields();
   }
   
   

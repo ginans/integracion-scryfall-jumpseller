@@ -22,14 +22,13 @@ export class QueuesMagic extends WorkerHost {
       const lg  = job.name as IenumURLLang
       await job.updateProgress(25);
       this.logger.log(`process ${data.name}`)
-      await this.magicCardsService.procesarCardMagic(data);
+      await this.magicCardsService.procesarCardMagic(data, lg);
       await job.updateProgress(100);
       return 'done';
     } catch (error) {
       throw new Error(`Job failed at step: ${error.message}`);
     }
   }
-
 
   @OnWorkerEvent('completed')
   onCompleted(job: Job<any, any, string>) {

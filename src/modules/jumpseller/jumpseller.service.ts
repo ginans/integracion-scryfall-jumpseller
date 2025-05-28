@@ -35,7 +35,7 @@ export class JumpsellerService {
         this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
         const {data}= await axios.post(
           jumpsellerApiUrl,
-          { product }, 
+          product , 
           { 
             headers: {
               Authorization: `Basic ${authToken}`,

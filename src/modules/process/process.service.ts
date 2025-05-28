@@ -45,7 +45,7 @@ export class ProcessService {
     //ejecutar proceso en ingles
     await this.addQuesMagic(IenumURLLang.EN);
     //ejecutar proceso en español
-    //await this.addQuesMagic(IenumURLLang.ES);
+    await this.addQuesMagic(IenumURLLang.ES);
   }
 
   private async addQuesMagic(lg:IenumURLLang): Promise<void> {
@@ -58,12 +58,12 @@ export class ProcessService {
       console.log(data.length);
       
       for(let row of data){
-        await this.queuesMagic.add(lg,row);
-       
+        await this.queuesMagic.add(lg, row);
       }
+      
       this.logger.warn(`procesando pagina queues-magic ${page}`);
       //detener proceso si has_more es false
-      //let process = has_more;
+      // process = has_more;
       //comentar esto en produccion
       if(page==1){// para las pruebas solo consultamos la primera pagina 
         process = false;

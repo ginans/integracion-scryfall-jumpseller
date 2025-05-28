@@ -62,10 +62,10 @@ export class MagicCardsController {
     return this.magicCardsService.createNewMagicCardAndVariantToJumpseller(card, condition); 
   }
 
-  @Get('test/getAllCustomFields')
-  async getAllCustomFields() : Promise<JumpsellerCustomField[]> {
-    return this.customFieldsService.getAllCustomFields();
-  }
+  // @Get('test/getAllCustomFields')
+  // async getAllCustomFields() : Promise<JumpsellerCustomField[]> {
+  //   return this.customFieldsService.getAllCustomFields();
+  // }
   
   
   // @Get('test-precio/:oracleId')

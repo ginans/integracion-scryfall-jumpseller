@@ -271,7 +271,7 @@ export class JumpsellerService {
         this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(customFields)}`);
         const {data}= await axios.post<AddAnExistingCustomFieldToAProductResponse>(
           jumpsellerApiUrl,
-          { customFields }, 
+           customFields , 
           { 
             headers: {
               Authorization: `Basic ${authToken}`,

@@ -18,13 +18,14 @@ import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.se
 import { EnumLanguage } from './enums/lang.enum';
 import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
 import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
-import { StagingProductVariant, StagingProductVariantDocument, StagingProductVariantSchema } from '../products/staging-product-variant/entities/staging-product-variant.entity';
+import { StagingProductVariant, StagingProductVariantDocument } from '../products/staging-product-variant/entities/staging-product-variant.entity';
 import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
 import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
+import { mapCardData } from './mappers/scryfall-to-db.mapper';
 
 @Injectable()
 export class MagicCardsService {
@@ -32,16 +33,11 @@ export class MagicCardsService {
 
   constructor(
     private readonly jumpsellerService: JumpsellerService,
-    private readonly productsService: ProductsService,
     @InjectModel(MagicCard.name) private readonly model: Model<MagicCardEntity>,
     @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
-    @InjectModel(UsdPrice.name) private readonly usdPricesModel: Model<UsdPriceDocument>,
-    @InjectModel(BasePrice.name) private readonly basePricesModel: Model<BasePriceDocument>,
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
     private readonly stagingProductVariantService: StagingProductVariantService,
     private readonly scryfallService: ScryfallService,
-    private readonly usdPricesService: UsdPricesService,
-    private readonly basePricesService: BasePricesService,
     private readonly jumpsellerMapperService: JumpsellerMapperService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
   ) {}
@@ -86,9 +82,6 @@ export class MagicCardsService {
         const baseRes = await this.jumpsellerService.createJumpsellerProducts(baseReq);
         enCard.idJumpSeller = baseRes.product?.id;
         await this.updateByStatus(enCard.id, { idJumpSeller: enCard.idJumpSeller });
-        //TODO: REVISAR USO DE PRODUCT
-        await this.productsService.createOrUpdateProduct({ oracleId: enCard.oracleId, ...baseRes.product });
-        await this.delay(300);
       }
       await this.delay(300);
 
@@ -112,7 +105,7 @@ export class MagicCardsService {
             enCard.idJumpSeller,
             {variant}
           );
-          // await this.updateByStatus(id de variante, { idJumpSeller: enCard.idJumpSeller });
+          // TODO: await this.updateByStatus(id de variante, { idJumpSeller: enCard.idJumpSeller });
           await this.delay(300);
           
           //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
@@ -157,7 +150,6 @@ export class MagicCardsService {
                 },
                 fatherProduct: {
                   oracleId: enCard.oracleId,
-                  // sku: REVISAR LOGICA, SE DEBE CREAR VARIANTES EN LA ACTUALIZACION DE LOS PRODUCTOS
                   description: enCard.oracleText || "",
                   setName: enCard.setName || "",
                   setId: enCard.setId || "",
@@ -250,99 +242,10 @@ export class MagicCardsService {
     }
   }
 
-  // mapear data de Scryfall para guadar en tabla magic
-  private mapCardData(card: Partial<ScryfallCard>): MappedMagicCard {
-    return {
-      id: card.id || '',
-      oracleId: card.oracle_id || '',
-      name: card.name || '',
-      printedName: card.printed_name || '',
-      oracleText: card.oracle_text || '',
-      printedText: card.printed_text || '',
-      lang: card.lang || '',
-      uri: card.uri || '',
-      layout: card.layout || '',
-      imageUris: card.image_uris ? {
-        large: card.image_uris.large || '',
-        small: card.image_uris.small || ''
-      } : { small: '', large: '' },
-      typeLine: card.type_line || '',
-      printedTypeLine: card.printed_type_line || '',
-      cmc: card.cmc || 0,
-      manaCost: card.mana_cost || '',
-      colors: card.colors || [],
-      colorIdentity: card.color_identity || [],
-      keywords: card.keywords || [],
-      finishes: card.finishes || [],
-      foil: card.foil || null,
-      nonfoil: card.nonfoil || null,
-      cardFaces: card.card_faces?.map((face) => ({
-        name: face.name || '',
-        printedName: face.printed_name || '',
-        manaCost: face.mana_cost || '',
-        typeLine: face.type_line || '',
-        printedTypeLine: face.printed_type_line || '',
-        oracleText: face.oracle_text || '',
-        printedText: face.printed_text || '',
-        colors: face.colors || [],
-        artist: face.artist || '',
-        power: face.power || '',
-        toughness: face.toughness || '',
-        imageUris: face.image_uris ? {
-          small: face.image_uris.small || '',
-          large: face.image_uris.large || ''
-        } : { small: '', large: '' },
-      })) || [],
-      legalities: card.legalities ? {
-        standard: card.legalities.standard || '',
-        future: card.legalities.future || '',
-        historic: card.legalities.historic || '',
-        timeless: card.legalities.timeless || '',
-        gladiator: card.legalities.gladiator || '',
-        pioneer: card.legalities.pioneer || '',
-        explorer: card.legalities.explorer || '',
-        modern: card.legalities.modern || '',
-        legacy: card.legalities.legacy || '',
-        pauper: card.legalities.pauper || '',
-        vintage: card.legalities.vintage || '',
-        penny: card.legalities.penny || '',
-        commander: card.legalities.commander || '',
-        brawl: card.legalities.brawl || '',
-        standardbrawl: card.legalities.standardbrawl || '',
-        alchemy: card.legalities.alchemy || '',
-        paupercommander: card.legalities.paupercommander || '',
-        duel: card.legalities.duel || '',
-        oldschool: card.legalities.oldschool || '',
-        premodern: card.legalities.premodern || '',
-        predh: card.legalities.predh || '',
-        oathbreaker: card.legalities.oathbreaker || ''
-      } : {},
-      gameChanger: card.game_changer || false,
-      rarity: card.rarity || '',
-      artist: card.artist || '',
-      prices: {
-        usd: card.prices?.usd || null,
-        usdFoil: card.prices?.usd_foil || null,
-        usdEtched: card.prices?.usd_etched || null,
-      },
-      collectorNumber: card.collector_number || '',
-      setId: card.set_id || '',
-      set: card.set || '',
-      setName: card.set_name || '',
-      setType: card.set_type || '',
-      games: card.games || [],
-      borderColor: card.border_color || '',
-      fullArt: card.full_art || false,
-      textless: card.textless || false,
-      power: card.power || '',
-      toughness: card.toughness || '',
-    };
-  }
-
   //buscar actualizar o crear magic card
   async createMagicCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
     //TODO: pasar cards a card
-    const mappedCardData: MappedMagicCard = this.mapCardData(cards);
+    const mappedCardData: MappedMagicCard = mapCardData(cards);
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
       this.logger.log(`actualizar id ${mappedCardData.id}`);
@@ -545,7 +448,7 @@ export class MagicCardsService {
   }
 
   async createNewMagicCardAndVariantToJumpseller(cards: ScryfallCardResponse, condition: EnumCondition ): Promise<MappedMagicCard> {
-    const mappedCardData: MappedMagicCard = this.mapCardData(cards);
+    const mappedCardData: MappedMagicCard = mapCardData(cards);
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
       this.logger.log(`actualizar id ${mappedCardData.id}`);

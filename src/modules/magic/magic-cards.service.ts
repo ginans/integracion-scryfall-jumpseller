@@ -1,31 +1,27 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException, HttpException } from '@nestjs/common';
-import { IresponseSryfall, ScryfallCard, ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
+import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 import { MagicCard, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
-import { Model, set, Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { IsetMagic, MappedMagicCard } from '../../modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IenumURLLang } from './submodules/scryfall/enums/lang.enum';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
-import { ProductsService } from 'src/modules/products/products.service';
 import { Product, ProductDocument } from '../products/entities/product.entity';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
-import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
-import { UsdPrice, UsdPriceDocument } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
-import { BasePrice, BasePriceDocument } from 'src/modules/prices/base-prices/entities/base-price.entity';
-import { BasePricesService } from 'src/modules/prices/base-prices/base-prices.service';
 import { EnumLanguage } from './enums/lang.enum';
 import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
 import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
 import { StagingProductVariant, StagingProductVariantDocument } from '../products/staging-product-variant/entities/staging-product-variant.entity';
-import { EnumGame, EnumGamePrefix } from '../../common/enums/game.enum';
+import { EnumGame } from '../../common/enums/game.enum';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
 import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 import { mapCardData } from './mappers/scryfall-to-db.mapper';
+import { mappedStaggingProductVariant} from './mappers/staging-product-variant.mapper';
 
 @Injectable()
 export class MagicCardsService {
@@ -116,47 +112,14 @@ export class MagicCardsService {
           });
           
           if (!cardWithStock) {
-            const getGameFromSku = (sku: string) => {
-              if (!sku) return null;
-              const prefix = sku.split('-')[0];
-              switch (prefix) {
-                case EnumGamePrefix.MAGIC: return EnumGame.MAGIC;
-                case  EnumGamePrefix.POKEMON: return EnumGame.POKEMON;
-                case EnumGamePrefix.ONEPIECE: return EnumGame.ONEPIECE;
-                default: return `Juego no encontrado para el SKU: ${sku}`;
-              }
-            };
-            
             //solo agregar al stock si no existe
             this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
-            await this.stagingProductVariantModel.create(
-              {
-                productId: enCard.idJumpSeller,
-                variantId: varRes.variant.id,
-                name: enCard.name || "",
-                anotherLangName: enCard.printedName || "",
-                sku: varRes.variant.sku,
-                finish: finish || "",
-                rarity: enCard.rarity || "",
-                condition: condition || "",
-                game: getGameFromSku(varRes.variant.sku) || null,
-                imageUrl: {
-                  large: enCard.imageUris?.large || null,
-                  cardFacelarge1: enCard.cardFaces?.[0]?.imageUris?.large || null,
-                  cardFacelarge2: enCard.cardFaces?.[1]?.imageUris?.large || null,
-                  small: enCard.imageUris?.small || null,
-                  cardFaceSmall1: enCard.cardFaces?.[0]?.imageUris?.small || null,
-                  cardFaceSmall2: enCard.cardFaces?.[1]?.imageUris?.small || null,
-                },
-                fatherProduct: {
-                  oracleId: enCard.oracleId,
-                  description: enCard.oracleText || "",
-                  setName: enCard.setName || "",
-                  setId: enCard.setId || "",
-                  set: enCard.set || "",
-                },
-              }
+
+            const saveStagingVariant =  mappedStaggingProductVariant(enCard, varRes, condition, finish)
+            await this.stagingProductVariantModel.create( 
+              saveStagingVariant
             );
+
             const price= await this.stagingProductVariantService.calculatePricesForAllCards(varRes.variant.id, enCard.idJumpSeller); 
               if (price) {
                 this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id} con precio ${JSON.stringify(price)}`);

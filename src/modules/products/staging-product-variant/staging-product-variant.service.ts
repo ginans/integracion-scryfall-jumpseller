@@ -325,9 +325,6 @@ export class StagingProductVariantService {
   async calculatePricesForAllCards(variantId?: number, productId?: number, game?: EnumGame, type?: string) {
     try {
       let variantes: IStagingProductVariant[] = [];
-
-      
-      
       // Buscar variantes según los parámetros recibidos
       if (variantId && productId) {
         const variante = await this.stagingProductVariantModel.findOne({
@@ -344,13 +341,25 @@ export class StagingProductVariantService {
           case 'commonC':
             rarity = 'common';
             break;
-          case 'uncommon':
+          case 'commonC-Foil':
+            rarity = 'common';
+            break;
+          case 'uncommonU':
             rarity = 'uncommon';
             break;
-          case 'rare':
+          case 'uncommonU-Foil':
+            rarity = 'uncommon';
+            break;
+          case 'rareR':
             rarity = 'rare';
             break;
-          case 'mythic':
+          case 'rareR-Foil':
+            rarity = 'rare';
+            break;
+          case 'mythicM':
+            rarity = 'mythic';
+            break;
+          case 'mythicM-Foil':
             rarity = 'mythic';
             break;
           default:
@@ -405,9 +414,16 @@ export class StagingProductVariantService {
         rarityPrices[item.label] = item.price;
       });
 
+      let processedVariants = 0;
+      let successfulUpdates = 0;
+      let failedUpdates = 0;
+      let skippedVariants = 0; // Nueva categoría para variantes omitidas por precio 0
+      let processedResults: string[] = []; // Para almacenar resultados individuales
+
       // Procesar cada variante individualmente
       for (const variante of variantes) {
         try {
+          processedVariants++;
           // Buscar la carta correspondiente
           const matchingCard = await this.magicCardModel.findOne({ idJumpSeller: variante.productId });
 
@@ -422,6 +438,7 @@ export class StagingProductVariantService {
                 }
               }
             );
+            failedUpdates++;
             continue; // Pasar a la siguiente variante
           }
 
@@ -517,6 +534,7 @@ export class StagingProductVariantService {
             };
             
             const response = await this.jumpsellerService.updateVariant(variante.productId, variante.variantId, variantTo);
+            this.logger.log(`se envio la variante : ${JSON.stringify(response)} a Jumpseller`);
             
             if (!('message' in response)) {
               await this.updateVariantPriceStatus(
@@ -526,8 +544,10 @@ export class StagingProductVariantService {
                 nullErrorMsg
               );
               this.logger.log(`Se actualizó el precio de la variante ${variante.variantId} en Jumpseller`);
-              return `Se actualizo el precio de la variante ${response.variant.id}, con sku ${response.variant.sku} en Jumpseller`;
-
+              successfulUpdates++;
+              
+              // Almacenar resultado individual en lugar de retornarlo
+              processedResults.push(`Variante ${response.variant.id} (${response.variant.sku}) actualizada exitosamente`);
             } else {
               const errorMsg = `Status 400 - ${'message' in response ? response.message : 'Sin detalles'}`;
               this.logger.error(errorMsg);
@@ -537,9 +557,14 @@ export class StagingProductVariantService {
                 EnumPriceAndStockState.ERROR,
                 errorMsg
               );
+              failedUpdates++;
+              processedResults.push(`Variante ${variante.variantId} (${variante.sku}) falló: ${errorMsg}`);
             }
           } else {
-            this.logger.warn(`Precio calculado es <= 0, no se actualizará para variante ${variante.variantId} con sku ${variante.sku}`);
+            // Esta es una omisión normal, no un fallo
+            this.logger.log(`Variante ${variante.variantId} con sku ${variante.sku} omitida: precio calculado es 0 (comportamiento esperado)`);
+            skippedVariants++;
+            processedResults.push(`Variante ${variante.variantId} (${variante.sku}) omitida: precio = 0 (normal)`);
           }
           
         } catch (varianteError) {
@@ -553,10 +578,24 @@ export class StagingProductVariantService {
               }
             }
           );
+          failedUpdates++;
+          processedResults.push(`Variante ${variante.variantId} error: ${varianteError.message}`);
         }
       }
       
-      // return variantes.length; // Retornar la cantidad de variantes procesadas
+      // Retornar resumen completo del procesamiento
+      const summary = {
+        totalProcessed: processedVariants,
+        successful: successfulUpdates,
+        failed: failedUpdates,
+        skipped: skippedVariants, // Nueva propiedad
+        details: processedResults,
+        message: `Procesamiento completado: ${processedVariants} variantes procesadas. Exitosas: ${successfulUpdates}, Fallidas: ${failedUpdates}, Omitidas (precio=0): ${skippedVariants}`,
+        isComplete: true
+      };
+      
+      this.logger.log(`Resumen final del procesamiento: ${JSON.stringify(summary)}`);
+      return summary;
       
     } catch (error) {
       this.logger.error(`Error al calcular precios para todas las cartas: ${error.message}`);

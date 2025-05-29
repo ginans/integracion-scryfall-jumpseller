@@ -29,7 +29,7 @@ export class QueuesRecalculatePrices extends WorkerHost {
       const { gameID, id, subId, price, usdPrice } = job.data as IRecalculatePrices;
 
       let pricesResponse: IUsdPrice | IBasePriceUpdate
-      let calculatedPrice: string
+      let calculatedPrice: any
 
       //recalcular precios por cambio del dolar
       if (gameID && usdPrice){

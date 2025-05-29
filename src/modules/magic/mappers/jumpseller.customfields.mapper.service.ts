@@ -29,9 +29,9 @@ export class CustomFieldsMapperService {
 
   customFieldsLabelsToValue(card: MappedMagicCard, customFieldLabel: string){
     const legalFormats = Object.entries(card.legalities) // convierte en array de pares [key, value]
-    .filter(([_, value]) => value === "legal")         // filtra los que tengan valor 'legal'
-    .map(([key]) => key)                               // extrae solo las keys y los mete en un array
-    .join(", ");   // une en un string separando por comas
+    .filter(([_, value]) => value === "legal")           // filtra los que tengan valor 'legal'
+    .map(([key]) => key)                                 // extrae solo las keys y los mete en un array
+    .join(", ");                                         // une en un string separando por comas
   
     switch (customFieldLabel) {
       case "Color":

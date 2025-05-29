@@ -52,47 +52,54 @@ async translatedLanguages(langInput: string): Promise<string> {
   return translatedLang;
 }
 
-createSku (card: MappedMagicCard, lang?: Language, finish?: string, condition?: string): string {
-  let formattedSet = ""
-    const regPromo = /promos?/i;
-    const regToken = /tokens?/i;
-    const regArt = /arts?/i;
-    if (
-      regToken.test(card.setName)
-    ) {
-      formattedSet = card.set.slice(1)
-    }else if (
-     regPromo.test(card.setName) 
-    ) {
-      formattedSet = card.set.slice(1)
-    }else if (
-     regArt.test(card.setName) 
-    ) {
-      formattedSet = card.set.slice(1)
-    }else if (
-     card.setName.includes("The List")
-    ) {
-      formattedSet = card.set.slice(0, 4)
-    }else {
-      formattedSet = card.set
-    }
+createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: string): string {
+  let formattedSet = "";
+  const regPromo = /promos?/i;
+  const regToken = /tokens?/i;
+  const regArt = /arts?/i;
 
-  const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase();
-  const baseCollectorNumber = collectorNumberToUpperCase
-    ? (collectorNumberToUpperCase.length <= 4
-      ? collectorNumberToUpperCase.padStart(4, '0')
-      : collectorNumberToUpperCase)
-    : '';
-  return `M-${formattedSet?.toUpperCase() || ''}${baseCollectorNumber}${
-    card.setName
-      ? (regToken.test(card.setName) || regPromo.test(card.setName) || regArt.test(card.setName))
-        ? (card.set ? card.set[0].toUpperCase() : '')
-        : ''
-      : (card.setName.includes("The List"))
-        ? `TL`
-        : ''
-  }${lang ? ("-" + lang.code.toUpperCase()) : ''}${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
+  if (regToken.test(card.setName)) {
+    formattedSet = card.set.slice(1);
+  } else if (regPromo.test(card.setName)) {
+    formattedSet = card.set.slice(1);
+  } else if (regArt.test(card.setName)) {
+    formattedSet = card.set.slice(1);
+  } else if (card.setName === "The List") {
+    formattedSet = ""; 
+  } else {
+    formattedSet = card.set;
+  }
+
+  // ✨ Aseguramos que el collectorNumber tenga mínimo 4 dígitos al final
+  const rawCollector = card.collectorNumber?.toUpperCase() || '';
+  const match = rawCollector.match(/([A-Z\-]*)(\d+)/); // separamos prefijo y número
+  let baseCollectorNumber = rawCollector;
+
+  if (match) {
+    const prefix = match[1]; // puede ser algo como 'WOC-' o ''
+    const number = match[2].padStart(4, '0'); // aseguramos 4 dígitos
+    baseCollectorNumber = `${prefix}${number}`;
+  }
+
+  const suffix = (() => {
+    if (card.setName === "The List") {
+      return 'TL';
+    } else if (
+      regToken.test(card.setName) ||
+      regPromo.test(card.setName) ||
+      regArt.test(card.setName)
+    ) {
+      return card.set ? card.set[0].toUpperCase() : '';
+    } else {
+      return '';
+    }
+  })();
+
+  return `M-${formattedSet?.toUpperCase() || ''}${baseCollectorNumber}${suffix}${
+    lang ? ("-" + lang.code.toUpperCase()) : ''
+  }${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
 }
+
 
 
 async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {

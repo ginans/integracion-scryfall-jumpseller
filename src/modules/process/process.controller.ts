@@ -27,8 +27,8 @@ export class ProcessController {
     }catch(error){
       return error
     }
- 
   }
+  
   @Post('prices/api-prices')
   async updatePrices(@Body() product: IPriceFromFront[]){
     try{

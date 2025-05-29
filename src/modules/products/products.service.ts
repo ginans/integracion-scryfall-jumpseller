@@ -240,7 +240,7 @@ export class ProductsService {
            previousStock: variantToUpdate.variantStock,
            newStock: newStock,
            salesByCard: newHistorySales
-         });
+        });
 
         // actualizar el stock de la variante en bd y agregar historial de ventas por carta
         await this.stagingProductVariantModel.updateOne(

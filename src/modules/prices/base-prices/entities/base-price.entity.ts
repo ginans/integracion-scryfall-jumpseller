@@ -1,12 +1,13 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
-import { BasePriceConfig, IBasePrice } from "../interface/base-prices.interface";
+import { IBasePrices } from "../interface/base-prices.interface";
+import { EnumGame } from "src/common/enums/game.enum";
 
 @Schema({ timestamps: true })
-export class BasePrice implements BasePriceConfig {
+export class BasePrice implements IBasePrices {
 
     @Prop({ required: true })
-    game: string;
+    game: EnumGame;
 
     @Prop({ required: true })
     type: string;

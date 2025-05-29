@@ -5,9 +5,9 @@ import { StagingProductVariantService } from 'src/modules/products/staging-produ
 
 
 
-@Processor('queues-prices')
-export class QueuesPrices extends WorkerHost {
-  private readonly logger = new Logger(QueuesPrices.name, {
+@Processor('queues-api-prices')
+export class QueuesApiPrices extends WorkerHost {
+  private readonly logger = new Logger(QueuesApiPrices.name, {
     timestamp: true,
   });
   constructor(

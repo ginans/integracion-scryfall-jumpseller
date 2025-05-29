@@ -62,24 +62,5 @@ export class MagicCardsController {
     return this.magicCardsService.createNewMagicCardAndVariantToJumpseller(card, condition); 
   }
 
-  // @Get('test/getAllCustomFields')
-  // async getAllCustomFields() : Promise<JumpsellerCustomField[]> {
-  //   return this.customFieldsService.getAllCustomFields();
-  // }
-  
-  
-  // @Get('test-precio/:oracleId')
-  // async testPrecio(@Param('oracleId') oracleId: string) {
-  //   return this.magicCardsService.addDollarValueToCard(oracleId);
-  // }
-
-  // @Get('calcular-precio/:oracleId')
-  // async calcularPrecio(@Param('oracleId') oracleId: string) {
-  //   return this.magicCardsService.addDollarValueToCard(oracleId);
-  // }
-    
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateProductCardDto: UpdateProductCardDto) {
-  //   return this.magicCardsService.update(id, updateProductCardDto);
-  // }
+ 
 }

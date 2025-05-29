@@ -9,17 +9,22 @@ import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { QueuesStock } from './queues/queues.stock';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
 import { StagingProductVariantModule } from '../products/staging-product-variant/staging-product-variant.module';
-import { QueuesPrices } from './queues/queues.prices';
+import { QueuesApiPrices } from './queues/prices/queues.api-prices';
+import { QueuesRecalculatePrices } from './queues/prices/queues.recalculate-prices';
+import { BasePricesModule } from '../prices/base-prices/base-prices.module';
+import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 
 @Module({
   imports: [
     MagicCardsModule,
     JumpsellerModule,
     StagingProductVariantModule,
+    BasePricesModule,
+    UsdPricesModule,
     BullModule.registerQueue({
       name: 'queues-magic',
       defaultJobOptions: {
-        delay: 3000,
+        // delay: 3000,
         lifo: true,
       },
     }),
@@ -47,12 +52,23 @@ import { QueuesPrices } from './queues/queues.prices';
     }),
     BullBoardModule.forFeature({
       name: 'queues-prices',
+      adapter: BullMQAdapter,
+    }),
+    BullModule.registerQueue({
+      name: QueuesRecalculatePrices.name,
+      defaultJobOptions: {
+        // delay: 3000,
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: QueuesRecalculatePrices.name,
       adapter: BullMQAdapter,
     }),
   ],
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
-  providers: [ProcessService, QueuesMagic, QueuesStock, QueuesPrices],
+  providers: [ProcessService, QueuesMagic, QueuesStock, QueuesApiPrices],
 
 })
 export class ProcessModule {

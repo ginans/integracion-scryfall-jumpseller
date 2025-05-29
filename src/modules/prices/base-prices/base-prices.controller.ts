@@ -27,7 +27,7 @@ export class BasePricesController {
     @Param("subid") subid : string,
     @Body("price") price: number
   ) {
-    return this.basePricesService.updatePrices(id, subid, price);
+    return this.basePricesService.updateBasePrices(id, subid, price);
   }
   
 

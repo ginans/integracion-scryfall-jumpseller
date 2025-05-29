@@ -1,7 +1,8 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post, Query } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
+import { IRecalculatePrices } from './interfaces/recalculate-prices.interface';
 
 @Controller('process')
 export class ProcessController {
@@ -26,7 +27,7 @@ export class ProcessController {
     }
  
   }
-  @Post('prices')
+  @Post('prices/api-prices')
   async updatePrices(@Body() product: IPriceFromFront[]){
     try{
       const response = await this.processService.updatePricesQueue(product);
@@ -36,4 +37,17 @@ export class ProcessController {
       return error
     }
   }
+
+  @Post('prices/recalculate-prices')
+  async recalculatePrices(
+    @Body() data: IRecalculatePrices,
+  ) {
+    try {
+      await this.processService.recalculatePrices(data);
+      return "ok" ;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
 }

@@ -6,12 +6,9 @@ import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.
 import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
+import { QueuesRecalculatePrices } from './queues/prices/queues.recalculate-prices';
+import { IRecalculatePrices } from './interfaces/recalculate-prices.interface';
 
-
-interface Ilist {
-  name: string
-  active: boolean
-}
 @Injectable()
 export class ProcessService {
   /*
@@ -25,7 +22,8 @@ export class ProcessService {
     private readonly scryfallService: ScryfallService,
     @InjectQueue('queues-magic') private readonly queuesMagic: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
-    @InjectQueue('queues-prices') private readonly queuesPrices: Queue,
+    @InjectQueue('queues-api-prices') private readonly queuesPrices: Queue,
+    @InjectQueue(QueuesRecalculatePrices.name) private readonly queuesRecalculatePrices: Queue,
   ) { }
 
   async updateStockQueue(variants: IStockFromFront[]) {
@@ -39,6 +37,11 @@ export class ProcessService {
       await this.queuesPrices.add('update-prices', variant
     )}
   }
+
+  async recalculatePrices(data: IRecalculatePrices) {
+    await this.queuesPrices.add(QueuesRecalculatePrices.name, data);
+  }
+  
 
 
   async initCardMagic(): Promise<void> {

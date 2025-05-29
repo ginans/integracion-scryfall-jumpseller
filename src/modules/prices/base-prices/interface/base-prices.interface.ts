@@ -2,13 +2,11 @@
 export interface IBasePrice {
     label: string;
     price: number;
-}
+} 
 
-export interface BasePriceConfig {
+export interface IBasePrices {
     game: string;
     type: string;
     currency: string;
     basePrices: IBasePrice[];
 }
-
-export type BasePrices = BasePriceConfig[];

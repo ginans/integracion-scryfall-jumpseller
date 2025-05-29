@@ -31,9 +31,7 @@ export class CustomFieldsMapperService {
     const legalFormats = Object.entries(card.finishes) // convierte en array de pares [key, value]
     .filter(([_, value]) => value === "legal")         // filtra los que tengan valor 'legal'
     .map(([key]) => key)                               // extrae solo las keys y los mete en un array
-    .join(", ");   
-    
-    // une en un string separando por comas
+    .join(", ");   // une en un string separando por comas
   
     switch (customFieldLabel) {
       case "Color":

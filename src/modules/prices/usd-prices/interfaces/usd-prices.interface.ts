@@ -1,4 +1,4 @@
-export interface BasePrice {
+export interface IUsdPrice {
   game: string;
   usdPrice: number;
 }

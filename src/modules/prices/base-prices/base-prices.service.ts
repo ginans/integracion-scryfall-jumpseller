@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { CreateBasePriceDto } from './dto/create-base-price.dto';
-import { UpdateBasePriceDto } from './dto/update-base-price.dto';
 import { BasePrice } from './entities/base-price.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { UpdateBasePriceItemDto } from './dto/update-base-price-item.dto';
+import { StagingProductVariantService } from 'src/modules/products/staging-product-variant/staging-product-variant.service';
+import { IBasePrices } from './interface/base-prices.interface';
 
 @Injectable()
 export class BasePricesService {
   constructor(
       @InjectModel(BasePrice.name) private basePriceModel: Model<BasePrice>,
+      private readonly stagingProductVariantService: StagingProductVariantService
     ) {}
 
   async createBasePrice (createBasePriceDto: CreateBasePriceDto) {
@@ -51,24 +52,25 @@ export class BasePricesService {
     }
   }
 
-  async updatePrices(id: string, subid: string, price: number) {
+  async updateBasePrices(id: string, subid: string, price: number): Promise<IBasePrices> {
     try {  
       const existingBasePrice = await this.basePriceModel.findById(id);
       if (!existingBasePrice) {
         throw new Error('Este precio base no existe');
       }
       // Acceso y actualización del _id de un objeto dentro del array basePrices
-       await this.basePriceModel.updateOne(
-        { _id: id },
-        { $set: { "basePrices.$[elem].price": price } },
-        {
-          arrayFilters: [{ "elem._id": new Types.ObjectId(subid) }],
-          new: true
-        }
-      );
-      return await this.basePriceModel.findById(id);
+      const response: IBasePrices = await this.basePriceModel.findOneAndUpdate(
+          { _id: id },
+          { $set: { "basePrices.$[elem].price": price } },
+          {
+            arrayFilters: [{ "elem._id": new Types.ObjectId(subid) }],
+            new: true
+          }
+        );
+        
+      return response 
     } catch (error) {
-      return { error: error.message };
+      throw new Error(`Error al actualizar el precio base: ${error.message}`);
     }
   }
   

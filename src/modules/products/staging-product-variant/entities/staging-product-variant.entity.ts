@@ -43,13 +43,13 @@ export class StagingProductVariant implements IStagingProductVariant {
     @Prop({ default: null })
     finish: string | null;
 
-    @Prop({ default: null })
+    @Prop({ default: null, index: true })
     rarity: string | null;
 
     @Prop({ default: null })
     condition: string | null;
 
-    @Prop({ default: null })
+    @Prop({ default: null, index: true })
     game: string | null;
 
     @Prop({ default: 0 })

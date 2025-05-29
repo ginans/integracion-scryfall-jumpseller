@@ -5,9 +5,6 @@ import { EnumGame } from "src/common/enums/game.enum";
 
 @Schema({ timestamps: true })
 export class BasePrice implements IBasePrices {
-
-    @Prop({ type: Types.ObjectId, auto: true })
-    _id: string;
     
     @Prop({ required: true })
     game: EnumGame;

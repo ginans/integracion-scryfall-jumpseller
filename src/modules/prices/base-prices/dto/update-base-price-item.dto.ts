@@ -4,6 +4,9 @@ export class UpdateBasePriceItemDto {
   @IsMongoId()
   subId: string;
 
+  @IsMongoId()
+  id: string;
+
   @IsNumber()
   price: number;
 }

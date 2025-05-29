@@ -68,11 +68,11 @@ export class ProcessService {
       
       this.logger.warn(`procesando pagina queues-magic ${page}`);
       //detener proceso si has_more es false
-      // process = has_more;
+      process = has_more;
       //comentar esto en produccion
-      if(page==1){// para las pruebas solo consultamos la primera pagina 
-        process = false;
-      }
+      // if(page==1){// para las pruebas solo consultamos la primera pagina 
+      //   process = false;
+      // }
       page++;
     } while (process)
   }

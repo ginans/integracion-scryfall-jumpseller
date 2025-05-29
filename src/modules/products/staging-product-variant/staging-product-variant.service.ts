@@ -325,6 +325,8 @@ export class StagingProductVariantService {
   async calculatePricesForAllCards(variantId?: number, productId?: number, game?: EnumGame, type?: string) {
     try {
       let variantes: IStagingProductVariant[] = [];
+
+      
       
       // Buscar variantes según los parámetros recibidos
       if (variantId && productId) {
@@ -336,10 +338,29 @@ export class StagingProductVariantService {
         // lo meto igual en un array para poder procesar todas las variantes de la misma forma
         if (variante) variantes = [variante]; 
       } else if (game && type) {
+        //TODO: Manejo de rarezas, TYPE ESTA RECIBIENDO LAS LABELS DE BASE PRICES 
+        let rarity: string;
+        switch (type) {
+          case 'commonC':
+            rarity = 'common';
+            break;
+          case 'uncommon':
+            rarity = 'uncommon';
+            break;
+          case 'rare':
+            rarity = 'rare';
+            break;
+          case 'mythic':
+            rarity = 'mythic';
+            break;
+          default:
+            this.logger.error(`Rareza no válida: ${type}`);
+            throw new BadRequestException(`Rareza no válida: ${type}`);
+        }
         variantes = await this.stagingProductVariantModel.find({
           isPriceUpdateable: true,
           game: game,
-          rarity: type
+          rarity: rarity
         }).exec();
       } else if (game && !type) {
         variantes = await this.stagingProductVariantModel.find({

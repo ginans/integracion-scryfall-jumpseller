@@ -5,9 +5,10 @@ import { StagingProductVariantService } from 'src/modules/products/staging-produ
 import { BasePricesService } from '../../../prices/base-prices/base-prices.service';
 import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
 import { IRecalculatePrices } from '../../interfaces/recalculate-prices.interface';
-import { IUsdPrice } from '../../../../../dist/modules/prices/usd-prices/interfaces/usd-prices.interface';
-import { IBasePrices } from 'src/modules/prices/base-prices/interface/base-prices.interface';
+import { IUsdPrice } from 'src/modules/prices/usd-prices/interfaces/usd-prices.interface';
+import { IBasePrice, IBasePrices, IBasePriceUpdate } from 'src/modules/prices/base-prices/interface/base-prices.interface';
 import { EnumGame } from 'src/common/enums/game.enum';
+import { string } from 'joi';
 
 
 
@@ -25,9 +26,9 @@ export class QueuesRecalculatePrices extends WorkerHost {
   }
   async process(job: Job<any, IRecalculatePrices, string>): Promise<any> {
     try {
-      const { gameID, id, subid, basePrice, usdPrice } = job.data as IRecalculatePrices;
+      const { gameID, id, subId, price, usdPrice } = job.data as IRecalculatePrices;
 
-      let pricesResponse : IUsdPrice | IBasePrices ;
+      let pricesResponse: IUsdPrice | IBasePriceUpdate
       let calculatedPrice: string
 
       //recalcular precios por cambio del dolar
@@ -44,15 +45,15 @@ export class QueuesRecalculatePrices extends WorkerHost {
         await job.updateProgress(100);
         
         //recalcular precios por cambio de base price
-      }else if (id && subid && basePrice) {
+      }else if (id && subId && price) {
         await job.updateProgress(25);
-        pricesResponse =  await this.basePricesService.updateBasePrices(id, subid, basePrice);
+        pricesResponse =  await this.basePricesService.updateBasePrices(id, subId, price);
         await job.updateProgress(50);
         calculatedPrice = await this.stageingProductVariantService.calculatePricesForAllCards(
           undefined,
           undefined,
           pricesResponse.game as EnumGame,
-          pricesResponse.type,
+          pricesResponse.details.label
         )
         await job.updateProgress(100);
       }else {

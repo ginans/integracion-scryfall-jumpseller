@@ -24,7 +24,7 @@ import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
     BullModule.registerQueue({
       name: 'queues-magic',
       defaultJobOptions: {
-        // delay: 3000,
+        delay: 3000,
         lifo: true,
       },
     }),
@@ -44,20 +44,20 @@ import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: 'queues-prices',
+      name: 'queues-api-prices',
       defaultJobOptions: {
         delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'queues-prices',
+      name: 'queues-api-prices',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
       name: QueuesRecalculatePrices.name,
       defaultJobOptions: {
-        // delay: 3000,
+        delay: 3000,
         lifo: true,
       },
     }),
@@ -68,7 +68,7 @@ import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
   ],
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
-  providers: [ProcessService, QueuesMagic, QueuesStock, QueuesApiPrices],
+  providers: [ProcessService, QueuesMagic, QueuesStock, QueuesApiPrices, QueuesRecalculatePrices],
 
 })
 export class ProcessModule {

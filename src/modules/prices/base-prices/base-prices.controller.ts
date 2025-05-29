@@ -21,13 +21,20 @@ export class BasePricesController {
   findOne(@Param('id') id: string) {
     return this.basePricesService.findOne(id);
   }
-  @Patch('by-id/:id/:subid')
+  // @Patch('by-id/:id/:subid')
+  // updateBasePrices(
+  //   @Param('id') id: string, 
+  //   @Param("subid") subid : string,
+  //   @Body("price") price: number
+  // ) {
+  //   return this.basePricesService.updateBasePrices(id, subid, price);
+  // }
+
+  @Patch("test/update-base-price")
   updateBasePrices(
-    @Param('id') id: string, 
-    @Param("subid") subid : string,
-    @Body("price") price: number
+    @Body() data: UpdateBasePriceItemDto
   ) {
-    return this.basePricesService.updateBasePrices(id, subid, price);
+    return this.basePricesService.updateBasePrices(data.id, data.subId, data.price);
   }
   
 

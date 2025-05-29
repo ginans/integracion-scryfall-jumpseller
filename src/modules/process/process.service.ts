@@ -8,6 +8,8 @@ import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stoc
 import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
 import { QueuesRecalculatePrices } from './queues/prices/queues.recalculate-prices';
 import { IRecalculatePrices } from './interfaces/recalculate-prices.interface';
+import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
+import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 
 @Injectable()
 export class ProcessService {
@@ -38,8 +40,8 @@ export class ProcessService {
     )}
   }
 
-  async recalculatePrices(data: IRecalculatePrices) {
-    await this.queuesPrices.add(QueuesRecalculatePrices.name, data);
+  async recalculatePrices(data: RecalculatePricesByUsdDto | RecalculatePricesByBaseDto ) {
+    await this.queuesRecalculatePrices.add(QueuesRecalculatePrices.name, data);
   }
   
 

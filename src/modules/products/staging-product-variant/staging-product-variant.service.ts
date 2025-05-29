@@ -374,7 +374,12 @@ export class StagingProductVariantService {
         throw new Error("No se encontraron precios base para Magic");
       }
 
-      const rarityPrices = {};
+      
+      let rarityPrices = {};
+      if (type) {
+        const rarityType = basePrice.basePrices.find(item => item.label === type);    
+        rarityPrices[rarityType.label] = rarityType.price;
+      }
       basePrice.basePrices.forEach(item => {
         rarityPrices[item.label] = item.price;
       });

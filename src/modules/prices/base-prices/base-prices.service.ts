@@ -3,14 +3,13 @@ import { CreateBasePriceDto } from './dto/create-base-price.dto';
 import { BasePrice } from './entities/base-price.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { StagingProductVariantService } from 'src/modules/products/staging-product-variant/staging-product-variant.service';
 import { IBasePrices } from './interface/base-prices.interface';
+import { IBasePriceUpdate } from './interface/base-prices.interface';
 
 @Injectable()
 export class BasePricesService {
   constructor(
       @InjectModel(BasePrice.name) private basePriceModel: Model<BasePrice>,
-      private readonly stagingProductVariantService: StagingProductVariantService
     ) {}
 
   async createBasePrice (createBasePriceDto: CreateBasePriceDto) {
@@ -52,7 +51,9 @@ export class BasePricesService {
     }
   }
 
-  async updateBasePrices(id: string, subid: string, price: number): Promise<IBasePrices> {
+  
+
+  async updateBasePrices(id: string, subId: string, basePrice: number): Promise< IBasePriceUpdate > {
     try {  
       const existingBasePrice = await this.basePriceModel.findById(id);
       if (!existingBasePrice) {
@@ -61,14 +62,17 @@ export class BasePricesService {
       // Acceso y actualización del _id de un objeto dentro del array basePrices
       const response: IBasePrices = await this.basePriceModel.findOneAndUpdate(
           { _id: id },
-          { $set: { "basePrices.$[elem].price": price } },
+          { $set: { "basePrices.$[elem].price": basePrice } },
           {
-            arrayFilters: [{ "elem._id": new Types.ObjectId(subid) }],
+            arrayFilters: [{ "elem._id": new Types.ObjectId(subId) }],
             new: true
           }
         );
         
-      return response 
+      return  {
+        game: response.game,
+        details: response.basePrices.find(item => item._id === subId) || null
+      } 
     } catch (error) {
       throw new Error(`Error al actualizar el precio base: ${error.message}`);
     }

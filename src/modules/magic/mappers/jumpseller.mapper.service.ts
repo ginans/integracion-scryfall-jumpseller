@@ -70,7 +70,7 @@ createSku (card: MappedMagicCard, lang?: Language, finish?: string, condition?: 
     ) {
       formattedSet = card.set.slice(1)
     }else if (
-     card.setName === "The List"
+     card.setName.includes("The List")
     ) {
       formattedSet = card.set.slice(0, 4)
     }else {
@@ -88,7 +88,7 @@ createSku (card: MappedMagicCard, lang?: Language, finish?: string, condition?: 
       ? (regToken.test(card.setName) || regPromo.test(card.setName) || regArt.test(card.setName))
         ? (card.set ? card.set[0].toUpperCase() : '')
         : ''
-      : (card.setName === "The List")
+      : (card.setName.includes("The List"))
         ? `TL`
         : ''
   }${lang ? ("-" + lang.code.toUpperCase()) : ''}${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;

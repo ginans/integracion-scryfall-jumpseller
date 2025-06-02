@@ -21,6 +21,7 @@ import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCusto
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 import { mapCardData } from './mappers/scryfall-to-db.mapper';
 import { mappedStaggingProductVariant} from './mappers/staging-product-variant.mapper';
+import { ProcessService } from '../process/process.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -34,6 +35,7 @@ export class MagicCardsService {
     private readonly scryfallService: ScryfallService,
     private readonly jumpsellerMapperService: JumpsellerMapperService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
+    private readonly processService: ProcessService,
   ) {}
 
   // helper para pausar entre llamadas
@@ -118,13 +120,10 @@ export class MagicCardsService {
               saveStagingVariant
             );
 
-            const price= await this.stagingProductVariantService.calculatePricesForAllCards(varRes.variant.id, enCard.idJumpSeller); 
-              if (price) {
-                this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id} con precio ${JSON.stringify(price)}`);
-              } else {
-                this.logger.warn(`🪙No se calculó el precio para la variante ${varRes.variant.id}`);
-              }
-          } else {
+          //job de calculo de precios 
+          await this.processService.updateApiPricesQueue({ productId: enCard.idJumpSeller, variantId: varRes.variant.id })
+          
+        } else {
             this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
           }
           await this.delay(300);

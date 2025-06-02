@@ -7,7 +7,7 @@ export class RecalculatePricesByBaseDto implements IRecalculateFromBasePrice {
   price: number;
 
   @IsNotEmpty()
-  // @IsString()
+  @IsString()
   id: string;
 
   @IsNotEmpty()

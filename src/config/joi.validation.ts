@@ -6,7 +6,7 @@ export const JoiValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().required(),
   URL_APP_BACKEND: Joi.string().required(),
   URL_APP_FRONTEND: Joi.string().required(),
-  HASH: Joi.string().required(),
+  // HASH: Joi.string().required(),
   DB_NAME: Joi.string().required(),
   DB_URI: Joi.string().required(),
   CACHE_URL: Joi.string().required(),

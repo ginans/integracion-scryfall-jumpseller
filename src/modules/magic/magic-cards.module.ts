@@ -10,6 +10,7 @@ import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.mod
 import { StagingProductVariantModule } from '../staging-product-variant/staging-product-variant.module';
 import { JumpsellerMapperService } from './mappers/jumpseller.mapper.service';
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
+import { ProcessModule } from '../process/process.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.map
     JumpsellerModule,
     UsdPricesModule,
     BasePricesModule,
+    forwardRef(() => ProcessModule),
     forwardRef(() => StagingProductVariantModule), 
   ],
   controllers: [MagicCardsController],

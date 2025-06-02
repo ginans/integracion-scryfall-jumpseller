@@ -4,62 +4,58 @@ import { Job } from 'bullmq';
 import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
 import { BasePricesService } from '../../../prices/base-prices/base-prices.service';
 import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
-import { IRecalculatePrices } from '../../interfaces/recalculate-prices.interface';
 import { IUsdPrice } from 'src/modules/prices/usd-prices/interfaces/usd-prices.interface';
 import { IBasePrice, IBasePrices, IBasePriceUpdate } from 'src/modules/prices/base-prices/interface/base-prices.interface';
 import { EnumGame } from 'src/common/enums/game.enum';
 import { string } from 'joi';
+import { IStagingProductVariant } from 'src/modules/staging-product-variant/interfaces/stagingProductVariant.interface';
 
 
 
-@Processor(QueuesRecalculatePrices.name)
-export class QueuesRecalculatePrices extends WorkerHost {
-  private readonly logger = new Logger(QueuesRecalculatePrices.name, {
+@Processor("queues-recalculate-prices-by-base")
+export class QueuesRecalculatePricesByBase extends WorkerHost {
+  private readonly logger = new Logger("queues-recalculate-prices-by-base", {
     timestamp: true,
   });
   constructor(
     private readonly stageingProductVariantService: StagingProductVariantService,
     private readonly basePricesService: BasePricesService,
-    private readonly usdPricesService: UsdPricesService,
   ) {
     super();
   }
-  async process(job: Job<any, IRecalculatePrices, string>): Promise<any> {
+  async process(job: Job<IStagingProductVariant, any , string>): Promise<any> {
+
+    //TODO: manejar casos para etched
+    let rarityFoil
+    if (job.data.rarity === "common" && job.data.finish === "nonfoil") {
+      rarityFoil = "commonC";
+    }else if(job.data.rarity === "common" && job.data.finish === "foil") {
+      rarityFoil = "commonC-Foil";
+    } else if (job.data.rarity === "uncommon" && job.data.finish === "nonfoil") {
+      rarityFoil = "uncommonU";
+    } else if (job.data.rarity === "uncommon" && job.data.finish === "foil") {
+      rarityFoil = "uncommonU-Foil";
+    }else if (job.data.rarity === "rare" && job.data.finish === "nonfoil") {
+      rarityFoil = "rareR";
+    }else if (job.data.rarity === "rare" && job.data.finish === "foil") {
+      rarityFoil = "rareR-Foil";
+    }else if (job.data.rarity === "mythic" && job.data.finish === "nonfoil") {
+      rarityFoil = "mythicM";
+    }else if (job.data.rarity === "mythic" && job.data.finish === "foil") {
+      rarityFoil = "mythicM-Foil";
+    } else{
+      rarityFoil = `${job.data.rarity}, ${job.data.finish}`;
+    }
+      
     try {
-      const { gameID, id, subId, price, usdPrice } = job.data as IRecalculatePrices;
-
-      let pricesResponse: IUsdPrice | IBasePriceUpdate
-      let calculatedPrice: any
-
-      //recalcular precios por cambio del dolar
-      if (gameID && usdPrice){
-        await job.updateProgress(25);
-        pricesResponse = await this.usdPricesService.updateUsdPriceByGame(gameID, usdPrice);
-        await job.updateProgress(50);
-        calculatedPrice = await this.stageingProductVariantService.calculatePricesForAllCards(
-          undefined,
-          undefined,
-          pricesResponse.game as EnumGame,
-          undefined
-        )
-        await job.updateProgress(100);
-        
-        //recalcular precios por cambio de base price
-      }else if (id && subId && price) {
-        await job.updateProgress(25);
-        pricesResponse =  await this.basePricesService.updateBasePrices(id, subId, price);
-        await job.updateProgress(50);
-        calculatedPrice = await this.stageingProductVariantService.calculatePricesForAllCards(
-          undefined,
-          undefined,
-          pricesResponse.game as EnumGame,
-          pricesResponse.details.label
-        )
-        await job.updateProgress(100);
-      }else {
-        throw new Error('No se recibieron datos validos para recalcular precios');
-      }
-      return calculatedPrice;
+      await job.updateProgress(25);
+      await this.stageingProductVariantService.calculatePricesByVariant(
+         job.data,
+         rarityFoil 
+       )
+       await job.updateProgress(100);
+    
+    
     } catch (error) {
       await job.moveToFailed(new Error(error.message), "true");
       throw new Error(`Job failed at step: ${error.message}`);

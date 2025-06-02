@@ -2,23 +2,23 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
-import { IdsJumpseller } from '../../interfaces/api-prices.interface';
-import { IStagingProductVariant } from 'src/modules/staging-product-variant/interfaces/stagingProductVariant.interface';
 
-@Processor('queues-api-prices')
-export class QueuesApiPrices extends WorkerHost {
-  private readonly logger = new Logger(QueuesApiPrices.name, {
+@Processor('update-prices-from-front')
+export class QueuesPricesFromFront extends WorkerHost {
+  private readonly logger = new Logger("update-prices-from-front", {
     timestamp: true,
   });
   constructor(
-    private readonly variantService: StagingProductVariantService,
+    private readonly stageingProductVariantService: StagingProductVariantService,
   ) {
     super();
   }
-  async process(job: Job<IStagingProductVariant, any, string>): Promise<any> {
+  async process(job: Job<any, any, string>): Promise<any> {
     try {
       await job.updateProgress(25);
-      await this.variantService.calculatePricesByVariant(job.data);
+      await this.stageingProductVariantService.savePricesFromFront(job.data);
+      await job.updateProgress(50);
+      await this.stageingProductVariantService.sendPriceToJumpseller(job.data);
       await job.updateProgress(100);
       return 'done';
     } catch (error) {

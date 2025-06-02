@@ -8,12 +8,11 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IenumURLLang } from './submodules/scryfall/enums/lang.enum';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
-import { Product, ProductDocument } from '../products/entities/product.entity';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
 import { EnumLanguage } from './enums/lang.enum';
-import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
-import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
-import { StagingProductVariant, StagingProductVariantDocument } from '../products/staging-product-variant/entities/staging-product-variant.entity';
+import { StagingProductVariantService } from '../staging-product-variant/staging-product-variant.service';
+import { IStagingProductVariant } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
+import { StagingProductVariant, StagingProductVariantDocument } from '../staging-product-variant/entities/staging-product-variant.entity';
 import { EnumGame } from '../../common/enums/game.enum';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
@@ -22,6 +21,7 @@ import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCusto
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 import { mapCardData } from './mappers/scryfall-to-db.mapper';
 import { mappedStaggingProductVariant} from './mappers/staging-product-variant.mapper';
+import { ProcessService } from '../process/process.service';
 
 @Injectable()
 export class MagicCardsService {
@@ -30,12 +30,12 @@ export class MagicCardsService {
   constructor(
     private readonly jumpsellerService: JumpsellerService,
     @InjectModel(MagicCard.name) private readonly model: Model<MagicCardEntity>,
-    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
     private readonly stagingProductVariantService: StagingProductVariantService,
     private readonly scryfallService: ScryfallService,
     private readonly jumpsellerMapperService: JumpsellerMapperService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
+    private readonly processService: ProcessService,
   ) {}
 
   // helper para pausar entre llamadas
@@ -120,13 +120,10 @@ export class MagicCardsService {
               saveStagingVariant
             );
 
-            const price= await this.stagingProductVariantService.calculatePricesForAllCards(varRes.variant.id, enCard.idJumpSeller); 
-              if (price) {
-                this.logger.log(`🪙✅Precios calculados para la variante ${varRes.variant.id} con precio ${JSON.stringify(price)}`);
-              } else {
-                this.logger.warn(`🪙No se calculó el precio para la variante ${varRes.variant.id}`);
-              }
-          } else {
+          //job de calculo de precios 
+          await this.processService.updateApiPricesQueue({ productId: enCard.idJumpSeller, variantId: varRes.variant.id })
+          
+        } else {
             this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
           }
           await this.delay(300);

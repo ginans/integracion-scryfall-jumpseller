@@ -6,7 +6,7 @@ import { IenumURLLang } from './enums/lang.enum';
 @Injectable()
 export class ScryfallService {
    private readonly logger = new Logger(ScryfallService.name);
-  async getScryfallCards(lang: IenumURLLang, page: number, oracle_id?:string ): Promise<IresponseSryfall> {
+  async getScryfallCards(lang: IenumURLLang, page: number, oracle_id?:string, set?: string ): Promise<IresponseSryfall> {
     const url = "https://api.scryfall.com/cards/search";
     try {
       const params = {
@@ -22,6 +22,9 @@ export class ScryfallService {
       let queryString = new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper`;
       if(oracle_id){
         queryString= new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper+oracle_id:${oracle_id}`;
+      }
+      if (set){
+        queryString = new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper+set:${set}`;
       }
       const { data } = await axios.get(`${url}?${queryString}`);
 
@@ -43,13 +46,13 @@ export class ScryfallService {
     };
     // Construir manualmente la cadena de consulta de idioma
     //consultar solo por oracle_id si no se pasa el lang
-    let cards = []
     
     let queryString = new URLSearchParams(params as any).toString() + `&q=oracle_id:${oracle_id}+game%3Apaper+number:${collectorNumber}`;
 
     if(lang){
      queryString = new URLSearchParams(params as any).toString() + `&q=lang:${lang}+oracle_id:${oracle_id}+game%3Apaper+number:${collectorNumber}`;
     }
+
     try {
       let page = 1;
       let has_more = true;

@@ -21,7 +21,7 @@ export class UsdPrice implements IUsdPrice {
     gameID: string;
 
     @Prop({ required: true})
-    game: string;
+    game: EnumGame;
 
     @Prop({ required: true})
     usdPrice: number;

@@ -1,8 +1,7 @@
 import { Body, Controller, Param, Patch, Post, Query } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
-import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
-import { IRecalculatePrices } from './interfaces/recalculate-prices.interface';
+import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 
@@ -20,19 +19,19 @@ export class ProcessController {
     }
   }
   @Post('stock')
-  async updateStock(@Body() product: IStockFromFront[]) {
+  async updateStock(@Body() variants: IStockFromFront[]) {
     try{
-      const response = await this.processService.updateStockQueue(product);
+      const response = await this.processService.updateStockQueue(variants);
       return response
     }catch(error){
       return error
     }
   }
   
-  @Post('prices/api-prices')
-  async updatePrices(@Body() product: IPriceFromFront[]){
+  @Post('prices/update-from-front')
+  async updatePrices(@Body() variants: IPriceFromFront[]){
     try{
-      const response = await this.processService.updatePricesQueue(product);
+      const response = await this.processService.updatePricesFromFrontQueue(variants);
       return response
     }
     catch(error){
@@ -40,12 +39,23 @@ export class ProcessController {
     }
   }
 
-  @Patch('prices/recalculate-prices')
-  async recalculatePrices(
-    @Body() data: RecalculatePricesByBaseDto | RecalculatePricesByUsdDto,
+  @Patch('prices/recalculate-prices-by-base')
+  async recalculatePricesByBase(
+    @Body() basePrices: RecalculatePricesByBaseDto
   ) {
     try {
-      const response = await this.processService.recalculatePrices(data);
+      const response = await this.processService.recalculatePricesByBase(basePrices);
+      return response ;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+  @Patch('prices/recalculate-prices-by-usd')
+  async recalculatePricesByUsd(
+    @Body() usdPrices: RecalculatePricesByUsdDto,
+  ) {
+    try {
+      const response = await this.processService.recalculatePricesByUsd(usdPrices);
       return response ;
     } catch (error) {
       return { error: error.message };

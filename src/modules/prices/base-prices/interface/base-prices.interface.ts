@@ -1,3 +1,5 @@
+import { EnumGame } from "src/common/enums/game.enum";
+
 // BasePrices Interface
 export interface IBasePrice {
     _id?: string;
@@ -7,13 +9,13 @@ export interface IBasePrice {
 
 export interface IBasePrices {
     _id?: string;
-    game?: string;
+    game?: EnumGame;
     type?: string;
     currency?: string;
     basePrices?: IBasePrice[];
 }
 
 export interface IBasePriceUpdate {
-    game: string;
+    game: EnumGame;
     details: IBasePrice;
   }

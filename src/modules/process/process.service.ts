@@ -5,7 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
-import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
+import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { QueuesRecalculatePrices } from './queues/prices/queues.recalculate-prices';
 import { IRecalculatePrices } from './interfaces/recalculate-prices.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
@@ -58,7 +58,8 @@ export class ProcessService {
     let process = true; // Controla la ejecución del bucle
     do {
       // Obtener lista de getScryfallCards
-      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page);
+      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, );
+      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
       // agregar colas con data obtenidad 
       console.log(data.length);
       
@@ -68,11 +69,11 @@ export class ProcessService {
       
       this.logger.warn(`procesando pagina queues-magic ${page}`);
       //detener proceso si has_more es false
-      process = has_more;
+      // process = has_more;
       //comentar esto en produccion
-      // if(page==1){// para las pruebas solo consultamos la primera pagina 
-      //   process = false;
-      // }
+      if(page==1){// para las pruebas solo consultamos la primera pagina 
+        process = false;
+      }
       page++;
     } while (process)
   }

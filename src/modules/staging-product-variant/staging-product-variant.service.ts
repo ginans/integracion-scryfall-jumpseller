@@ -8,7 +8,6 @@ import { StagingProductVariant, StagingProductVariantDocument } from './entities
 import { EnumPriceAndStockState } from './enums/price-and-stock-state.enum';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
-import { Product, ProductDocument } from '../entities/product.entity';
 import { IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
 import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
 import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
@@ -22,7 +21,6 @@ import { CreatePricesDto } from './dto/prices/create-prices.dto';
 export class StagingProductVariantService {
   constructor(
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
-    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     @InjectModel(MagicCard.name) private magicCardModel: Model<MagicCard>,
     @InjectModel(UsdPrice.name) private usdPriceModel: Model<UsdPrice>,
     @InjectModel(BasePrice.name) private basePriceModel: Model<BasePrice>,
@@ -268,15 +266,7 @@ export class StagingProductVariantService {
         );
         this.logger.log(`Se actualizó el stock de la variante ${variant.variantId} en Jumpseller`);
 
-      
-          const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productVariant.productId);
 
-          await this.productModel.updateOne(
-            { id: jumpsellerProduct.product.id },
-            { ...jumpsellerProduct }
-          );
-          this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
-      
         return response;
         }else {
           const errorMsg = `Status ${response.status} - ${response?.message || 'Sin detalles'}`;
@@ -689,13 +679,6 @@ export class StagingProductVariantService {
        
          const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productVariant.productId);
 
-         const updatedProduct = await this.productModel.updateOne(
-            {
-              id: jumpsellerProduct.product.id },
-            { ...jumpsellerProduct }
-          );
-          this.logger.log(`😎 Se actualizó el producto ${jumpsellerProduct.product.id} en la coleccion products`);
-          return updatedProduct;
       } else {
         const errorMsg = `Status 400 - ${response?.message || 'Sin detalles'}`;
         this.logger.error(errorMsg);

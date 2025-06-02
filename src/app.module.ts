@@ -26,10 +26,9 @@ import { ScryfallModule } from './modules/magic/submodules/scryfall/scryfall.mod
 import { MagicCardsModule } from './modules/magic/magic-cards.module';
 import { JumpsellerModule } from './modules/jumpseller/jumpseller.module';
 import { ProcessModule } from './modules/process/process.module';
-import { ProductsModule } from './modules/products/products.module';
 import { BasePricesModule } from './modules/prices/base-prices/base-prices.module';
 import { UsdPricesModule } from './modules/prices/usd-prices/usd-prices.module';
-import { StagingProductVariantModule } from './modules/products/staging-product-variant/staging-product-variant.module';
+import { StagingProductVariantModule } from './modules/staging-product-variant/staging-product-variant.module';
 
 @Module({
   imports: [
@@ -65,7 +64,6 @@ import { StagingProductVariantModule } from './modules/products/staging-product-
     MagicCardsModule,
     JumpsellerModule,
     ProcessModule,
-    ProductsModule,
     UsdPricesModule,
     BasePricesModule,
     StagingProductVariantModule,

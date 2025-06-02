@@ -1,134 +1,334 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Magic Forever Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Sistema backend desarrollado en NestJS para la gestión de cartas de Magic: The Gathering, integrado con Jumpseller para e-commerce y Scryfall para datos de cartas.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Características Principales
 
-# Magic 4ever
-  Magic 4ever es un middleware diseñado para facilitar la integración entre los sistemas Defontana y Agilizar, optimizando la gestión de ventas, compras y logística en la organización. Este sistema permite:
+- **API REST** completa con documentación Swagger
+- **Autenticación JWT** con roles y permisos
+- **Integración con Scryfall** para datos de cartas Magic
+- **Integración con Jumpseller** para e-commerce
+- **Sistema de colas** con BullMQ para procesamiento asíncrono
+- **Gestión de precios** en USD y precios base
+- **Sistema de inventario** con variantes de productos
+- **Envío de emails** con plantillas Handlebars
+- **Logging avanzado** con Winston y Loki
+- **Base de datos MongoDB** con Mongoose
+- **Cache Redis** para optimización
+- **Dockerización** completa para desarrollo y producción
 
-## Obtener ventas:
-Recopila y procesa información de ventas provenientes de diferentes fuentes.
-## Distribuir cargas:
-Asigna y distribuye las ventas automáticamente a las sucursales de Defontana en función de criterios específicos.
-## Seleccionar ventas para sucursales:
-Controla qué ventas serán gestionadas en cada sucursal de Defontana, permitiendo un manejo eficiente y personalizado.
-## Integración con Agilizar:
-Sincroniza y transfiere datos entre Defontana y Agilizar, asegurando consistencia y rapidez.
-## Gestión de envíos:
-Facilita el envío de ventas y documentos asociados a los procesos de despacho.
-## Compras y cancelaciones:
-Procesa compras y maneja cancelaciones, manteniendo la información actualizada en ambos sistemas.
-## Guías de despacho:
-Genera y gestiona guías de despacho, facilitando la trazabilidad y control de los envíos.
-# Tecnologías Utilizadas
-## Backend: 
-Construido con NestJS y TypeScript, proporcionando una estructura robusta y modular.
-## Frontend: 
-Desarrollado con Next.js 15 y React 19, permitiendo una interfaz ágil y dinámica.
-## Componentes:
-Interfaz de usuario implementada con la librería de componentes Shadcn, garantizando consistencia visual y alta personalización.
+## 📋 Requisitos
 
-## Magic 4ever permite mejorar la eficiencia operativa y centralizar la información, agilizando el proceso de toma de decisiones y reduciendo el tiempo necesario para la actualización de los datos entre sistemas.
+- Node.js 22+
+- npm/pnpm
+- MongoDB
+- Redis
+- Docker (opcional)
 
-## Configurations and Environment Variables
+## 🛠️ Instalación
 
+### Desarrollo Local
+
+1. **Clonar el repositorio**
 ```bash
-# Create a .env file in the root of the project and add the following configurations
-$ cp .env.example .env
-
-# Add the following configurations to the .env file
-
-# Create services with the compose.yaml file
-$ docker-compose up -d
+git clone <repository-url>
+cd Magic-Forever-Backend
 ```
 
-## Project setup
-
+2. **Instalar dependencias**
 ```bash
-$ yarn install
+npm install
+# o
+pnpm install
 ```
 
-## Compile and run the project
-
+3. **Configurar variables de entorno**
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+cp .env.example .env
 ```
 
-## Run tests
+4. **Configurar variables requeridas en `.env`**
+```env
+# Base
+NODE_ENV=development
+PORT=8000
+APP_NAME=Magic Forever Backend
 
-```bash
-# unit tests
-$ yarn run test
+# Seguridad
+JWT_SECRET=your-jwt-secret
+JWT_HOURS_EXPIRE=24
 
-# e2e tests
-$ yarn run test:e2e
+# URLs
+URL_APP_BACKEND=http://localhost:8000
+URL_APP_FRONTEND=http://localhost:3000
 
-# test coverage
-$ yarn run test:cov
+# Base de datos
+DB_NAME=magic-forever
+DB_URI=mongodb://localhost:27017
+
+# Cache
+CACHE_URL=redis://localhost:6379
+CACHE_PORT=6379
+
+# Email (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+MAIL_FROM_NAME=Magic Forever
+MAIL_FROM_ADDRESS=your-email@gmail.com
+
+# Jumpseller API
+JUMPSELLER_LOGIN=your-jumpseller-login
+JUMPSELLER_AUTHTOKEN=your-jumpseller-token
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+5. **Ejecutar en modo desarrollo**
 ```bash
-$ yarn install -g mau
-$ mau deploy
+npm run dev
+# o
+pnpm run dev
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Con Docker
 
-## Resources
+1. **Desarrollo con Docker**
+```bash
+npm run docker:dev
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+2. **Producción con Docker**
+```bash
+npm run docker:prod
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 📁 Estructura del Proyecto
 
-## Support
+```
+src/
+├── auth/                    # Autenticación y autorización
+├── common/                  # Utilidades compartidas
+│   ├── adapters/           # Adaptadores HTTP
+│   ├── dto/                # DTOs comunes
+│   ├── enums/              # Enumeraciones
+│   ├── interfaces/         # Interfaces comunes
+│   ├── interceptor/        # Interceptores
+│   ├── logger/             # Sistema de logging
+│   └── services/           # Servicios comunes
+├── config/                  # Configuración
+├── jobs/                    # Sistema de trabajos/colas
+├── modules/                 # Módulos principales
+│   ├── files/              # Gestión de archivos
+│   ├── jumpseller/         # Integración Jumpseller
+│   ├── magic/              # Cartas Magic: The Gathering
+│   │   ├── entities/       # Entidades de cartas
+│   │   ├── mappers/        # Mapeadores de datos
+│   │   └── submodules/     # Submódulos (Scryfall)
+│   ├── mail/               # Sistema de emails
+│   ├── prices/             # Gestión de precios
+│   │   ├── base-prices/    # Precios base
+│   │   └── usd-prices/     # Precios en USD
+│   ├── process/            # Procesamiento de datos
+│   │   └── queues/         # Colas de procesamiento
+│   ├── products/           # Productos y variantes
+│   └── users/              # Gestión de usuarios
+└── main.ts                 # Punto de entrada
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🔧 Scripts Disponibles
 
-## Stay in touch
+```bash
+# Desarrollo
+npm run dev                  # Ejecutar en modo desarrollo
+npm run start               # Ejecutar en modo producción
+npm run build               # Compilar para producción
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# Testing
+npm run test                # Ejecutar tests
+npm run test:watch          # Tests en modo watch
+npm run test:cov            # Tests con cobertura
+npm run test:e2e            # Tests end-to-end
 
-## License
+# Linting y formato
+npm run lint                # Ejecutar ESLint
+npm run format              # Formatear código con Prettier
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# Docker
+npm run docker:dev          # Ejecutar contenedor de desarrollo
+npm run docker:dev:build    # Construir imagen de desarrollo
+npm run docker:dev:stop     # Detener contenedor de desarrollo
+npm run docker:dev:logs     # Ver logs de desarrollo
+
+npm run docker:prod         # Ejecutar contenedor de producción
+npm run docker:prod:build   # Construir imagen de producción
+npm run docker:prod:stop    # Detener contenedor de producción
+npm run docker:prod:logs    # Ver logs de producción
+
+npm run docker:stop:all     # Detener todos los contenedores
+```
+
+## 📚 Documentación API
+
+Una vez ejecutado el proyecto, la documentación Swagger estará disponible en:
+- **Desarrollo**: http://localhost:8000/backend/docs
+- **Producción**: https://your-domain.com/backend/docs
+
+## 🔐 Autenticación
+
+El sistema utiliza JWT con los siguientes roles:
+- `Admin`: Acceso completo al sistema
+- `User`: Acceso limitado a funcionalidades básicas
+
+### Endpoints principales:
+- `POST /backend/auth/login` - Iniciar sesión
+- `POST /backend/auth/recover_pass` - Recuperar contraseña
+- `POST /backend/auth/new-password` - Cambiar contraseña
+
+## 🧩 Módulos Principales
+
+### Magic Cards
+Gestión completa de cartas Magic: The Gathering con integración a Scryfall.
+
+```bash
+GET    /backend/magic-cards           # Listar cartas con paginación
+GET    /backend/magic-cards/:id       # Obtener carta por ID
+POST   /backend/magic-cards/create    # Crear nueva carta
+```
+
+### Jumpseller Integration
+Integración completa con la plataforma de e-commerce Jumpseller.
+
+```bash
+GET    /backend/jumpseller/products   # Sincronizar productos
+POST   /backend/jumpseller/webhook    # Webhook de ventas
+```
+
+### Process & Queues
+Sistema de procesamiento asíncrono con colas.
+
+```bash
+POST   /backend/process/magic         # Procesar cartas Magic
+POST   /backend/process/stock         # Actualizar inventario
+POST   /backend/process/prices        # Actualizar precios
+```
+
+### Products & Variants
+Gestión de productos y sus variantes.
+
+```bash
+GET    /backend/staging-product-variant     # Gestionar variantes
+```
+
+## 🔄 Sistema de Colas
+
+El proyecto utiliza BullMQ para procesamiento asíncrono:
+
+- **queues-magic**: Procesamiento de cartas Magic
+- **queues-stock**: Actualización de inventario
+- **queues-api-prices**: Actualización de precios
+- **queues-recalculate-prices**: Recálculo de precios
+
+Dashboard disponible en: `/admin/queues`
+
+## 📧 Sistema de Emails
+
+Configurado con Nodemailer y plantillas Handlebars para:
+- Recuperación de contraseñas
+- Notificaciones del sistema
+- Confirmaciones de acciones
+
+## 🗃️ Base de Datos
+
+### Colecciones principales:
+- `users`: Usuarios del sistema
+- `magicCards`: Cartas Magic: The Gathering
+- `products`: Productos de la tienda
+- `stagingProductVariants`: Variantes de productos
+- `usdPrices`: Precios en USD
+- `basePrices`: Precios base
+
+## 🚀 Despliegue
+
+### Producción con Docker
+
+1. **Configurar variables de producción**
+```bash
+cp docker/prod/.env.example docker/prod/.env
+```
+
+2. **Ejecutar en producción**
+```bash
+npm run docker:prod
+```
+
+### Producción manual
+
+1. **Compilar el proyecto**
+```bash
+npm run build
+```
+
+2. **Ejecutar con PM2**
+```bash
+pm2 start ecosystem.config.js --env production
+```
+
+## 🔍 Monitoring y Logs
+
+- **Logs**: Almacenados en `/app/logs` (en Docker)
+- **Health Check**: `GET /backend/health`
+- **Queue Dashboard**: `/admin/queues`
+- **API Docs**: `/backend/docs`
+
+## 🧪 Testing
+
+```bash
+# Tests unitarios
+npm run test
+
+# Tests con cobertura
+npm run test:cov
+
+# Tests end-to-end
+npm run test:e2e
+```
+
+## 🤝 Contribución
+
+1. Fork del proyecto
+2. Crear rama feature (`git checkout -b feature/AmazingFeature`)
+3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abrir Pull Request
+
+## 📝 Notas de Desarrollo
+
+### Comandos útiles:
+
+```bash
+# Generar nuevo módulo
+nest g module modules/nombre-modulo
+
+# Generar controlador
+nest g controller modules/nombre-modulo
+
+# Generar servicio
+nest g service modules/nombre-modulo
+
+# Limpiar cache de Docker
+docker system prune -a
+```
+
+### Variables de entorno importantes:
+- Todas las variables son requeridas excepto las marcadas como opcionales
+- Los secretos JWT deben ser únicos por ambiente
+- Las credenciales de Jumpseller son necesarias para la integración completa
+
+## 📄 Licencia
+
+Este proyecto es privado y propietario de Fixlabs.
+
+## 🆘 Soporte
+
+Para soporte técnico, contactar al equipo de desarrollo o crear un issue en el repositorio.

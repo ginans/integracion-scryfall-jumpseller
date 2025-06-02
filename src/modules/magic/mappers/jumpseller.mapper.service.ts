@@ -65,22 +65,19 @@ createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: s
   } else if (regArt.test(card.setName)) {
     formattedSet = card.set.slice(1);
   } else if (card.setName === "The List") {
-    formattedSet = ""; 
+    formattedSet = "";
   } else {
     formattedSet = card.set;
   }
 
-  // ✨ Aseguramos que el collectorNumber tenga mínimo 4 dígitos al final
-  const rawCollector = card.collectorNumber?.toUpperCase() || '';
-  const match = rawCollector.match(/([A-Z\-]*)(\d+)/); // separamos prefijo y número
-  let baseCollectorNumber = rawCollector;
+  const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase();
+  const baseCollectorNumber = collectorNumberToUpperCase
+    ? (collectorNumberToUpperCase.length <= 4
+        ? collectorNumberToUpperCase.padStart(4, '0')
+        : collectorNumberToUpperCase)
+    : '';
 
-  if (match) {
-    const prefix = match[1]; // puede ser algo como 'WOC-' o ''
-    const number = match[2].padStart(4, '0'); // aseguramos 4 dígitos
-    baseCollectorNumber = `${prefix}${number}`;
-  }
-
+  // 💡 Sufijo especial según el setName
   const suffix = (() => {
     if (card.setName === "The List") {
       return 'TL';

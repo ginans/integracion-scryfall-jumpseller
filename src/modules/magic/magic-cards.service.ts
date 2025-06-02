@@ -8,12 +8,11 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IenumURLLang } from './submodules/scryfall/enums/lang.enum';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
-import { Product, ProductDocument } from '../products/entities/product.entity';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
 import { EnumLanguage } from './enums/lang.enum';
-import { StagingProductVariantService } from '../products/staging-product-variant/staging-product-variant.service';
-import { IStagingProductVariant } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
-import { StagingProductVariant, StagingProductVariantDocument } from '../products/staging-product-variant/entities/staging-product-variant.entity';
+import { StagingProductVariantService } from '../staging-product-variant/staging-product-variant.service';
+import { IStagingProductVariant } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
+import { StagingProductVariant, StagingProductVariantDocument } from '../staging-product-variant/entities/staging-product-variant.entity';
 import { EnumGame } from '../../common/enums/game.enum';
 import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
@@ -30,7 +29,6 @@ export class MagicCardsService {
   constructor(
     private readonly jumpsellerService: JumpsellerService,
     @InjectModel(MagicCard.name) private readonly model: Model<MagicCardEntity>,
-    @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
     private readonly stagingProductVariantService: StagingProductVariantService,
     private readonly scryfallService: ScryfallService,

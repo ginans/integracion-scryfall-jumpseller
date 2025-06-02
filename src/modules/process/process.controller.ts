@@ -1,7 +1,7 @@
 import { Body, Controller, Param, Patch, Post, Query } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
-import { IPriceFromFront } from '../products/staging-product-variant/interfaces/stagingProductVariant.interface';
+import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { IRecalculatePrices } from './interfaces/recalculate-prices.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';

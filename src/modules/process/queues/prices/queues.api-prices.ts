@@ -1,7 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/products/staging-product-variant/staging-product-variant.service';
+import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
 
 
 

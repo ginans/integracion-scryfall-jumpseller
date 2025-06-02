@@ -59,6 +59,8 @@ export class ProcessService {
   //recalcular precios al cambiar el precio base (rareza)
   async recalculatePricesByBase(basePrices: RecalculatePricesByBaseDto ) {
     //actualizo el precio base
+
+    //devolver un status 200 para que no quede cargando
     const newBasePrice = await this.basePricesService.updateBasePrices(basePrices.id, basePrices.subId, basePrices.price);
     
     //obtengo los variantes
@@ -96,8 +98,8 @@ export class ProcessService {
     let process = true; // Controla la ejecución del bucle
     do {
       // Obtener lista de getScryfallCards
-      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, );
-      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
+      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, );
+      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
       // agregar colas con data obtenidad 
       console.log(data.length);
       

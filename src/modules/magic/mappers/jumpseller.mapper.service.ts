@@ -10,10 +10,7 @@ import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { MagicCard, magicCardDocument } from '../entities/magic-card.entity';
 import { Model } from 'mongoose';
-
-// If you need to use magicCardModel, define it inside a service or class like this:
 import { Injectable } from '@nestjs/common';
-import { find } from 'rxjs';
 
 export type Language = {
   code: EnumLanguage; 
@@ -71,11 +68,30 @@ createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: s
   }
 
   const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase();
-  const baseCollectorNumber = collectorNumberToUpperCase
-    ? (collectorNumberToUpperCase.length <= 4
+  
+  // Formateo especial para cartas de "The List"
+  let baseCollectorNumber = '';
+  if (card.setName === "The List" && collectorNumberToUpperCase) {
+    // Para The List, formatear el número después del guión
+    if (collectorNumberToUpperCase.includes('-')) {
+      const parts = collectorNumberToUpperCase.split('-');
+      const prefix = parts[0];
+      const number = parts[1];
+      const paddedNumber = number.padStart(4, '0');
+      baseCollectorNumber = `${prefix}-${paddedNumber}`;
+    } else {
+      baseCollectorNumber = collectorNumberToUpperCase.length <= 4
         ? collectorNumberToUpperCase.padStart(4, '0')
-        : collectorNumberToUpperCase)
-    : '';
+        : collectorNumberToUpperCase;
+    }
+  } else {
+    // Para otras cartas, usar la lógica original
+    baseCollectorNumber = collectorNumberToUpperCase
+      ? (collectorNumberToUpperCase.length <= 4
+          ? collectorNumberToUpperCase.padStart(4, '0')
+          : collectorNumberToUpperCase)
+      : '';
+  }
 
   // 💡 Sufijo especial según el setName
   const suffix = (() => {
@@ -97,8 +113,6 @@ createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: s
   }${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
 }
 
-
-
 async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
   //por aca nunca va a pasar un a carta en ESPAÑOL
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
@@ -110,6 +124,7 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+
   // Busca cartas con el mismo oracleId y set, pero en idioma diferente de inglés
   const findAnotherLangCard = await this.magicCardModel.findOne({
     oracleId: card.oracleId, 

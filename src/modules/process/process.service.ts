@@ -14,6 +14,7 @@ import { BasePricesService } from '../prices/base-prices/base-prices.service';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesRecalculatePricesByBase } from './queues/prices/queues.recalculate-prices-by-base';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
+import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards';
 
 @Injectable()
 export class ProcessService {
@@ -29,7 +30,7 @@ export class ProcessService {
     private readonly variantService: StagingProductVariantService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
-    @InjectQueue('queues-magic') private readonly queuesMagic: Queue,
+    @InjectQueue('queues-get-magic-cards') private readonly QueuesGetMagicCards: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
     @InjectQueue('queues-api-prices') private readonly queuesApiPrices: Queue,
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
@@ -88,32 +89,33 @@ export class ProcessService {
 
   async initCardMagic(): Promise<void> {
     //ejecutar proceso en ingles
-    await this.addQuesMagic(IenumURLLang.EN);
+    await this.getAllMagicCards(IenumURLLang.EN);
     //ejecutar proceso en español
-    await this.addQuesMagic(IenumURLLang.ES);
+    await this.getAllMagicCards(IenumURLLang.ES);
   }
 
-  private async addQuesMagic(lg:IenumURLLang): Promise<void> {
+  async getAllMagicCards(lg:IenumURLLang): Promise<void> {
     let page = 1;//inicio de paginacion
     let process = true; // Controla la ejecución del bucle
     do {
       // Obtener lista de getScryfallCards
-      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, );
-      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
+      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page);
+      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
       // agregar colas con data obtenidad 
-      console.log(data.length);
+  
+      this.logger.log(`Obteniendo cartas de Magic en idioma ${lg} - Página ${page} con ${data.length} cartas.`);
       
       for(let row of data){
-        await this.queuesMagic.add(lg, row);
+        await this.QueuesGetMagicCards.add(lg, row);
       }
       
       this.logger.warn(`procesando pagina queues-magic ${page}`);
       //detener proceso si has_more es false
-      // process = has_more;
+      process = has_more;
       //comentar esto en produccion
-      if(page==1){// para las pruebas solo consultamos la primera pagina 
-        process = false;
-      }
+      // if(page==1){// para las pruebas solo consultamos la primera pagina 
+      //   process = false;
+      // }
       page++;
     } while (process)
   }

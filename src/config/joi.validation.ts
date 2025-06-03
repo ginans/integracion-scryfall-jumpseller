@@ -10,4 +10,7 @@ export const JoiValidationSchema = Joi.object({
   DB_NAME: Joi.string().required(),
   DB_URI: Joi.string().required(),
   CACHE_URL: Joi.string().required(),
+  JUMPSELLER_API_URL: Joi.string().required(),
+  JUMPSELLER_LOGIN: Joi.string().required(),
+  JUMPSELLER_AUTHTOKEN: Joi.string().required(),
 });

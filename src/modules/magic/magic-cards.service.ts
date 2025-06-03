@@ -75,7 +75,7 @@ export class MagicCardsService {
       const enCard = versions.find(v => v.lang?.toLowerCase() === 'en');
       if (enCard && !enCard.idJumpSeller) {
         const baseReq = await this.jumpsellerMapperService.mapDBProductToJumpseller(enCard);
-        const baseRes = await this.jumpsellerService.createJumpsellerProducts(baseReq);
+        const baseRes = await this.jumpsellerService.createProduct(baseReq);
         enCard.idJumpSeller = baseRes.product?.id;
         await this.updateByStatus(enCard.id, { idJumpSeller: enCard.idJumpSeller });
       }
@@ -137,7 +137,7 @@ export class MagicCardsService {
         const imgReq = await this.jumpsellerMapperService.mapImageToJumpseller(enCard);
         if (imgReq) {
           try {
-            await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, imgReq);
+            await this.jumpsellerService.insertImages(enCard.idJumpSeller, imgReq);
             this.logger.log(`✅ Imagen principal subida para carta ${enCard.name}`);
           } catch (error) {
             this.logger.error(`❌ Error al subir imagen principal: ${error.message}`);
@@ -151,7 +151,7 @@ export class MagicCardsService {
           const mappedCardFace1Image = await this.jumpsellerMapperService.mapCardFace1ImageToJumpseller(enCard);
           if (mappedCardFace1Image) {
             try {
-              await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace1Image);
+              await this.jumpsellerService.insertImages(enCard.idJumpSeller, mappedCardFace1Image);
               this.logger.log(`✅ Imagen cara 1 subida para carta ${enCard.name}`);
             } catch (error) {
               this.logger.error(`❌ Error al subir imagen cara 1: ${error.message}`);
@@ -163,7 +163,7 @@ export class MagicCardsService {
           const mappedCardFace2Image = await this.jumpsellerMapperService.mapCardFace2ImageToJumpseller(enCard);
           if (mappedCardFace2Image) {
             try {
-              await this.jumpsellerService.insertJumpsellerImages(enCard.idJumpSeller, mappedCardFace2Image);
+              await this.jumpsellerService.insertImages(enCard.idJumpSeller, mappedCardFace2Image);
               this.logger.log(`✅ Imagen cara 2 subida para carta ${enCard.name}`);
             } catch (error) {
               this.logger.error(`❌ Error al subir imagen cara 2: ${error.message}`);
@@ -181,7 +181,7 @@ export class MagicCardsService {
 
         for (const customField of mappedCFields) {
           try {
-            await this.jumpsellerService.addAnExistingCustomFieldToAProduct(
+            await this.jumpsellerService.addCustomFieldInProduct(
               enCard.idJumpSeller,
               customField
             );
@@ -483,7 +483,7 @@ export class MagicCardsService {
 
    async getAllCustomFields(): Promise<JumpsellerCustomField[]> {
       try{
-        const response = await this.jumpsellerService.getAllJumpsellerCustomFields();
+        const response = await this.jumpsellerService.getAllCustomFields();
         return response.custom_fields;
       }catch (error) {
         this.logger.error('Error trayendo los custom fields', error);

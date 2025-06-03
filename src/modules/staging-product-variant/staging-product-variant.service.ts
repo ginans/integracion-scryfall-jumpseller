@@ -255,7 +255,7 @@ export class StagingProductVariantService {
       );
       
       this.logger.log(`🦍 Enviando stock a Jumpseller: ${JSON.stringify(stockRequest)}`);
-      const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);
+      const response = await this.jumpsellerService.addStock(stockRequest);
 
       if (response.status !== 201 && response.message) {      
         await this.updateVariantStockStatus(

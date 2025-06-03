@@ -10,8 +10,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './modules/mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
-import { JobsService } from './jobs/jobs.service';
-import { JobsModule } from './jobs/jobs.module';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
@@ -19,7 +17,6 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestLoggerInterceptor } from './common/interceptor/request-logger.interceptor';
 import { LoggerService } from './common/logger/logger.service';
 import { LoggerModule } from './common/logger/logger.module';
-import { FilesModule } from './modules/files/files.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import {join} from "path";
 import { ScryfallModule } from './modules/magic/submodules/scryfall/scryfall.module';
@@ -53,13 +50,11 @@ import { StagingProductVariantModule } from './modules/staging-product-variant/s
     UsersModule,
     AuthModule,
     MailModule,
-    JobsModule,
     LoggerModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads/pdfs'),
       serveRoot: '/pdfs',
     }),
-    FilesModule,
     ScryfallModule,
     MagicCardsModule,
     JumpsellerModule,
@@ -72,7 +67,6 @@ import { StagingProductVariantModule } from './modules/staging-product-variant/s
   providers: [
     AppService,
     JwtService,
-    JobsService,
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggerInterceptor,

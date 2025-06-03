@@ -1,7 +1,6 @@
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { JumpsellerProductRequest, JumpsellerStatus } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
 import { JumpsellerUpdateProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
-import { JumpsellerCreateImageRequest } from 'src/modules/jumpseller/interfaces/jumpsellerImages/jumpsellerCreateImageRequest.interface';
 import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { EnumGame } from 'src/common/enums/game.enum';
@@ -11,6 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { MagicCard, magicCardDocument } from '../entities/magic-card.entity';
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
+import { ICreateImageRequest } from '../../jumpseller/interfaces/create-image.interface';
 
 export type Language = {
   code: EnumLanguage; 
@@ -242,7 +242,7 @@ async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerU
     return {product};
 }
 
-async mapImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
+async mapImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest | null> {
   if (!card.imageUris || !card.imageUris.large) {
     console.warn(`⚠️ Carta sin imagen: ${card.name}`);
     return null;
@@ -250,7 +250,7 @@ async mapImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImage
   return { image: { url: card.imageUris.large, position: 0 } };
 }
 
-  async mapCardFace1ImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
+  async mapCardFace1ImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest | null> {
     if (!card.cardFaces || !card.cardFaces[0] || !card.cardFaces[0].imageUris || !card.cardFaces[0].imageUris.large) {
       console.warn(`⚠️ Carta sin imagen para la primera cara: ${card.name}`);
       return null;
@@ -260,7 +260,7 @@ async mapImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImage
   }
 
 
-async mapCardFace2ImageToJumpseller(card: MappedMagicCard): Promise<JumpsellerCreateImageRequest | null> {
+async mapCardFace2ImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest | null> {
   if (!card.cardFaces || !card.cardFaces[1] || !card.cardFaces[1].imageUris || !card.cardFaces[1].imageUris.large) {
     console.warn(`⚠️ Carta sin imagen para la segunda cara: ${card.name}`);
     return null;

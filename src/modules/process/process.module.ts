@@ -1,6 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { QueuesMagic } from './queues/queues.magic';
+import { QueuesCreateMagicProducts} from './queues/magic-cards/queues-create-magic-products.ts';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
@@ -15,6 +15,7 @@ import { BasePricesModule } from '../prices/base-prices/base-prices.module';
 import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
+import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards';
 
 @Module({
   imports: [
@@ -24,14 +25,25 @@ import { QueuesApiPrices } from './queues/prices/queues.api-prices';
     BasePricesModule,
     UsdPricesModule,
     BullModule.registerQueue({
-      name: 'queues-magic',
+      name: 'queues-get-magic-cards',
       defaultJobOptions: {
         // delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'queues-magic',
+      name: 'queues-get-magic-cards',
+      adapter: BullMQAdapter,
+    }),
+    BullModule.registerQueue({
+      name: 'queues-create-magic-products',
+      defaultJobOptions: {
+        // delay: 3000,
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: 'queues-create-magic-products',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
@@ -94,12 +106,13 @@ import { QueuesApiPrices } from './queues/prices/queues.api-prices';
   exports: [ProcessService, BullModule],
   providers: [
     ProcessService, 
-    QueuesMagic, 
+    QueuesCreateMagicProducts,
+    QueuesGetMagicCards,
     QueuesStock, 
     QueuesApiPrices, 
     QueuesRecalculatePricesByBase, 
     QueuesRecalculatePricesByUds, 
-    QueuesPricesFromFront
+    QueuesPricesFromFront,
   ],
 
 })

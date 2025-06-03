@@ -6,9 +6,9 @@ import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.e
 import { ScryfallCardResponse } from 'src/modules/magic/submodules/scryfall/interfaces/scryfall.interface';
 
 
-@Processor('queues-magic')
-export class QueuesMagic extends WorkerHost {
-  private readonly logger = new Logger(QueuesMagic.name, {
+@Processor('queues-get-magic-cards')
+export class QueuesGetMagicCards extends WorkerHost {
+  private readonly logger = new Logger(QueuesGetMagicCards.name, {
     timestamp: true,
   });
   constructor(
@@ -21,8 +21,9 @@ export class QueuesMagic extends WorkerHost {
       const data = job.data as ScryfallCardResponse;
       const lg  = job.name as IenumURLLang
       await job.updateProgress(25);
-      this.logger.log(`process ${data.name}`)
-      await this.magicCardsService.procesarCardMagic(data, lg);
+      this.logger.log(`procesando ${data.name} en languaje ${lg}`);
+      //guardar la carta en la base de datos
+      await this.magicCardsService.createMagicCards(data);
       await job.updateProgress(100);
       return 'done';
     } catch (error) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
@@ -7,17 +7,15 @@ import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 
 @Controller('process')
 export class ProcessController {
-  constructor(private readonly processService: ProcessService,
-  ) { }
-
+  constructor(private readonly processService: ProcessService) {}
+  /**
+   * Endpoint que Obtiene las cartas de Magic desde Scryfall
+   */
   @Post('magic')
-  async procesarCardMagic(): Promise<string> {
-    try{
-      await this.processService.initCardMagic();
-    }catch(error){
-      return error
-    }
+  async procesarCardMagic(): Promise<void> {
+    return await this.processService.initCardMagic();
   }
+
   @Post('stock')
   async updateStock(@Body() variants: IStockFromFront[]) {
     try{

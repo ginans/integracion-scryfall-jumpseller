@@ -1,9 +1,8 @@
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-
 import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
-import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
+import { IEnumLangUrl } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
@@ -11,10 +10,7 @@ import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto
 import { StagingProductVariantService } from '../staging-product-variant/staging-product-variant.service';
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
-import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
-import { QueuesRecalculatePricesByBase } from './queues/prices/queues.recalculate-prices-by-base';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
-import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards';
 
 @Injectable()
 export class ProcessService {
@@ -88,13 +84,12 @@ export class ProcessService {
   }
 
   async initCardMagic(): Promise<void> {
+    //Crear un servicio que se encargue de obtener las cartas de Magic desde Scryfall, Priority: 1
     //ejecutar proceso en ingles
-    await this.getAllMagicCards(IenumURLLang.EN);
-    //ejecutar proceso en español
-    await this.getAllMagicCards(IenumURLLang.ES);
+    await this.getAllMagicCards(IEnumLangUrl.EN);
   }
 
-  async getAllMagicCards(lg:IenumURLLang): Promise<void> {
+  async getAllMagicCards(lg:IEnumLangUrl): Promise<void> {
     let page = 1;//inicio de paginacion
     let process = true; // Controla la ejecución del bucle
     do {

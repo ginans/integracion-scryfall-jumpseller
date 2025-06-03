@@ -6,7 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { IsetMagic, MappedMagicCard } from '../../modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
-import { IenumURLLang } from './submodules/scryfall/enums/lang.enum';
+import { IEnumLangUrl } from './submodules/scryfall/enums/lang.enum';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
 import { EnumLanguage } from './enums/lang.enum';
@@ -44,7 +44,7 @@ export class MagicCardsService {
   }
 
   //procesar cada carta magic
-  async procesarCardMagic(cards: ScryfallCardResponse, lg: IenumURLLang): Promise<void> {
+  async procesarCardMagic(cards: ScryfallCardResponse, lg: IEnumLangUrl): Promise<void> {
     try {
       // 1. guardar en BD todas las versiones (fetchAndCreateCards)
       const versions: MappedMagicCard[] = [];
@@ -58,14 +58,14 @@ export class MagicCardsService {
       if (originalCard.lang?.toLowerCase() !== 'en') {
         this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
         //TODO: revisar paginacion
-        const versionEN = await this.scryfallService.getScryfallCards(IenumURLLang.EN, 1, cards.oracle_id);
+        const versionEN = await this.scryfallService.getScryfallCards(IEnumLangUrl.EN, 1, cards.oracle_id);
         await this.delay(300);
         if (versionEN?.data?.length) {
           versions.push(await this.createMagicCards(versionEN.data[0]));
         }
       }
 
-      const versionES = await this.scryfallService.getScryfallCards(IenumURLLang.ES, 1, cards.oracle_id);
+      const versionES = await this.scryfallService.getScryfallCards(IEnumLangUrl.ES, 1, cards.oracle_id);
       await this.delay(300);
       if (versionES?.data?.length) {
         versions.push(await this.createMagicCards(versionES.data[0]));
@@ -203,18 +203,17 @@ export class MagicCardsService {
   }
 
   //buscar actualizar o crear magic card
-  async createMagicCards(cards: ScryfallCardResponse): Promise<MappedMagicCard> {
-    //TODO: pasar cards a card
-    const mappedCardData: MappedMagicCard = mapCardData(cards);
-    const existingCard = await this.model.findOne({ id: mappedCardData.id });
+  async createMagicCards(card: ScryfallCardResponse): Promise<MappedMagicCard> {
+    const existingCard = await this.model.findOne({ id: card.id });
+    const newCard = mapCardData(card);
     if (existingCard) {
-      this.logger.log(`actualizar id ${mappedCardData.id}`);
+      this.logger.log(`Actualizando carta con id ${card.id}`);
       await this.model.updateOne(
-        { id: mappedCardData.id },
+        { id: card.id },
         { $set: { ...mappedCardData } }
       );
     } else {
-      this.logger.log(`crear card magic ${mappedCardData.id}`);
+      this.logger.log(`Creando nueva carta con id ${card.id}`);
       await this.model.create({ ...mappedCardData });
     }
     return { ...mappedCardData, idJumpSeller: existingCard?.idJumpSeller || null };

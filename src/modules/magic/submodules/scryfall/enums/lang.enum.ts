@@ -1,4 +1,4 @@
-export enum IenumURLLang {
+export enum IEnumLangUrl {
   ES = "lang:es",
   EN = "lang:en"
 }

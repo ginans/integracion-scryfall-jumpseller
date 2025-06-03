@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { IresponseSryfall, ScryfallCardResponse } from './interfaces/scryfall.interface';
-import { IenumURLLang } from './enums/lang.enum';
+import { IEnumLangUrl } from './enums/lang.enum';
 
 @Injectable()
 export class ScryfallService {
    private readonly logger = new Logger(ScryfallService.name);
-  async getScryfallCards(lang: IenumURLLang, page: number, oracle_id?:string, set?: string ): Promise<IresponseSryfall> {
+  async getScryfallCards(lang: IEnumLangUrl, page: number, oracle_id?:string, set?: string ): Promise<IresponseSryfall> {
     const url = "https://api.scryfall.com/cards/search";
     try {
       const params = {

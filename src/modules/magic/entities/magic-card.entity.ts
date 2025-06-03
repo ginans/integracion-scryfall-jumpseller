@@ -1,20 +1,143 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-import { MappedMagicCard } from '../../../modules/jumpseller/interfaces/mapped-magic-card.interface';
-import { EnumCondition } from '../enums/condition.enum';
+import { HydratedDocument } from 'mongoose';
 import { EnumStatus } from '../enums/status.enum';
 
-@Schema({ timestamps: true })
-export class MagicCard implements MappedMagicCard{
+@Schema({ _id: false })
+export class ImageUris {
+  @Prop({ type: String, required: true })
+  small: string;
 
-  @Prop({ type: Types.ObjectId, default: () => new Types.ObjectId() })
-  _id: Types.ObjectId;
-  
-  @Prop({ default: null, index: true })
-  idJumpSeller: number;
-  
+  @Prop({ type: String, required: true })
+  large: string;
+}
+
+@Schema({ _id: false })
+export class CardFace {
+  @Prop({ type: String, required: true })
+  name: string;
+
+  @Prop({ type: String })
+  printedName: string;
+
+  @Prop({ type: String })
+  manaCost: string;
+
+  @Prop({ type: String })
+  typeLine: string;
+
+  @Prop({ type: String })
+  printedTypeLine: string;
+
+  @Prop({ type: String })
+  oracleText: string;
+
+  @Prop({ type: String })
+  printedText: string;
+
+  @Prop({ type: String })
+  power: string;
+
+  @Prop({ type: String })
+  toughness: string;
+
+  @Prop({ type: [String], default: [] })
+  colors: string[];
+
+  @Prop({ type: String })
+  artist: string;
+
+  @Prop({ type: ImageUris })
+  imageUris: ImageUris;
+}
+
+@Schema({ _id: false })
+export class Legalities {
+  @Prop({ type: String })
+  standard: string;
+
+  @Prop({ type: String })
+  future: string;
+
+  @Prop({ type: String })
+  historic: string;
+
+  @Prop({ type: String })
+  timeless: string;
+
+  @Prop({ type: String })
+  gladiator: string;
+
+  @Prop({ type: String })
+  pioneer: string;
+
+  @Prop({ type: String })
+  explorer: string;
+
+  @Prop({ type: String })
+  modern: string;
+
+  @Prop({ type: String })
+  legacy: string;
+
+  @Prop({ type: String })
+  pauper: string;
+
+  @Prop({ type: String })
+  vintage: string;
+
+  @Prop({ type: String })
+  penny: string;
+
+  @Prop({ type: String })
+  commander: string;
+
+  @Prop({ type: String })
+  oathbreaker: string;
+
+  @Prop({ type: String })
+  standardbrawl: string;
+
+  @Prop({ type: String })
+  brawl: string;
+
+  @Prop({ type: String })
+  alchemy: string;
+
+  @Prop({ type: String })
+  paupercommander: string;
+
+  @Prop({ type: String })
+  duel: string;
+
+  @Prop({ type: String })
+  oldschool?: string;
+
+  @Prop({ type: String })
+  premodern?: string;
+
+  @Prop({ type: String })
+  predh?: string;
+}
+
+@Schema({ _id: false })
+export class Prices {
+  @Prop({ type: String, default: null })
+  usd?: string | null;
+
+  @Prop({ type: String, default: null })
+  usdFoil?: string | null;
+
+  @Prop({ type: String, default: null })
+  usdEtched?: string | null;
+}
+
+@Schema({ timestamps: true })
+export class MagicCard {
   @Prop({ required: true })
   id: string;
+
+  @Prop({ default: null, index: true })
+  idJumpSeller?: number | null;
   
   @Prop({ index: true })
   oracleId: string;
@@ -40,11 +163,8 @@ export class MagicCard implements MappedMagicCard{
   @Prop()
   layout: string;
   
-  @Prop({ type: Object })
-  imageUris: {
-    small: string;
-    large: string;
-  };
+  @Prop({ type: ImageUris, required: true })
+  imageUris: ImageUris;
   
   @Prop()
   manaCost: string;
@@ -58,10 +178,10 @@ export class MagicCard implements MappedMagicCard{
   @Prop()
   printedTypeLine: string;
   
-  @Prop({ type: [String]})
+  @Prop({ type: [String], default: [] })
   colors: string[];
   
-  @Prop({ type: [String] })
+  @Prop({ type: [String], default: [] })
   colorIdentity: string[];
 
   @Prop()
@@ -79,7 +199,7 @@ export class MagicCard implements MappedMagicCard{
   @Prop()
   toughness: string;
 
-  @Prop({ type: [String]})
+  @Prop({ type: String})
   setType: string;
   
   @Prop({ type: [String]})
@@ -94,57 +214,14 @@ export class MagicCard implements MappedMagicCard{
   @Prop()
   nonfoil: boolean;
 
-  @Prop({ type: Object })
-  cardFaces: {
-    name: string;
-    printedName: string;
-    manaCost: string;
-    typeLine: string;
-    printedTypeLine: string;
-    oracleText: string;
-    printedText: string;
-    power: string;
-    toughness: string;
-    colors: string[];
-    artist: string;
-    imageUris: {
-      small: string;
-      large: string;
-    };
-  }[];
+  @Prop({ type: [CardFace], default: [] })
+  cardFaces: CardFace[];
 
   @Prop({ type: Object })
-  legalities: {
-    standard: string;
-    future: string;
-    historic: string;
-    timeless: string;
-    gladiator: string;
-    pioneer: string;
-    explorer: string;
-    modern: string;
-    legacy: string;
-    pauper: string;
-    vintage: string;
-    penny: string;
-    commander: string;
-    oathbreaker: string;
-    standardbrawl: string;
-    brawl: string;
-    alchemy: string;
-    paupercommander: string;
-    duel: string;
-    oldschool: string;
-    premodern: string;
-    predh: string;
-  };
+  legalities: Legalities;
 
   @Prop({ type: Object })
-  prices: {
-    usd: string | null;
-    usdFoil: string | null;
-    usdEtched: string | null;
-  };
+  prices: Prices;
 
   @Prop()
   gameChanger: boolean;
@@ -155,13 +232,13 @@ export class MagicCard implements MappedMagicCard{
   @Prop()
   artist: string;
 
-  @Prop({ nulleable: true })
-  collectorNumber?: string;
+  @Prop({ nullable: true })
+  collectorNumber?: string | null;
 
-  @Prop({ nulleable: true })
+  @Prop({ nullable: true })
   setId: string
 
-  @Prop({ nulleable: true })
+  @Prop({ nullable: true })
   set: string;
 
   @Prop()
@@ -170,13 +247,9 @@ export class MagicCard implements MappedMagicCard{
   @Prop({ type: [String]})
   games: string[];
 
-  @Prop({
-    default: EnumStatus.PENDING,
-  })
-  status: EnumStatus;
+  @Prop({ default: EnumStatus.PENDING })
+  status?: EnumStatus;
 }
-
-
 
 export type magicCardDocument = HydratedDocument<MagicCard>;
 export const magicCardSchema = SchemaFactory.createForClass(MagicCard);

@@ -15,7 +15,7 @@ import { BasePricesModule } from '../prices/base-prices/base-prices.module';
 import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
-import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards';
+import { CreateMagicCardsProcessor } from './processors/create-magic-cards.processor';
 
 @Module({
   imports: [
@@ -107,7 +107,7 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
   providers: [
     ProcessService, 
     QueuesCreateMagicProducts,
-    QueuesGetMagicCards,
+    CreateMagicCardsProcessor,
     QueuesStock, 
     QueuesApiPrices, 
     QueuesRecalculatePricesByBase, 

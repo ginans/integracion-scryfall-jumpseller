@@ -8,12 +8,12 @@ export interface IresponseSryfall {
 
 export interface ScryfallCardResponse {
     object?: string;
-    id?: string;
-    oracle_id?: string;
+    id: string;
+    oracle_id: string;
     multiverse_ids?: number[];
     name?: string;
-    printed_name?: string;
-    lang?: string;
+    printed_name: string;
+    lang: string;
     released_at?: string;
     uri?: string;
     scryfall_uri?: string;
@@ -95,6 +95,8 @@ export interface ScryfallCardResponse {
     full_art: boolean;
     textless: boolean;
     booster?: boolean;
+    power?: string | null;
+    toughness?: string | null;
     story_spotlight?: boolean;
     edhrec_rank?: number;
     penny_rank?: number;

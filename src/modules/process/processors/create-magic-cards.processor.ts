@@ -2,28 +2,22 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
-import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
+import { IEnumLangUrl } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { ScryfallCardResponse } from 'src/modules/magic/submodules/scryfall/interfaces/scryfall.interface';
 
 
-@Processor('queues-get-magic-cards')
-export class QueuesGetMagicCards extends WorkerHost {
-  private readonly logger = new Logger(QueuesGetMagicCards.name, {
-    timestamp: true,
-  });
-  constructor(
-    private readonly magicCardsService:MagicCardsService
-  ) {
+@Processor('create-magic-cards')
+export class CreateMagicCardsProcessor extends WorkerHost {
+  private readonly logger = new Logger(CreateMagicCardsProcessor.name, { timestamp: true });
+  constructor(private readonly magicCardsService:MagicCardsService) {
     super();
   }
-  async process(job: Job<any, any, string>): Promise<any> {
+  async process(job: Job<{lg: IEnumLangUrl, card: ScryfallCardResponse}, any, string>): Promise<any> {
     try {
-      const data = job.data as ScryfallCardResponse;
-      const lg  = job.name as IenumURLLang
       await job.updateProgress(25);
-      this.logger.log(`procesando ${data.name} en languaje ${lg}`);
-      //guardar la carta en la base de datos
-      await this.magicCardsService.createMagicCards(data);
+      await this.magicCardsService.createMagicCards(job.data.card);
+      // Validar si existe
+      const existingCard = await this.magicCardsService.findByScryfallId(data.id);
       await job.updateProgress(100);
       return 'done';
     } catch (error) {

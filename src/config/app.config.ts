@@ -5,7 +5,7 @@ export const EnvConfiguration = () => ({
   jwt_secret: process.env.JWT_SECRET,
   url_backend: process.env.URL_APP_BACKEND || 'http://localhost:8000',
   url_frontend: process.env.URL_APP_FRONTEND || 'http://localhost:8000',
-  hash: process.env.HASH,
+  // hash: process.env.HASH,
   db_name: process.env.DB_NAME,
   db_uri: process.env.DB_URI,
   cache_url: process.env.CACHE_URL || 'redis://localhost:6379',

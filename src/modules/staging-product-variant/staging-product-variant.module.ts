@@ -4,8 +4,6 @@ import { StagingProductVariantController } from './staging-product-variant.contr
 import { MongooseModule } from '@nestjs/mongoose';
 import { StagingProductVariant, StagingProductVariantSchema } from './entities/staging-product-variant.entity';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
-import { Product } from '../entities/product.entity';
-import { ProductsModule } from '../products.module';
 import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
 import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
@@ -21,7 +19,6 @@ import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.mod
     UsdPricesModule,
     BasePricesModule,
     forwardRef(() => MagicCardsModule),
-    forwardRef(() => ProductsModule),
   ],
   exports: [
     StagingProductVariantService,

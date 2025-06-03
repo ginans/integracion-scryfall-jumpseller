@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateBasePriceDto } from './dto/create-base-price.dto';
-import { UpdateBasePriceDto } from './dto/update-base-price.dto';
 import { BasePrice } from './entities/base-price.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { UpdateBasePriceItemDto } from './dto/update-base-price-item.dto';
+import { IBasePrices } from './interface/base-prices.interface';
+import { IBasePriceUpdate } from './interface/base-prices.interface';
 
 @Injectable()
 export class BasePricesService {
@@ -31,6 +31,11 @@ export class BasePricesService {
       if (basePrices.length === 0) {
         throw new Error("No hay precios base registrados");
       } else {
+        // Log para debug - muestra los IDs reales
+        console.log('IDs encontrados:', basePrices.map(bp => ({
+          id: bp._id.toString(),
+          game: bp.game
+        })));
         return basePrices;
       }
     } catch (error) {
@@ -39,36 +44,66 @@ export class BasePricesService {
   }
 
   async findOne(id: string) {
-    try{
+    try {
+      // Validar que el ID sea un ObjectId válido
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('ID no es válido');
+      }
+
       const existingBasePrice = await this.basePriceModel.findById(id);
-        if (!existingBasePrice) {
-          throw new Error('Este precio base no existe');
-        }else{
-          return existingBasePrice;   
-        }
-    }catch (error) {
-      return error.message;
+      if (!existingBasePrice) {
+        throw new NotFoundException('Este precio base no existe');
+      }
+      return existingBasePrice;   
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Error al buscar precio base: ${error.message}`);
     }
   }
 
-  async updatePrices(id: string, subid: string, price: number) {
+  async updateBasePrices(id: string, subId: string, basePrice: number): Promise<IBasePriceUpdate> {
     try {  
+      // Validar que los IDs sean ObjectId válidos
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('ID principal no es válido');
+      }
+      if (!Types.ObjectId.isValid(subId)) {
+        throw new BadRequestException('SubID no es válido');
+      }
+
       const existingBasePrice = await this.basePriceModel.findById(id);
       if (!existingBasePrice) {
-        throw new Error('Este precio base no existe');
+        throw new NotFoundException('Este precio base no existe');
       }
+
       // Acceso y actualización del _id de un objeto dentro del array basePrices
-       await this.basePriceModel.updateOne(
-        { _id: id },
-        { $set: { "basePrices.$[elem].price": price } },
-        {
-          arrayFilters: [{ "elem._id": new Types.ObjectId(subid) }],
-          new: true
-        }
+      const response: IBasePrices = await this.basePriceModel.findOneAndUpdate(
+          { _id: id },
+          { $set: { "basePrices.$[elem].price": basePrice } },
+          {
+            arrayFilters: [{ "elem._id": new Types.ObjectId(subId) }],
+            new: true
+          }
+        );
+        
+        console.log('Respuesta de la actualización:', response);
+      
+      const updatedItem = response.basePrices.find(item => 
+        item._id.toString() === subId.toString()
       );
-      return await this.basePriceModel.findById(id);
+
+      console.log('Elemento actualizado:', updatedItem);
+      return {
+        game: response.game,
+        details: updatedItem || null
+      };
     } catch (error) {
-      return { error: error.message };
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Error al actualizar el precio base: ${error.message}`);
     }
   }
   

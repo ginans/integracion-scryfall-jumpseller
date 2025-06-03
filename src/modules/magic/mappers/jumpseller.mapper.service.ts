@@ -10,10 +10,7 @@ import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { MagicCard, magicCardDocument } from '../entities/magic-card.entity';
 import { Model } from 'mongoose';
-
-// If you need to use magicCardModel, define it inside a service or class like this:
 import { Injectable } from '@nestjs/common';
-import { find } from 'rxjs';
 
 export type Language = {
   code: EnumLanguage; 
@@ -52,48 +49,69 @@ async translatedLanguages(langInput: string): Promise<string> {
   return translatedLang;
 }
 
-createSku (card: MappedMagicCard, lang?: Language, finish?: string, condition?: string): string {
-  let formattedSet = ""
-    const regPromo = /promos?/i;
-    const regToken = /tokens?/i;
-    const regArt = /arts?/i;
-    if (
-      regToken.test(card.setName)
-    ) {
-      formattedSet = card.set.slice(1)
-    }else if (
-     regPromo.test(card.setName) 
-    ) {
-      formattedSet = card.set.slice(1)
-    }else if (
-     regArt.test(card.setName) 
-    ) {
-      formattedSet = card.set.slice(1)
-    }else if (
-     card.setName === "The List"
-    ) {
-      formattedSet = card.set.slice(0, 4)
-    }else {
-      formattedSet = card.set
-    }
+createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: string): string {
+  let formattedSet = "";
+  const regPromo = /promos?/i;
+  const regToken = /tokens?/i;
+  const regArt = /arts?/i;
+
+  if (regToken.test(card.setName)) {
+    formattedSet = card.set.slice(1);
+  } else if (regPromo.test(card.setName)) {
+    formattedSet = card.set.slice(1);
+  } else if (regArt.test(card.setName)) {
+    formattedSet = card.set.slice(1);
+  } else if (card.setName === "The List") {
+    formattedSet = "";
+  } else {
+    formattedSet = card.set;
+  }
 
   const collectorNumberToUpperCase = card.collectorNumber?.toUpperCase();
-  const baseCollectorNumber = collectorNumberToUpperCase
-    ? (collectorNumberToUpperCase.length <= 4
-      ? collectorNumberToUpperCase.padStart(4, '0')
-      : collectorNumberToUpperCase)
-    : '';
-  return `M-${formattedSet?.toUpperCase() || ''}${baseCollectorNumber}${
-    card.setName
-      ? (regToken.test(card.setName) || regPromo.test(card.setName) || regArt.test(card.setName))
-        ? (card.set ? card.set[0].toUpperCase() : '')
-        : ''
-      : (card.setName === "The List")
-        ? `TL`
-        : ''
-  }${lang ? ("-" + lang.code.toUpperCase()) : ''}${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
-}
+  
+  // Formateo especial para cartas de "The List"
+  let baseCollectorNumber = '';
+  if (card.setName === "The List" && collectorNumberToUpperCase) {
+    // Para The List, formatear el número después del guión
+    if (collectorNumberToUpperCase.includes('-')) {
+      const parts = collectorNumberToUpperCase.split('-');
+      const prefix = parts[0];
+      const number = parts[1];
+      const paddedNumber = number.padStart(4, '0');
+      baseCollectorNumber = `${prefix}-${paddedNumber}`;
+    } else {
+      baseCollectorNumber = collectorNumberToUpperCase.length <= 4
+        ? collectorNumberToUpperCase.padStart(4, '0')
+        : collectorNumberToUpperCase;
+    }
+  } else {
+    // Para otras cartas, usar la lógica original
+    baseCollectorNumber = collectorNumberToUpperCase
+      ? (collectorNumberToUpperCase.length <= 4
+          ? collectorNumberToUpperCase.padStart(4, '0')
+          : collectorNumberToUpperCase)
+      : '';
+  }
 
+  // 💡 Sufijo especial según el setName
+  const suffix = (() => {
+    if (card.setName === "The List") {
+      return 'TL';
+    } else if (
+      regToken.test(card.setName) ||
+      regPromo.test(card.setName) ||
+      regArt.test(card.setName)
+    ) {
+      return card.set ? card.set[0].toUpperCase() : '';
+    } else {
+      return '';
+    }
+  })();
+
+  return `M-${formattedSet?.toUpperCase() || ''}${baseCollectorNumber}${suffix}${
+    lang ? ("-" + lang.code.toUpperCase()) : ''
+  }${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
+}
 
 async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
   //por aca nunca va a pasar un a carta en ESPAÑOL
@@ -106,6 +124,7 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
+
   // Busca cartas con el mismo oracleId y set, pero en idioma diferente de inglés
   const findAnotherLangCard = await this.magicCardModel.findOne({
     oracleId: card.oracleId, 

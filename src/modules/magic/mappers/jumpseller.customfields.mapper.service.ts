@@ -3,12 +3,13 @@ import { JumpsellerCustomField } from 'src/modules/jumpseller/interfaces/jumpsel
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
 import { CustomField, CustomFieldFallback, CustomFieldTextBoolean } from '../enums/custom-fields.enum';
+import { MagicCard } from '../entities/magic-card.entity';
 
 
 @Injectable()
 export class CustomFieldsMapperService {
   async mappedCustomFields(
-    card: MappedMagicCard, 
+    card: MagicCard,
     customFields: JumpsellerCustomField[], 
   ): Promise<AddAnExistingCustomFieldToAProductRequest[]> {
     return customFields.map(customField => ({
@@ -20,7 +21,7 @@ export class CustomFieldsMapperService {
     }));
   }
 
-  customFieldsLabelsToValue(card: MappedMagicCard, customFieldLabel: string){
+  customFieldsLabelsToValue(card: MagicCard, customFieldLabel: string){
     const legalFormats = Object.entries(card.legalities) // convierte en array de pares [key, value]
     .filter(([_, value]) => value === "legal")           // filtra los que tengan valor 'legal'
     .map(([key]) => key)                                 // extrae solo las keys y los mete en un array

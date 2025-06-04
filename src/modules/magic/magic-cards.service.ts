@@ -1,16 +1,15 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
-import { MagicCard, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
+import { MagicCard, magicCardDocument, magicCardDocument as MagicCardEntity } from './entities/magic-card.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { IsetMagic, MappedMagicCard } from '../../modules/jumpseller/interfaces/mapped-magic-card.interface';
+import { IsetMagic, MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IEnumLangUrl } from './submodules/scryfall/enums/lang.enum';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
 import { EnumLanguage } from './enums/lang.enum';
-import { StagingProductVariantService } from '../staging-product-variant/staging-product-variant.service';
 import { IStagingProductVariant } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { StagingProductVariant, StagingProductVariantDocument } from '../staging-product-variant/entities/staging-product-variant.entity';
 import { EnumGame } from '../../common/enums/game.enum';
@@ -31,7 +30,6 @@ export class MagicCardsService {
     private readonly jumpsellerService: JumpsellerService,
     @InjectModel(MagicCard.name) private readonly model: Model<MagicCardEntity>,
     @InjectModel(StagingProductVariant.name) private stagingProductVariantModel: Model<StagingProductVariantDocument>,
-    private readonly stagingProductVariantService: StagingProductVariantService,
     private readonly scryfallService: ScryfallService,
     private readonly jumpsellerMapperService: JumpsellerMapperService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
@@ -47,7 +45,7 @@ export class MagicCardsService {
   async procesarCardMagic(cards: ScryfallCardResponse, lg: IEnumLangUrl): Promise<void> {
     try {
       // 1. guardar en BD todas las versiones (fetchAndCreateCards)
-      const versions: MappedMagicCard[] = [];
+      const versions: MagicCard[] = [];
       
       // Guardar la carta original
       //TODO:CAMBIAR A card
@@ -203,20 +201,18 @@ export class MagicCardsService {
   }
 
   //buscar actualizar o crear magic card
-  async createMagicCards(card: ScryfallCardResponse): Promise<MappedMagicCard> {
-    const existingCard = await this.model.findOne({ id: card.id });
+  async createMagicCards(card: ScryfallCardResponse): Promise<MagicCard> {
+    const existingCard: magicCardDocument = await this.model.findOne({ id: card.id });
     const newCard = mapCardData(card);
     if (existingCard) {
-      this.logger.log(`Actualizando carta con id ${card.id}`);
       await this.model.updateOne(
         { id: card.id },
-        { $set: { ...mappedCardData } }
+        { $set: { ...newCard } }
       );
     } else {
-      this.logger.log(`Creando nueva carta con id ${card.id}`);
-      await this.model.create({ ...mappedCardData });
+      await this.model.create({ ...newCard });
     }
-    return { ...mappedCardData, idJumpSeller: existingCard?.idJumpSeller || null };
+    return { ...newCard, idJumpSeller: existingCard?.idJumpSeller || null };
   }
 
   //buscar paginar magic card
@@ -406,8 +402,8 @@ export class MagicCardsService {
     }
   }
 
-  async createNewMagicCardAndVariantToJumpseller(cards: ScryfallCardResponse, condition: EnumCondition ): Promise<MappedMagicCard> {
-    const mappedCardData: MappedMagicCard = mapCardData(cards);
+  async createNewMagicCardAndVariantToJumpseller(cards: ScryfallCardResponse, condition: EnumCondition ): Promise<MagicCard> {
+    const mappedCardData: MagicCard = mapCardData(cards);
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
       this.logger.log(`actualizar id ${mappedCardData.id}`);

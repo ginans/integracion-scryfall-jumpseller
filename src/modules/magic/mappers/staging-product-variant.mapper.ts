@@ -1,6 +1,7 @@
 import { EnumGame, EnumGamePrefix } from "src/common/enums/game.enum";
 import { JumpsellerCreateVariantResponse } from "src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface";
 import { MappedMagicCard } from "src/modules/jumpseller/interfaces/mapped-magic-card.interface";
+import { MagicCard } from '../entities/magic-card.entity';
 
 // Exportamos la función para que pueda ser usada en otros archivos si es necesario
 export const getGameFromSku = (sku: string) => {
@@ -14,7 +15,7 @@ export const getGameFromSku = (sku: string) => {
   }
 };
 
-export const mappedStaggingProductVariant = (card: MappedMagicCard, variant: JumpsellerCreateVariantResponse, condition, finish ) => {
+export const mappedStaggingProductVariant = (card: MagicCard, variant: JumpsellerCreateVariantResponse, condition, finish ) => {
     return {
       productId: card.idJumpSeller,
       variantId: variant.variant.id,

@@ -49,7 +49,7 @@ async translatedLanguages(langInput: string): Promise<string> {
   return translatedLang;
 }
 
-createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: string): string {
+createSku(card: MagicCard, lang?: Language, finish?: string, condition?: string): string {
   let formattedSet = "";
   const regPromo = /promos?/i;
   const regToken = /tokens?/i;
@@ -113,7 +113,7 @@ createSku(card: MappedMagicCard, lang?: Language, finish?: string, condition?: s
   }${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
 }
 
-async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProductRequest> {
+async mapDBProductToJumpseller(card: MagicCard): Promise<JumpsellerProductRequest> {
   //por aca nunca va a pasar un a carta en ESPAÑOL
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   let rarity = card.rarity;
@@ -177,7 +177,7 @@ async mapDBProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerProduct
   return { product };
 }
 
-async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerUpdateProductRequest> {
+async mapDBUpdateProductToJumpseller(card: MagicCard): Promise<JumpsellerUpdateProductRequest> {
     //por aca nunca va a pasar un a carta en ESPAÑOL
     const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
     let rarity = card.rarity;
@@ -242,7 +242,7 @@ async mapDBUpdateProductToJumpseller(card: MappedMagicCard): Promise<JumpsellerU
     return {product};
 }
 
-async mapImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest | null> {
+async mapImageToJumpseller(card: MagicCard): Promise<ICreateImageRequest | null> {
   if (!card.imageUris || !card.imageUris.large) {
     console.warn(`⚠️ Carta sin imagen: ${card.name}`);
     return null;
@@ -250,7 +250,7 @@ async mapImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest |
   return { image: { url: card.imageUris.large, position: 0 } };
 }
 
-  async mapCardFace1ImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest | null> {
+  async mapCardFace1ImageToJumpseller(card: MagicCard): Promise<ICreateImageRequest | null> {
     if (!card.cardFaces || !card.cardFaces[0] || !card.cardFaces[0].imageUris || !card.cardFaces[0].imageUris.large) {
       console.warn(`⚠️ Carta sin imagen para la primera cara: ${card.name}`);
       return null;
@@ -260,7 +260,7 @@ async mapImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest |
   }
 
 
-async mapCardFace2ImageToJumpseller(card: MappedMagicCard): Promise<ICreateImageRequest | null> {
+async mapCardFace2ImageToJumpseller(card: MagicCard): Promise<ICreateImageRequest | null> {
   if (!card.cardFaces || !card.cardFaces[1] || !card.cardFaces[1].imageUris || !card.cardFaces[1].imageUris.large) {
     console.warn(`⚠️ Carta sin imagen para la segunda cara: ${card.name}`);
     return null;
@@ -271,7 +271,7 @@ async mapCardFace2ImageToJumpseller(card: MappedMagicCard): Promise<ICreateImage
 
 //TODO ARREGLAR CONDITIONS
 async mapVariantsToJumpseller(
-  card: MappedMagicCard,
+  card: MagicCard,
   languages: Language[],
   condition: EnumCondition = EnumCondition.NearMint
 ): Promise<JumpsellerCreateVariantRequest[]> {
@@ -309,7 +309,7 @@ async mapVariantsToJumpseller(
 
 //mapeo de variantes para el caso de crear una carta nueva a partir de una ya existente
 async mapVariantFromNewCardToJumpseller(
-  card: MappedMagicCard,
+  card: MagicCard,
   languages: Language[],
   condition: EnumCondition,
 ): Promise<JumpsellerCreateVariantRequest[]> {

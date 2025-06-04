@@ -1,6 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { QueuesCreateMagicProducts} from './queues/magic-cards/queues-create-magic-products.ts';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
@@ -16,6 +15,7 @@ import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
 import { CreateMagicCardsProcessor } from './processors/create-magic-cards.processor';
+import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor';
 
 @Module({
   imports: [
@@ -24,28 +24,30 @@ import { CreateMagicCardsProcessor } from './processors/create-magic-cards.proce
     StagingProductVariantModule,
     BasePricesModule,
     UsdPricesModule,
+    //Job Sync Magic Cards
     BullModule.registerQueue({
-      name: 'queues-get-magic-cards',
+      name: 'sync-magic-cards',
       defaultJobOptions: {
-        // delay: 3000,
+        lifo: true,
+
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: 'sync-magic-cards',
+      adapter: BullMQAdapter,
+    }),
+    //Job Create Magic Cards
+    BullModule.registerQueue({
+      name: 'create-magic-cards',
+      defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'queues-get-magic-cards',
+      name: 'create-magic-cards',
       adapter: BullMQAdapter,
     }),
-    BullModule.registerQueue({
-      name: 'queues-create-magic-products',
-      defaultJobOptions: {
-        // delay: 3000,
-        lifo: true,
-      },
-    }),
-    BullBoardModule.forFeature({
-      name: 'queues-create-magic-products',
-      adapter: BullMQAdapter,
-    }),
+    // Other queues
     BullModule.registerQueue({
       name: 'queues-stock',
       defaultJobOptions: {
@@ -57,6 +59,7 @@ import { CreateMagicCardsProcessor } from './processors/create-magic-cards.proce
       name: 'queues-stock',
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: 'queues-api-prices',
       defaultJobOptions: {
@@ -68,6 +71,7 @@ import { CreateMagicCardsProcessor } from './processors/create-magic-cards.proce
       name: 'queues-api-prices',
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-base",
       defaultJobOptions: {
@@ -79,6 +83,7 @@ import { CreateMagicCardsProcessor } from './processors/create-magic-cards.proce
       name: "queues-recalculate-prices-by-base",
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-usd",
       defaultJobOptions: {
@@ -90,6 +95,7 @@ import { CreateMagicCardsProcessor } from './processors/create-magic-cards.proce
       name: "queues-recalculate-prices-by-usd",
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: "update-prices-from-front",
       defaultJobOptions: {
@@ -105,16 +111,15 @@ import { CreateMagicCardsProcessor } from './processors/create-magic-cards.proce
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
   providers: [
-    ProcessService, 
-    QueuesCreateMagicProducts,
+    ProcessService,
     CreateMagicCardsProcessor,
+    SyncMagicCardsProcessor,
     QueuesStock, 
     QueuesApiPrices, 
-    QueuesRecalculatePricesByBase, 
-    QueuesRecalculatePricesByUds, 
+    QueuesRecalculatePricesByBase,
+    QueuesRecalculatePricesByUds,
     QueuesPricesFromFront,
   ],
 
 })
-export class ProcessModule {
-}
+export class ProcessModule {}

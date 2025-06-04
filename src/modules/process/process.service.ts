@@ -22,11 +22,10 @@ export class ProcessService {
    */
   private readonly logger = new Logger(ProcessService.name);
   constructor(
-    private readonly scryfallService: ScryfallService,
     private readonly variantService: StagingProductVariantService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
-    @InjectQueue('queues-get-magic-cards') private readonly QueuesGetMagicCards: Queue,
+    @InjectQueue('sync-magic-cards') private readonly syncMagicCardsQueue: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
     @InjectQueue('queues-api-prices') private readonly queuesApiPrices: Queue,
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
@@ -84,34 +83,6 @@ export class ProcessService {
   }
 
   async initCardMagic(): Promise<void> {
-    //Crear un servicio que se encargue de obtener las cartas de Magic desde Scryfall, Priority: 1
-    //ejecutar proceso en ingles
-    await this.getAllMagicCards(IEnumLangUrl.EN);
-  }
-
-  async getAllMagicCards(lg:IEnumLangUrl): Promise<void> {
-    let page = 1;//inicio de paginacion
-    let process = true; // Controla la ejecución del bucle
-    do {
-      // Obtener lista de getScryfallCards
-      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page);
-      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
-      // agregar colas con data obtenidad 
-  
-      this.logger.log(`Obteniendo cartas de Magic en idioma ${lg} - Página ${page} con ${data.length} cartas.`);
-      
-      for(let row of data){
-        await this.QueuesGetMagicCards.add(lg, row);
-      }
-      
-      this.logger.warn(`procesando pagina queues-magic ${page}`);
-      //detener proceso si has_more es false
-      process = has_more;
-      //comentar esto en produccion
-      // if(page==1){// para las pruebas solo consultamos la primera pagina 
-      //   process = false;
-      // }
-      page++;
-    } while (process)
+    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: IEnumLangUrl.EN });
   }
 }

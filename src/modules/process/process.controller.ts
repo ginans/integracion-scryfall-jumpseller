@@ -13,14 +13,13 @@ export class ProcessController {
    */
   @Post('magic')
   async procesarCardMagic(): Promise<void> {
-    return await this.processService.initCardMagic();
+    return this.processService.initCardMagic();
   }
 
   @Post('stock')
   async updateStock(@Body() variants: IStockFromFront[]) {
     try{
-      const response = await this.processService.updateStockQueue(variants);
-      return response
+      return await this.processService.updateStockQueue(variants)
     }catch(error){
       return error
     }
@@ -29,8 +28,7 @@ export class ProcessController {
   @Post('prices/update-from-front')
   async updatePrices(@Body() variants: IPriceFromFront[]){
     try{
-      const response = await this.processService.updatePricesFromFrontQueue(variants);
-      return response
+      return await this.processService.updatePricesFromFrontQueue(variants)
     }
     catch(error){
       return error
@@ -42,8 +40,7 @@ export class ProcessController {
     @Body() basePrices: RecalculatePricesByBaseDto
   ) {
     try {
-      const response = await this.processService.recalculatePricesByBase(basePrices);
-      return response ;
+      return await this.processService.recalculatePricesByBase(basePrices) ;
     } catch (error) {
       return { error: error.message };
     }
@@ -53,8 +50,7 @@ export class ProcessController {
     @Body() usdPrices: RecalculatePricesByUsdDto,
   ) {
     try {
-      const response = await this.processService.recalculatePricesByUsd(usdPrices);
-      return response ;
+      return await this.processService.recalculatePricesByUsd(usdPrices) ;
     } catch (error) {
       return { error: error.message };
     }

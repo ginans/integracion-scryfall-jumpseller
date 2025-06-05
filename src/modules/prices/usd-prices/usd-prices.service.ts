@@ -4,6 +4,7 @@ import { UpdatePriceDto } from './dto/update-usd-price.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UsdPrice } from './entities/usd-price.entity';
+import { IUsdPrice } from './interfaces/usd-prices.interface';
 
 @Injectable()
 export class UsdPricesService {
@@ -37,9 +38,9 @@ export class UsdPricesService {
     return `This action returns a #${id} price`;
   }
 
-  async updateUsdPriceByGame(gameID: string, usdPrice: number) {
+  async updateUsdPriceByGame(gameID: string, usdPrice: number) : Promise<IUsdPrice> {
     try {
-      const updatedPrice = await this.usdPriceModel.findOneAndUpdate(
+      const updatedPrice : IUsdPrice = await this.usdPriceModel.findOneAndUpdate(
         { gameID },
         { usdPrice },
         { new: true }

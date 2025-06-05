@@ -1,124 +1,105 @@
+import { Injectable } from '@nestjs/common';
+import { JumpsellerCustomField } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
-import { UpdateCustomFieldRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
-import { JumpsellerMapperService } from './jumpseller.mapper.service';
-import { Injectable, Logger } from '@nestjs/common';
-//crear manualmente y luego me traigo los creados con el el get
-// crear custom fields con un valor string 
+import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
+import { CustomField, CustomFieldFallback, CustomFieldTextBoolean } from '../enums/custom-fields.enum';
+import { MagicCard } from '../entities/magic-card.entity';
+
 
 @Injectable()
 export class CustomFieldsMapperService {
-  private readonly logger = new Logger(CustomFieldsMapperService.name);
-  constructor(
-   
-  ) {}
-
-async mapCMCCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "CMC",
-      type: "selection",
-      values: [card.cmc.toString()],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapTypeLineCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Tipo",
-      type: "selection",
-      values: [card.typeLine],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapColorCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Color",
-      type: "selection",
-      values: [card.colors.join(', ')],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapColorIdentityCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Color Identity",
-      type: "selection",
-      values: [card.colorIdentity.join(', ')],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapKeywordsCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Habilidades",
-      type: "selection",
-      values: [card.keywords.join(', ')],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapLegalitiesCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  const legalities = Object.entries(card.legalities || {})
-    .filter(([, v]) => v === 'legal')
-    .map(([f]) => f)
-    .join(', ');
-  return {
-    custom_field: {
-      label: "Legalidades",
-      type: "selection",
-      values: [legalities],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapGameChangerCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Game Changer",
-      type: "selection",
-      values: [card.gameChanger ? "Si" : "No"],
-      product_visibility: true,
-    },
-  };
-}
-
-async mapRarityCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  let rarity = card.rarity;
-  switch (card.rarity) {
-    case 'mythic': rarity = 'Mitica'; break;
-    case 'rare': rarity = 'Rara'; break;
-    case 'uncommon': rarity = 'Infrecuente'; break;
-    case 'common': rarity = 'Común'; break;
+  async mappedCustomFields(
+    card: MagicCard,
+    customFields: JumpsellerCustomField[], 
+  ): Promise<AddAnExistingCustomFieldToAProductRequest[]> {
+    return customFields.map(customField => ({
+      field: {
+        id: customField.id,
+        value: String(this.customFieldsLabelsToValue(card, customField.label)),
+        variants: []
+      }
+    }));
   }
-  return {
-    custom_field: {
-      label: "Rareza",
-      type: "selection",
-      values: [rarity],
-      product_visibility: true,
-    },
-  };
-}
 
-async mapArtistCustomField(card: MappedMagicCard): Promise<UpdateCustomFieldRequest> {
-  return {
-    custom_field: {
-      label: "Artista",
-      type: "selection",
-      values: [card.artist],
-      product_visibility: true,
-    },
+  customFieldsLabelsToValue(card: MagicCard, customFieldLabel: string){
+    const legalFormats = Object.entries(card.legalities) // convierte en array de pares [key, value]
+    .filter(([_, value]) => value === "legal")           // filtra los que tengan valor 'legal'
+    .map(([key]) => key)                                 // extrae solo las keys y los mete en un array     
+    
+  const spanishRarities = (() => {
+    switch (card.rarity) {
+      case 'common': return 'Común';
+      case 'uncommon': return 'Poco Común';
+      case 'rare': return 'Rara';
+      case 'mythic': return 'Mítica';
+      default: return card.rarity;
+    }
+  })();
+
+  const translateColors = (colors: string[]) => {
+    const translatedColors = colors.map(color => {
+      switch (color) {
+        case 'W': return 'Blanco';
+        case 'U': return 'Azul';
+        case 'B': return 'Negro';
+        case 'R': return 'Rojo';
+        case 'G': return 'Verde';
+        case "black": return "Negro";
+        case "white": return "Blanco";
+        case "borderless": return "Sin Borde";
+        case "yellow": return "Amarillo";
+        case "silver": return "Plateado";
+        case "gold": return "Dorado";
+        default: return color;
+      }
+    });
+    if (translatedColors.length > 1) return translatedColors.join(', ');
+    return translatedColors[0];
   };
-}
-}
+
+  // une en un string separando por comas
+    switch (customFieldLabel) {
+      case CustomField.COLOR:
+        if(!card.colors || card.colors.length === 0) return CustomFieldFallback.COLOR;
+        return translateColors(card.colors);
+      case CustomField.GAME_CHANGER:
+        return card?.gameChanger ? CustomFieldTextBoolean.YES : CustomFieldTextBoolean.NO;
+      case CustomField.RARITY: return spanishRarities;
+      case CustomField.SET_NAME: return card.setName;
+      case CustomField.SET_TYPE: return card.setType;
+      case CustomField.MANA_COST:
+        return card.manaCost ? card.manaCost : CustomFieldFallback.MANA_COST;
+      case CustomField.CMC:
+        return card.cmc ? `${card.cmc}` : CustomFieldFallback.CMC;
+      case CustomField.POWER:
+        return (!card.power) ? CustomFieldFallback.POWER : card.power;
+      case CustomField.TOUGHNESS:
+        return (!card.toughness) ? CustomFieldFallback.TOUGHNESS : card.toughness;
+      case CustomField.COLOR_IDENTITY:
+        if (!card.colorIdentity || card.colorIdentity.length === 0) return CustomFieldFallback.COLOR_IDENTITY;
+        return translateColors(card.colorIdentity);
+      case CustomField.KEYWORDS:
+        if (!card.keywords || card.keywords.length === 0) return CustomFieldFallback.KEYWORDS;
+        return card.keywords.length > 1 ? card.keywords.join(', ') : card.keywords[0];
+      case CustomField.LEGAL_FORMATS:
+        if (card.legalities && legalFormats.length > 1) {
+          return legalFormats.join(', ');
+        }else if (card.legalities && legalFormats.length == 1) {
+          return legalFormats[0];
+        }else{
+          return CustomFieldFallback.LEGAL_FORMATS;
+        }
+      case CustomField.ARTIST: return card.artist;
+      case CustomField.BORDER_COLOR: return translateColors(Array(card.borderColor));
+      case CustomField.TEXTLESS: return card.textless ? CustomFieldTextBoolean.YES : CustomFieldTextBoolean.NO;
+      case CustomField.FULL_ART: return card.fullArt ? CustomFieldTextBoolean.YES : CustomFieldTextBoolean.NO;
+      case CustomField.TYPE_LINE: 
+        return card.typeLine ? card.typeLine.split(' — ')[0] : CustomFieldFallback.TYPE_LINE;
+      case CustomField.SUB_TYPE_LINE:
+        if (!card.typeLine) return CustomFieldFallback.SUB_TYPE_LINE;
+        const parts = card.typeLine.split(' — ');
+        return parts.length > 1 ? parts[1] : CustomFieldFallback.SUB_TYPE_LINE;
+        default: return null;
+      }
+    }
+  }

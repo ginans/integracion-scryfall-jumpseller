@@ -20,16 +20,7 @@ export class BasePricesController {
   @Get('by-id/:id')
   findOne(@Param('id') id: string) {
     return this.basePricesService.findOne(id);
-  }
-  @Patch('by-id/:id/:subid')
-  updateBasePrices(
-    @Param('id') id: string, 
-    @Param("subid") subid : string,
-    @Body("price") price: number
-  ) {
-    return this.basePricesService.updatePrices(id, subid, price);
-  }
-  
+  }  
 
   @Delete(':id')
   remove(@Param('id') id: string) {

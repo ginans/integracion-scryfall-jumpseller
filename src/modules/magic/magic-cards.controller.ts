@@ -5,16 +5,17 @@ import { PaginatedResponse } from 'src/common/interfaces/paginated-response.inte
 import { MagicCard } from './entities/magic-card.entity';
 import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
 import { MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
-import { ObjectId } from 'mongoose';
-import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
+import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 
 @Controller('magic-cards')
 export class MagicCardsController {
-  constructor(private readonly magicCardsService: MagicCardsService) {}
+  constructor(
+    private readonly magicCardsService: MagicCardsService,
+  ) {}
 
   @Post("create")
-  async create(@Body() cards: ScryfallCardResponse): Promise<MappedMagicCard>  {
+  async create(@Body() cards: ScryfallCardResponse): Promise<MagicCard>  {
     return this.magicCardsService.createMagicCards(cards); 
   }
   
@@ -31,7 +32,7 @@ export class MagicCardsController {
   @Post("findToCreate/:_id")
   async findByCollectorNumberAndLang(
     @Param('_id') _id: string,
-    @Body() form: findByCollectorNumberAndLangDto
+    @Body() form: findByCardByLangDto
   ): Promise< ScryfallCardResponse[] | { oracleId: string; message: string }> {
     try {
       return this.magicCardsService.findByCollectorNumberAndLang(form, _id);
@@ -53,24 +54,10 @@ export class MagicCardsController {
   @Post("createNewCardAndVariant")
   async createNewCardAndVariant(
     @Body() body: { card: ScryfallCardResponse; condition: EnumCondition }
-  ): Promise<MappedMagicCard>  {
+  ): Promise<MagicCard>  {
     const { card, condition } = body;
     return this.magicCardsService.createNewMagicCardAndVariantToJumpseller(card, condition); 
   }
-  
-  
-  // @Get('test-precio/:oracleId')
-  // async testPrecio(@Param('oracleId') oracleId: string) {
-  //   return this.magicCardsService.addDollarValueToCard(oracleId);
-  // }
 
-  // @Get('calcular-precio/:oracleId')
-  // async calcularPrecio(@Param('oracleId') oracleId: string) {
-  //   return this.magicCardsService.addDollarValueToCard(oracleId);
-  // }
-    
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateProductCardDto: UpdateProductCardDto) {
-  //   return this.magicCardsService.update(id, updateProductCardDto);
-  // }
+ 
 }

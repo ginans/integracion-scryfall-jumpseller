@@ -118,12 +118,12 @@ export class MagicCardsService {
     if (imgReq) imagesRequests.push(imgReq);
 
     if (card.cardFaces && card.cardFaces.length >= 2) {
-        for (const cardFace of card.cardFaces) {
-          const index = card.cardFaces.indexOf(cardFace);
-          const faceImage = await this.jumpsellerMapperService.mapCardFaceImageToJumpseller(card, index);
-          if (faceImage) imagesRequests.push(faceImage);
-        }
-    }
+      // Procesar en orden inverso: índice 1 primero, luego índice 0
+      for (let index = card.cardFaces.length - 1; index >= 0; index--) {
+        const faceImage = await this.jumpsellerMapperService.mapCardFaceImageToJumpseller(card, index);
+        if (faceImage) imagesRequests.push(faceImage);
+      }
+  }
 
     return imagesRequests;
   }

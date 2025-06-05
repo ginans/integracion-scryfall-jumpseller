@@ -24,8 +24,7 @@ export class CustomFieldsMapperService {
   customFieldsLabelsToValue(card: MagicCard, customFieldLabel: string){
     const legalFormats = Object.entries(card.legalities) // convierte en array de pares [key, value]
     .filter(([_, value]) => value === "legal")           // filtra los que tengan valor 'legal'
-    .map(([key]) => key)                                 // extrae solo las keys y los mete en un array
-    .join(", ");       
+    .map(([key]) => key)                                 // extrae solo las keys y los mete en un array     
     
   const spanishRarities = (() => {
     switch (card.rarity) {
@@ -83,7 +82,13 @@ export class CustomFieldsMapperService {
         if (!card.keywords || card.keywords.length === 0) return CustomFieldFallback.KEYWORDS;
         return card.keywords.length > 1 ? card.keywords.join(', ') : card.keywords[0];
       case CustomField.LEGAL_FORMATS:
-        return Array.isArray(card.legalities) && card.legalities.length > 0 ? legalFormats : CustomFieldFallback.LEGAL_FORMATS;
+        if (card.legalities && legalFormats.length > 1) {
+          return legalFormats.join(', ');
+        }else if (card.legalities && legalFormats.length == 1) {
+          return legalFormats[0];
+        }else{
+          return CustomFieldFallback.LEGAL_FORMATS;
+        }
       case CustomField.ARTIST: return card.artist;
       case CustomField.BORDER_COLOR: return translateColors(Array(card.borderColor));
       case CustomField.TEXTLESS: return card.textless ? CustomFieldTextBoolean.YES : CustomFieldTextBoolean.NO;

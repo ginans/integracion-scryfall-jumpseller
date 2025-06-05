@@ -34,7 +34,7 @@ export class SyncMagicCardsProcessor extends WorkerHost {
         /**
          * Para probar el flujo de solo 1 página, descomentar la siguiente línea;
          */
-        if (page == 1) process = false;
+        // if (page == 1) process = false;
         page++;
         await new Promise(resolve => setTimeout(resolve, 300));
       } while (process);

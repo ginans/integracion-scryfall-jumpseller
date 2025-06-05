@@ -1,3 +1,5 @@
+import { Type } from 'class-transformer';
+import { TypeEnum } from '../../prices/base-prices/enums/create-base-price.enum';
 export enum CustomField {
   COLOR = 'Color',
   GAME_CHANGER = 'Game Changer',
@@ -13,8 +15,11 @@ export enum CustomField {
   LEGAL_FORMATS = 'Legal en',
   ARTIST = 'Dibujante',
   BORDER_COLOR = 'Color de borde',
-  TEXTLESS = 'Sin texto',
-  FULL_ART = 'Ilustración grande',
+  TEXTLESS = 'Textless',
+  FULL_ART = 'Full Art',
+  TYPE_LINE = 'Tipo de Carta',
+  SUB_TYPE_LINE = 'Subtipo',
+
 }
 export enum CustomFieldTextBoolean {
   YES = 'Sí',
@@ -29,4 +34,6 @@ export enum CustomFieldFallback {
   COLOR_IDENTITY = 'Sin identidad',
   KEYWORDS = 'Sin palabras claves',
   LEGAL_FORMATS = 'Ningún formato legal',
+  TYPE_LINE = 'Sin tipo de carta',
+  SUB_TYPE_LINE = 'Sin subtipo'
 }

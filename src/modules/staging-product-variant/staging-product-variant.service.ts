@@ -419,7 +419,6 @@ export class StagingProductVariantService {
       let successfulUpdates = 0;
       let failedUpdates = 0;
       let skippedVariants = 0;
-      let processedResults: string[] = [];
   
       processedVariants++;
   
@@ -532,7 +531,6 @@ export class StagingProductVariantService {
               nullErrorMsg
             );
             successfulUpdates++;
-            processedResults.push(`Variante ${response.variant.id} (${response.variant.sku}) actualizada exitosamente`);
           } else {
             const errorMsg = `Status 400 - ${response.message || 'Sin detalles'}`;
             this.logger.error(errorMsg);
@@ -542,12 +540,9 @@ export class StagingProductVariantService {
               EnumPriceAndStockState.ERROR,
               errorMsg
             );
-            failedUpdates++;
-            processedResults.push(`Variante ${variant.variantId} (${variant.sku}) falló: ${errorMsg}`);
-          }
+            failedUpdates++;          }
         } else {
           skippedVariants++;
-          processedResults.push(`Variante ${variant.variantId} (${variant.sku}) omitida: precio = 0 (normal)`);
         }
       }
   
@@ -556,7 +551,6 @@ export class StagingProductVariantService {
         successful: successfulUpdates,
         failed: failedUpdates,
         skipped: skippedVariants,
-        details: processedResults,
         message: `Procesamiento completado: ${processedVariants} variantes procesadas. Exitosas: ${successfulUpdates}, Fallidas: ${failedUpdates}, Omitidas (precio=0): ${skippedVariants}`,
         isComplete: true
       };

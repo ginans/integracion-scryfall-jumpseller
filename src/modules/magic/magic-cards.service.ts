@@ -22,7 +22,7 @@ import {
   StagingProductVariantDocument,
 } from '../staging-product-variant/entities/staging-product-variant.entity';
 import { EnumGame } from '../../common/enums/game.enum';
-import { findByCollectorNumberAndLangDto } from './dto/find-by-collector-number-and-lang.dto';
+import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 import { JumpsellerMapperService, Language } from './mappers/jumpseller.mapper.service';
 import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
@@ -463,28 +463,29 @@ export class MagicCardsService {
     );
   }
 //endpoint para buscar en bd y traer si no existe en scryfall
-  async findByCollectorNumberAndLang( form: findByCollectorNumberAndLangDto, _id: string ) : Promise<{ oracleId: string; message: string } | ScryfallCardResponse[]> {
+  async findByCollectorNumberAndLang( form: findByCardByLangDto, _id: string ) : Promise<{ oracleId: string; message: string } | ScryfallCardResponse[]> {
     try {
       //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
-      const existingCardByColNumberAndLang = await this.model.findOne({ collectorNumber: form.collectorNumber, lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
-      if (existingCardByColNumberAndLang) {
+      //TODO: REVISAR SI PODRIA LLEGAR MAS DE UNA CARTA AQUI
+      const existingCardInBD = await this.model.findOne({ lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
+      if (existingCardInBD) {
         return { 
-          oracleId: existingCardByColNumberAndLang.oracleId, 
-          message: `La carta con collectorNumber ${existingCardByColNumberAndLang.collectorNumber} y lenguaje ${existingCardByColNumberAndLang.lang} ya existe en la base de datos` };
-        }
-        
-        //consultar solo por id para tomar el oracleId en caso de que sea distinta
-        const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id)  }).exec();
-        if (!existingCard) {
-          throw new NotFoundException(`No se encontró la carta con id: ${_id}`);
-        }
-        //busco por el oracleId de la carta que ya existe en base de datos
-    
-        const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
-          //consulto con lo que me trajo la busqueda por id porque necesito el oracleId
+          oracleId: existingCardInBD.oracleId,
+          message: `La carta con collectorNumber ${existingCardInBD.collectorNumber} y lenguaje ${existingCardInBD.lang} ya existe en la base de datos`
+        };
+      }
+
+      //consultar solo por id para tomar el oracleId en caso de que sea distinta
+      const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id) }).exec();
+      if (!existingCard) {
+        throw new NotFoundException(`No se encontró la carta con id: ${_id}`);
+      }
+      //busco por el oracleId, por lenguaje, por collectorNumber y set
+      const scryfallResponse = await this.scryfallService.getScryfallCardByOracleIdAndLang(
           existingCard.oracleId,
           form.lenguaje,
-          form.collectorNumber
+          existingCard.collectorNumber,
+          existingCard.get('set') // Usar el método get() de Mongoose
         );
       
         if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {
@@ -493,7 +494,7 @@ export class MagicCardsService {
         
         this.logger.log(`Se trajeron ${scryfallResponse.data.length} cartas ${scryfallResponse.data.length < 10? "😎": "💀"} de scryfall`);
         if (scryfallResponse.data.length == 0) {
-          throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje} y collectorNumber: ${form.collectorNumber}`);
+          throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje}, collectorNumber: ${existingCard.collectorNumber} y set : ${existingCard.get('set')}`);
         }
         return scryfallResponse.data;
 

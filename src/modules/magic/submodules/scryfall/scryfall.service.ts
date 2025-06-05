@@ -52,7 +52,7 @@ export class ScryfallService {
     }
   }
 
-    async getScryfallCardByOracleIdAndLang(oracle_id: string, lang: string, collectorNumber: string, set?: string ): Promise<IresponseSryfall> {
+    async getScryfallCardByOracleIdAndLang(oracle_id: string, lang: string, collectorNumber: string, set: string ): Promise<IresponseSryfall> {
     const url = "https://api.scryfall.com/cards/search";
     const params = {
       format: 'json',
@@ -63,15 +63,8 @@ export class ScryfallService {
     };
     // Construir manualmente la cadena de consulta de idioma
     //consultar solo por oracle_id si no se pasa el lang
-    
-    let queryString = new URLSearchParams(params as any).toString() + `&q=oracle_id:${oracle_id}+game%3Apaper+number:${collectorNumber}`;
 
-    if(lang){
-     queryString = new URLSearchParams(params as any).toString() + `&q=lang:${lang}+oracle_id:${oracle_id}+game%3Apaper+number:${collectorNumber}`;
-    }
-    if (set){
-      queryString = new URLSearchParams(params as any).toString() + `&q=${lang}+game%3Apaper+set:${set}`;
-    }
+    let queryString = new URLSearchParams(params as any).toString() + `&q=oracle_id:${oracle_id}+game%3Apaper` + `+number:${collectorNumber}` + `+set:${set}` + `+lang:${lang}`;
 
     try {
       let page = 1;

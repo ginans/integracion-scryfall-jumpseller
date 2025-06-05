@@ -1,4 +1,5 @@
 export enum EnumStatus {
     PENDING = "pending",
-    COMPLETADO = "completed",
+    COMPLETED = "completed",
+    FAILED = "error",
 }

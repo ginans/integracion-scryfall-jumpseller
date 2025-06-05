@@ -1,6 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { QueuesCreateMagicProducts} from './queues/magic-cards/queues-create-magic-products.ts';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
@@ -15,7 +14,13 @@ import { BasePricesModule } from '../prices/base-prices/base-prices.module';
 import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
-import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards';
+import { CreateMagicCardsProcessor } from './processors/create-magic-cards.processor';
+import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor';
+import { CreateProductJumpsellerProcessor } from './processors/create-product-jumpseller.processor';
+import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
+import { JumpsellerService } from '../jumpseller/jumpseller.service';
+import { CreateVariantsRequestProcessor } from './processors/create-variants-request.processor';
+import { CreateVariantJumpsellerProcessor } from './processors/create-variant-jumpseller.processor';
 
 @Module({
   imports: [
@@ -25,27 +30,60 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
     BasePricesModule,
     UsdPricesModule,
     BullModule.registerQueue({
-      name: 'queues-get-magic-cards',
+      name: '1-sync-magic-cards',
       defaultJobOptions: {
-        // delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'queues-get-magic-cards',
+      name: '1-sync-magic-cards',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: 'queues-create-magic-products',
+      name: '2-create-magic-cards',
       defaultJobOptions: {
-        // delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'queues-create-magic-products',
+      name: '2-create-magic-cards',
       adapter: BullMQAdapter,
     }),
+    BullModule.registerQueue({
+      name: '3-create-product-jumpseller',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '3-create-product-jumpseller',
+      adapter: BullMQAdapter,
+    }),
+
+    //Job Check Variants Cards
+    BullModule.registerQueue({
+      name: '4-create-variants-request',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '4-create-variants-request',
+      adapter: BullMQAdapter,
+    }),
+
+    //Job Create Variants
+    BullModule.registerQueue({
+      name: '5-create-variant-jumpseller',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '5-create-variant-jumpseller',
+      adapter: BullMQAdapter,
+    }),
+    // Other queues
     BullModule.registerQueue({
       name: 'queues-stock',
       defaultJobOptions: {
@@ -57,6 +95,7 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
       name: 'queues-stock',
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: 'queues-api-prices',
       defaultJobOptions: {
@@ -68,6 +107,7 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
       name: 'queues-api-prices',
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-base",
       defaultJobOptions: {
@@ -79,6 +119,7 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
       name: "queues-recalculate-prices-by-base",
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-usd",
       defaultJobOptions: {
@@ -90,6 +131,7 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
       name: "queues-recalculate-prices-by-usd",
       adapter: BullMQAdapter,
     }),
+    //
     BullModule.registerQueue({
       name: "update-prices-from-front",
       defaultJobOptions: {
@@ -105,16 +147,19 @@ import { QueuesGetMagicCards } from './queues/magic-cards/queues-get-magic-cards
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
   providers: [
-    ProcessService, 
-    QueuesCreateMagicProducts,
-    QueuesGetMagicCards,
-    QueuesStock, 
+    ProcessService,
+    QueuesStock,
     QueuesApiPrices, 
-    QueuesRecalculatePricesByBase, 
-    QueuesRecalculatePricesByUds, 
+    QueuesRecalculatePricesByBase,
+    QueuesRecalculatePricesByUds,
     QueuesPricesFromFront,
+    JumpsellerMapperService,
+    JumpsellerService,
+    SyncMagicCardsProcessor,
+    CreateMagicCardsProcessor,
+    CreateProductJumpsellerProcessor,
+    CreateVariantsRequestProcessor,
+    CreateVariantJumpsellerProcessor
   ],
-
 })
-export class ProcessModule {
-}
+export class ProcessModule {}

@@ -1,8 +1,7 @@
-import { MappedMagicCard } from "src/modules/jumpseller/interfaces/mapped-magic-card.interface";
-import { ScryfallCard } from "../submodules/scryfall/interfaces/scryfall.interface";
+import { ScryfallCardResponse } from '../submodules/scryfall/interfaces/scryfall.interface';
+import { MagicCard } from '../entities/magic-card.entity';
 
-// mapear data de Scryfall para guadar en tabla magic
- export const mapCardData = (card: Partial<ScryfallCard>): MappedMagicCard => {
+ export const mapCardData = (card: ScryfallCardResponse): MagicCard => {
     return {
       id: card.id || '',
       oracleId: card.oracle_id || '',
@@ -44,7 +43,7 @@ import { ScryfallCard } from "../submodules/scryfall/interfaces/scryfall.interfa
           large: face.image_uris.large || ''
         } : { small: '', large: '' },
       })) || [],
-      legalities: card.legalities ? {
+      legalities: {
         standard: card.legalities.standard || '',
         future: card.legalities.future || '',
         historic: card.legalities.historic || '',
@@ -67,7 +66,7 @@ import { ScryfallCard } from "../submodules/scryfall/interfaces/scryfall.interfa
         premodern: card.legalities.premodern || '',
         predh: card.legalities.predh || '',
         oathbreaker: card.legalities.oathbreaker || ''
-      } : {},
+      },
       gameChanger: card.game_changer || false,
       rarity: card.rarity || '',
       artist: card.artist || '',

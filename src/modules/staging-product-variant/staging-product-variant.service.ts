@@ -487,16 +487,13 @@ export class StagingProductVariantService {
         }
   
         const precioBaseRareza = rarityPrices[rarezaKey] || 0;
-        this.logger.log(`Precio base por rareza (${rarezaKey}): ${precioBaseRareza} CLP para ${variant.sku}`);
   
         // Calcular precio final en CLP
         let precioCLP = (precioUSD === 0 || precioUSD === null) ? 0 : precioUSD * usdPrice;
         precioCLP = Math.ceil(precioCLP / 100) * 100;
         const precioFinal = (precioCLP === 0) ? 0 : Math.max(precioCLP, precioBaseRareza);
   
-        if (precioFinal > 0) {
-          this.logger.log(`Actualizando precio para variante ${variant.variantId} (${variant.sku}): ${precioFinal} CLP`);
-  
+        if (precioFinal > 0) {  
           const nullErrorMsg = null;
   
           await this.stagingProductVariantModel.updateOne(
@@ -526,9 +523,7 @@ export class StagingProductVariantService {
             }
           };
   
-          const response = await this.jumpsellerService.updateVariant(variant.productId, variant.variantId, variantTo);
-          this.logger.log(`se envio la variante : ${JSON.stringify(response)} a Jumpseller`);
-  
+          const response = await this.jumpsellerService.updateVariant(variant.productId, variant.variantId, variantTo);  
           if (!('message' in response)) {
             await this.updateVariantPriceStatus(
               variant.variantId,
@@ -536,7 +531,6 @@ export class StagingProductVariantService {
               EnumPriceAndStockState.COMPLETED,
               nullErrorMsg
             );
-            this.logger.log(`Se actualizó el precio de la variante ${variant.variantId} en Jumpseller`);
             successfulUpdates++;
             processedResults.push(`Variante ${response.variant.id} (${response.variant.sku}) actualizada exitosamente`);
           } else {
@@ -552,7 +546,6 @@ export class StagingProductVariantService {
             processedResults.push(`Variante ${variant.variantId} (${variant.sku}) falló: ${errorMsg}`);
           }
         } else {
-          this.logger.log(`Variante ${variant.variantId} con sku ${variant.sku} omitida: precio calculado es 0 (comportamiento esperado)`);
           skippedVariants++;
           processedResults.push(`Variante ${variant.variantId} (${variant.sku}) omitida: precio = 0 (normal)`);
         }

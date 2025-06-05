@@ -40,9 +40,9 @@ export class CustomFieldsMapperService {
       case CustomField.CMC:
         return card.cmc ? `${card.cmc}` : CustomFieldFallback.CMC;
       case CustomField.POWER:
-        return (!card.power) ? CustomFieldFallback.POWER : card.power;//TODO: validar
+        return (!card.power) ? CustomFieldFallback.POWER : card.power;
       case CustomField.TOUGHNESS:
-        return (!card.toughness) ? CustomFieldFallback.TOUGHNESS : card.toughness; //TODO: validar
+        return (!card.toughness) ? CustomFieldFallback.TOUGHNESS : card.toughness;
       case CustomField.COLOR_IDENTITY:
         if (!card.colorIdentity || card.colorIdentity.length === 0) return CustomFieldFallback.COLOR_IDENTITY;
         return card.colorIdentity.length > 1 ? card.colorIdentity.join(', ') : card.colorIdentity[0];

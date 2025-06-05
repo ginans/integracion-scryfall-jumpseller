@@ -149,7 +149,6 @@ export class MagicCardsService {
       const versions: MagicCard[] = [];
       
       // Guardar la carta original
-      //TODO:CAMBIAR A card
       const originalCard = await this.createMagicCards(cards);
       versions.push(originalCard);
       //TODO: REVISAR

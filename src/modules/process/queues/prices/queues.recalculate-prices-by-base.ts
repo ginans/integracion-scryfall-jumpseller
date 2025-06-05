@@ -21,7 +21,7 @@ export class QueuesRecalculatePricesByBase extends WorkerHost {
     private readonly stageingProductVariantService: StagingProductVariantService,
     private readonly basePricesService: BasePricesService,
   ) {
-    super();
+    super();8
   }
   async process(job: Job<IStagingProductVariant, any , string>): Promise<any> {
 
@@ -60,35 +60,5 @@ export class QueuesRecalculatePricesByBase extends WorkerHost {
       await job.moveToFailed(new Error(error.message), "true");
       throw new Error(`Job failed at step: ${error.message}`);
     }
-  }
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job<any, any, string>) {
-    console.log(`Job completed with result ${job.returnvalue}`);
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job<any, any, string>) {
-    console.log(`Job failed with reason ${job.failedReason}`);
-  }
-
-  @OnWorkerEvent('progress')
-  onProgress(job: Job<any, any, string>) {
-    console.log(`Job progress updated to ${job.progress}`);
-  }
-
-  @OnWorkerEvent('paused')
-  onPaused(job: Job<any, any, string>) {
-    console.log(`Job paused`);
-  }
-
-  @OnWorkerEvent('resumed')
-  onResumed(job: Job<any, any, string>) {
-    console.log(`Job resumed`);
-  }
-
-  @OnWorkerEvent('drained')
-  onDrained() {
-    console.log(`Queue prices completada u agotada`);
   }
 }

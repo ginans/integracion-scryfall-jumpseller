@@ -114,7 +114,7 @@ createSku(card: MagicCard, lang?: Language, finish?: string, condition?: string)
 }
 
 async mapDBProductToJumpseller(card: MagicCard, description: string[]): Promise<JumpsellerProductRequest> {
-  const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || []; //TODO: revisar que hace
+  const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   let rarity: string;
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
@@ -255,7 +255,6 @@ async mapCardFaceImageToJumpseller(card: MagicCard, faceIndex: number): Promise<
   return { image: { url, position: 0 } };
 }
 
-//TODO ARREGLAR CONDITIONS
 async mapVariantsToJumpseller(
   card: MagicCard,
   languages: Language[],

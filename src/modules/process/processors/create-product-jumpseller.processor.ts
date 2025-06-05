@@ -26,6 +26,10 @@ export class CreateProductJumpsellerProcessor extends WorkerHost {
       await job.updateProgress(25);
       const response = await this.magicCardsService.createProductJumpseller(request);
       await this.magicCardsService.updateJumpsellerId(job.data.id, response.product.id);
+      if (versionES) {
+        await this.magicCardsService.createMagicCards(versionES);
+        await this.magicCardsService.updateJumpsellerId(versionES.id, response.product.id);
+      }
       await job.updateProgress(50);
       /**
        * Cargar Imágenes

@@ -485,7 +485,7 @@ export class MagicCardsService {
           existingCard.oracleId,
           form.lenguaje,
           existingCard.collectorNumber,
-          existingCard.get('set') // Usar el método get() de Mongoose
+          existingCard.get('set')
         );
       
         if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {

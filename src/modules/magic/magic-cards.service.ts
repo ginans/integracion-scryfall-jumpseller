@@ -467,13 +467,13 @@ export class MagicCardsService {
     try {
       //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
       //TODO: REVISAR SI PODRIA LLEGAR MAS DE UNA CARTA AQUI
-      const existingCardInBD = await this.model.findOne({ lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
-      if (existingCardInBD) {
-        return { 
-          oracleId: existingCardInBD.oracleId,
-          message: `La carta con collectorNumber ${existingCardInBD.collectorNumber} y lenguaje ${existingCardInBD.lang} ya existe en la base de datos`
-        };
-      }
+      // const existingCardInBD = await this.model.findOne({ lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
+      // if (existingCardInBD) {
+      //   return { 
+      //     oracleId: existingCardInBD.oracleId,
+      //     message: `La carta con collectorNumber ${existingCardInBD.collectorNumber} y lenguaje ${existingCardInBD.lang} ya existe en la base de datos`
+      //   };
+      // }
 
       //consultar solo por id para tomar el oracleId en caso de que sea distinta
       const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id) }).exec();
@@ -501,8 +501,9 @@ export class MagicCardsService {
     }
   }
 
-  async createNewMagicCardAndVariantToJumpseller(cards: ScryfallCardResponse, condition: EnumCondition ): Promise<MagicCard> {
-    const mappedCardData: MagicCard = mapCardData(cards);
+  async createNewMagicCardAndVariantToJumpseller(card: ScryfallCardResponse, condition: EnumCondition ): Promise<MagicCard> {
+    const mappedCardData: MagicCard = mapCardData(card);
+    //verificar si el condition para la carta que entra existe en staggingProductVariantModel
     const existingCard = await this.model.findOne({ id: mappedCardData.id });
     if (existingCard) {
       this.logger.log(`actualizar id ${mappedCardData.id}`);
@@ -514,25 +515,37 @@ export class MagicCardsService {
       this.logger.log(`crear card magic ${mappedCardData.id}`);
       await this.model.create({ ...mappedCardData });
     }
+    const existingVariant = await this.stagingProductVariantModel.findOne(
+      { 
+        condition: condition || EnumCondition.NearMint,
+        game: EnumGame.MAGIC,
+        'fatherProduct.id': existingCard.id,
+        'fatherProduct.set': existingCard.get('set'),
+        'fatherProduct.collectorNumber': existingCard.collectorNumber,
+        'fatherProduct.oracleId': existingCard.oracleId,
+      }
+    );
+    if (existingVariant) {
+      this.logger.warn(`La variante ya existe en el stock, omitiendo duplicado`);
+      return;
+    }
     //enviar carta a jumpseller como variante de la carta original
-    const baseCard = await this.model.findOne({ oracleId: mappedCardData.oracleId });
-
-    if (baseCard && baseCard.idJumpSeller) {
+    if (existingCard && existingCard.idJumpSeller && !existingVariant) {
       const variantReq = await this.jumpsellerMapperService.mapVariantFromNewCardToJumpseller(
-        baseCard,
+        existingCard,
         [
           { code: mappedCardData.lang as EnumLanguage, name: await this.jumpsellerMapperService.translatedLanguages(mappedCardData.lang) },
         ],
         condition
       );
       const varRes = await this.jumpsellerService.createJumpsellerVariant(
-        baseCard.idJumpSeller,
+        existingCard.idJumpSeller,
         { variant: variantReq[0].variant }
       );
       await this.delay(300);
       //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
       const cardWithStock : IStagingProductVariant = await this.stagingProductVariantModel.findOne({
-        productId: baseCard.idJumpSeller,
+        productId: existingCard.idJumpSeller,
         sku: varRes.variant.sku
       });
       
@@ -540,29 +553,32 @@ export class MagicCardsService {
         this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
         await this.stagingProductVariantModel.create(
           {
-            productId: baseCard.idJumpSeller,
+            productId: existingCard.idJumpSeller,
             variantId: varRes.variant.id,
-            name: baseCard.name || "",
-            anotherLangName: baseCard.printedName || "",
+            name: existingCard.name || "",
+            anotherLangName: existingCard.printedName || "",
             sku: varRes.variant.sku,
             finish: "",
-            rarity: baseCard.rarity || "",
+            rarity: existingCard.rarity || "",
             condition: condition || "",
             game: EnumGame.MAGIC,
             imageUrl: {
-              large: baseCard.imageUris?.large || null,
-              cardFacelarge1: baseCard.cardFaces?.[0]?.imageUris?.large || null,
-              cardFacelarge2: baseCard.cardFaces?.[1]?.imageUris?.large || null,
-              small: baseCard.imageUris?.small || null,
-              cardFaceSmall1: baseCard.cardFaces?.[0]?.imageUris?.small || null,
-              cardFaceSmall2: baseCard.cardFaces?.[1]?.imageUris?.small || null,
+              large: existingCard.imageUris?.large || null,
+              cardFacelarge1: existingCard.cardFaces?.[0]?.imageUris?.large || null,
+              cardFacelarge2: existingCard.cardFaces?.[1]?.imageUris?.large || null,
+              small: existingCard.imageUris?.small || null,
+              cardFaceSmall1: existingCard.cardFaces?.[0]?.imageUris?.small || null,
+              cardFaceSmall2: existingCard.cardFaces?.[1]?.imageUris?.small || null,
             },
             fatherProduct: {
-              oracleId: baseCard.oracleId,
-              description: baseCard.oracleText || "",
-              setName: baseCard.setName || "",
-              setId: baseCard.setId || "",
-              set: baseCard.set || "",
+              id: existingCard.id,
+              collectorNumber: existingCard.collectorNumber || "",
+              oracleId: existingCard.oracleId,
+              description: existingCard.oracleText || "",
+              setName: existingCard.setName || "",
+              setId: existingCard.setId || "",
+              set: existingCard.set || "",
+
             },
           }
         );

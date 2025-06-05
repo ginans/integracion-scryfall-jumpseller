@@ -34,6 +34,8 @@ export const mappedStaggingProductVariant = (card: MagicCard, variant: Jumpselle
         cardFaceSmall2: card.cardFaces?.[1]?.imageUris?.small || null,
       },
       fatherProduct: {
+        id: card.id,
+        collectorNumber: card.collectorNumber || "",
         oracleId: card.oracleId,
         description: card.oracleText || "",
         setName: card.setName || "",

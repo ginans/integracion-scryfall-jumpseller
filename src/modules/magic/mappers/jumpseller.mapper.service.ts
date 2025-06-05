@@ -312,7 +312,7 @@ async mapVariantFromNewCardToJumpseller(
         if (!finish.available) continue;
         variants.push({
           variant: {
-            sku: this.createSku(card, lang, finish.suffix, condition),
+            sku: this.createSku(card, lang, finish.suffix, condition === EnumCondition.NearMint ? "" : condition),
             price: 0, 
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },

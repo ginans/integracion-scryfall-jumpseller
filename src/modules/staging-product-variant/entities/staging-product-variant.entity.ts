@@ -93,11 +93,13 @@ export class StagingProductVariant implements IStagingProductVariant {
         default: null 
     })
     fatherProduct: {
-        oracleId: string | null;
+        id: string,
+        collectorNumber: string;
+        oracleId: string;
         sku?: string | null;
-        description: string | null;
-        setId: string
-        set: string
+        description: string;
+        setId: string;
+        set: string;
     }
 }
 

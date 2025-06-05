@@ -21,7 +21,7 @@ export class QueuesRecalculatePricesByBase extends WorkerHost {
     private readonly stageingProductVariantService: StagingProductVariantService,
     private readonly basePricesService: BasePricesService,
   ) {
-    super();8
+    super();
   }
   async process(job: Job<IStagingProductVariant, any , string>): Promise<any> {
 

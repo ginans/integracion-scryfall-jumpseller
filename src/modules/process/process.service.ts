@@ -2,7 +2,7 @@ import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
-import { IEnumLangUrl } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
+import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
@@ -25,7 +25,7 @@ export class ProcessService {
     private readonly variantService: StagingProductVariantService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
-    @InjectQueue('sync-magic-cards') private readonly syncMagicCardsQueue: Queue,
+    @InjectQueue('1-sync-magic-cards') private readonly syncMagicCardsQueue: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
     @InjectQueue('queues-api-prices') private readonly queuesApiPrices: Queue,
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
@@ -83,6 +83,6 @@ export class ProcessService {
   }
 
   async initCardMagic(): Promise<void> {
-    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: IEnumLangUrl.EN });
+    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN });
   }
 }

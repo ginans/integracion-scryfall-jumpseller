@@ -79,10 +79,9 @@ export class JumpsellerService {
         this.registerError(error);
       }
     }
-    async addCustomFieldInProduct(productId: number, customFields: AddAnExistingCustomFieldToAProductRequest): Promise<AddAnExistingCustomFieldToAProductResponse> {
+    async addCustomFieldInProduct(productId: number, customFields: AddAnExistingCustomFieldToAProductRequest): Promise<void> {
       try {
-        const { data } = await axios.post<JumpsellerProductResponse>(`${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.FIELDS}`, customFields);
-        return data;
+        await this.client.post(`${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.FIELDS}`, customFields);
       } catch (error) {
         this.logger.error(`❌ Error al crear campos personalizados en Jumpseller: ${error.message}`);
         this.registerError(error);

@@ -7,7 +7,7 @@ import { EnumGame } from 'src/common/enums/game.enum';
 import { EnumCondition } from '../enums/condition.enum';
 import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { MagicCard, magicCardDocument } from '../entities/magic-card.entity';
+import { MagicCard, MagicCardDocument } from '../entities/magic-card.entity';
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { ICreateImageRequest } from '../../jumpseller/interfaces/create-image.interface';
@@ -21,11 +21,11 @@ export type Language = {
 export class JumpsellerMapperService {
   private readonly logger = new Logger(JumpsellerMapperService.name);
   constructor(
-    @InjectModel(MagicCard.name) private readonly magicCardModel: Model<magicCardDocument>,
+    @InjectModel(MagicCard.name) private readonly magicCardModel: Model<MagicCardDocument>,
   ) {}
 
 async translatedLanguages(langInput: string): Promise<string> {
-  let translatedLang = langInput;
+  let translatedLang: string;
   switch (langInput) {
     case EnumLanguage.ESPAÑOL: translatedLang = 'Español'; break;
     case EnumLanguage.PORTUGUES: translatedLang = 'Portugués'; break;
@@ -113,10 +113,9 @@ createSku(card: MagicCard, lang?: Language, finish?: string, condition?: string)
   }${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
 }
 
-async mapDBProductToJumpseller(card: MagicCard): Promise<JumpsellerProductRequest> {
-  //por aca nunca va a pasar un a carta en ESPAÑOL
-  const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
-  let rarity = card.rarity;
+async mapDBProductToJumpseller(card: MagicCard, description: string[]): Promise<JumpsellerProductRequest> {
+  const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || []; //TODO: revisar que hace
+  let rarity: string;
   switch (card.rarity) {
     case 'mythic': rarity = 'Mitica'; break;
     case 'rare': rarity = 'Rara'; break;
@@ -124,32 +123,15 @@ async mapDBProductToJumpseller(card: MagicCard): Promise<JumpsellerProductReques
     case 'common': rarity = 'Común'; break;
     default: rarity = 'Desconocida'; break;
   }
-
-  // Busca cartas con el mismo oracleId y set, pero en idioma diferente de inglés
-  const findAnotherLangCard = await this.magicCardModel.findOne({
-    oracleId: card.oracleId, 
-    set: card.set, 
-    lang: { $ne: "en" }
-  });
-
-    let translatedName: string = ""
-    if(findAnotherLangCard) {
-      const translatedlang = await this.translatedLanguages(findAnotherLangCard?.lang || "No encontrado");
-      translatedName = findAnotherLangCard.printedName 
-        ? `Nombre en ${translatedlang}: ${findAnotherLangCard.printedName}.`
-        : translatedName
-    }
     let artDescription = ""
     const regArt = /arts?/i;
-    if (card.setName && regArt.test(card.setName)) {
-      artDescription = `CARTA DE ARTE COLECCIONABLE NO VÁLIDA PARA JUGAR`
-    }
+    if (card.setName && regArt.test(card.setName)) artDescription = `CARTA DE ARTE COLECCIONABLE NO VÁLIDA PARA JUGAR`
     const product = {
       name: card.name || '',
       description: [
       artDescription,
       `Nombre en Inglés: ${card.name}.`,
-      translatedName, 
+        description && description.length === 1 ? description[0] : (description && description.length > 1 ? description.join('\n') : ''),
       `Tipo: ${card.typeLine}.`,
       `Texto: ${card.oracleText}.`,
       `Edición: ${card.setName}.`,
@@ -173,7 +155,6 @@ async mapDBProductToJumpseller(card: MagicCard): Promise<JumpsellerProductReques
       brand: EnumGame.MAGIC,
       categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
     };
-
   return { product };
 }
 
@@ -243,10 +224,7 @@ async mapDBUpdateProductToJumpseller(card: MagicCard): Promise<JumpsellerUpdateP
 }
 
 async mapImageToJumpseller(card: MagicCard): Promise<ICreateImageRequest | null> {
-  if (!card.imageUris || !card.imageUris.large) {
-    console.warn(`⚠️ Carta sin imagen: ${card.name}`);
-    return null;
-  }
+  if (!card.imageUris || !card.imageUris.large) return null;
   return { image: { url: card.imageUris.large, position: 0 } };
 }
 
@@ -267,6 +245,14 @@ async mapCardFace2ImageToJumpseller(card: MagicCard): Promise<ICreateImageReques
   }
   
   return { image: { url: card.cardFaces[1].imageUris.large, position: 0 } };
+}
+//TODO: Refactorizar función Arriba
+
+async mapCardFaceImageToJumpseller(card: MagicCard, faceIndex: number): Promise<ICreateImageRequest | null> {
+  const face = card.cardFaces?.[faceIndex];
+  const url = face?.imageUris?.large;
+  if (!url) { return null }
+  return { image: { url, position: 0 } };
 }
 
 //TODO ARREGLAR CONDITIONS

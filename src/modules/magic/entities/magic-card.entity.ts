@@ -4,10 +4,10 @@ import { EnumStatus } from '../enums/status.enum';
 
 @Schema({ _id: false })
 export class ImageUris {
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: false })
   small: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, required: false })
   large: string;
 }
 
@@ -133,7 +133,7 @@ export class Prices {
 
 @Schema({ timestamps: true })
 export class MagicCard {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true, unique: true })
   id: string;
 
   @Prop({ default: null, index: true })
@@ -251,6 +251,6 @@ export class MagicCard {
   status?: EnumStatus;
 }
 
-export type magicCardDocument = HydratedDocument<MagicCard>;
+export type MagicCardDocument = HydratedDocument<MagicCard>;
 export const magicCardSchema = SchemaFactory.createForClass(MagicCard);
 

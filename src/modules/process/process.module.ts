@@ -16,6 +16,11 @@ import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
 import { CreateMagicCardsProcessor } from './processors/create-magic-cards.processor';
 import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor';
+import { CreateProductJumpsellerProcessor } from './processors/create-product-jumpseller.processor';
+import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
+import { JumpsellerService } from '../jumpseller/jumpseller.service';
+import { CreateVariantsRequestProcessor } from './processors/create-variants-request.processor';
+import { CreateVariantJumpsellerProcessor } from './processors/create-variant-jumpseller.processor';
 
 @Module({
   imports: [
@@ -24,27 +29,58 @@ import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor
     StagingProductVariantModule,
     BasePricesModule,
     UsdPricesModule,
-    //Job Sync Magic Cards
     BullModule.registerQueue({
-      name: 'sync-magic-cards',
+      name: '1-sync-magic-cards',
       defaultJobOptions: {
         lifo: true,
-
       },
     }),
     BullBoardModule.forFeature({
-      name: 'sync-magic-cards',
+      name: '1-sync-magic-cards',
       adapter: BullMQAdapter,
     }),
-    //Job Create Magic Cards
     BullModule.registerQueue({
-      name: 'create-magic-cards',
+      name: '2-create-magic-cards',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'create-magic-cards',
+      name: '2-create-magic-cards',
+      adapter: BullMQAdapter,
+    }),
+    BullModule.registerQueue({
+      name: '3-create-product-jumpseller',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '3-create-product-jumpseller',
+      adapter: BullMQAdapter,
+    }),
+
+    //Job Check Variants Cards
+    BullModule.registerQueue({
+      name: '4-create-variants-request',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '4-create-variants-request',
+      adapter: BullMQAdapter,
+    }),
+
+    //Job Create Variants
+    BullModule.registerQueue({
+      name: '5-create-variant-jumpseller',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '5-create-variant-jumpseller',
       adapter: BullMQAdapter,
     }),
     // Other queues
@@ -112,14 +148,18 @@ import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor
   exports: [ProcessService, BullModule],
   providers: [
     ProcessService,
-    CreateMagicCardsProcessor,
-    SyncMagicCardsProcessor,
-    QueuesStock, 
+    QueuesStock,
     QueuesApiPrices, 
     QueuesRecalculatePricesByBase,
     QueuesRecalculatePricesByUds,
     QueuesPricesFromFront,
+    JumpsellerMapperService,
+    JumpsellerService,
+    SyncMagicCardsProcessor,
+    CreateMagicCardsProcessor,
+    CreateProductJumpsellerProcessor,
+    CreateVariantsRequestProcessor,
+    CreateVariantJumpsellerProcessor
   ],
-
 })
 export class ProcessModule {}

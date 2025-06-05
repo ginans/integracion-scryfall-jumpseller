@@ -1,6 +1,5 @@
 import { EnumGame, EnumGamePrefix } from "src/common/enums/game.enum";
 import { JumpsellerCreateVariantResponse } from "src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface";
-import { MappedMagicCard } from "src/modules/jumpseller/interfaces/mapped-magic-card.interface";
 import { MagicCard } from '../entities/magic-card.entity';
 
 // Exportamos la función para que pueda ser usada en otros archivos si es necesario
@@ -20,7 +19,7 @@ export const mappedStaggingProductVariant = (card: MagicCard, variant: Jumpselle
       productId: card.idJumpSeller,
       variantId: variant.variant.id,
       name: card.name || "",
-      anotherLangName: card.printedName || "",
+      anotherLangName: card.printedName || "",//TODO: problema, en carta en inglés no hay printedName, pero en español sí
       sku: variant.variant.sku,
       finish: finish || "",
       rarity: card.rarity || "",

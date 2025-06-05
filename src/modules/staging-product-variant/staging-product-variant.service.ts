@@ -255,7 +255,7 @@ export class StagingProductVariantService {
       );
       
       this.logger.log(`🦍 Enviando stock a Jumpseller: ${JSON.stringify(stockRequest)}`);
-      const response = await this.jumpsellerService.addStocktoJumpseller(stockRequest);
+      const response = await this.jumpsellerService.addStock(stockRequest);
 
       if (response.status !== 201 && response.message) {      
         await this.updateVariantStockStatus(
@@ -376,8 +376,6 @@ export class StagingProductVariantService {
       if (variantes.length === 0) {
         this.logger.warn('No se encontraron variantes para procesar');
         return null;
-      }else{
-        this.logger.log(`Se encontraron ${variantes.length} variantes para procesar`);
       }
       return variantes;
      
@@ -396,8 +394,6 @@ export class StagingProductVariantService {
         throw new Error("No se encontraron valores del dolar para la colección Magic");
       }
       const usdPrice = usdPriceDoc.usdPrice;
-      this.logger.log(`Precio del dólar: ${usdPrice} CLP`);
-  
       // Obtener precios base por rareza
       const basePrice = await this.basePriceModel.findOne({ game: EnumGame.MAGIC });
       if (!basePrice) {
@@ -419,7 +415,6 @@ export class StagingProductVariantService {
       let successfulUpdates = 0;
       let failedUpdates = 0;
       let skippedVariants = 0;
-      let processedResults: string[] = [];
   
       processedVariants++;
   
@@ -427,7 +422,6 @@ export class StagingProductVariantService {
       const matchingCard = await this.magicCardModel.findOne({ idJumpSeller: variant.productId });
   
       if (!matchingCard) {
-        this.logger.warn(`No se encontró carta para productId: ${variant.productId}`);
         await this.stagingProductVariantModel.updateOne(
           { productId: variant.productId, variantId: variant.variantId },
           {
@@ -447,13 +441,10 @@ export class StagingProductVariantService {
         if (matchingCard.prices) {
           if (isNonFoil && matchingCard.prices.usd) {
             precioUSD = parseFloat(matchingCard.prices.usd);
-            this.logger.log(`Precio No Foil encontrado para ${variant.sku}: $${precioUSD} USD`);
           } else if (isFoil && matchingCard.prices.usdFoil) {
             precioUSD = parseFloat(matchingCard.prices.usdFoil);
-            this.logger.log(`Precio Foil encontrado para ${variant.sku}: $${precioUSD} USD`);
           } else if (matchingCard.prices.usdEtched) {
             precioUSD = parseFloat(matchingCard.prices.usdEtched);
-            this.logger.log(`Precio Etched encontrado para ${variant.sku}: $${precioUSD} USD`);
           } else {
             this.logger.warn(`No se encontraron precios para la carta ${matchingCard.oracleId} con finish ${variant.finish}`);
           }
@@ -487,16 +478,13 @@ export class StagingProductVariantService {
         }
   
         const precioBaseRareza = rarityPrices[rarezaKey] || 0;
-        this.logger.log(`Precio base por rareza (${rarezaKey}): ${precioBaseRareza} CLP para ${variant.sku}`);
   
         // Calcular precio final en CLP
         let precioCLP = (precioUSD === 0 || precioUSD === null) ? 0 : precioUSD * usdPrice;
         precioCLP = Math.ceil(precioCLP / 100) * 100;
         const precioFinal = (precioCLP === 0) ? 0 : Math.max(precioCLP, precioBaseRareza);
   
-        if (precioFinal > 0) {
-          this.logger.log(`Actualizando precio para variante ${variant.variantId} (${variant.sku}): ${precioFinal} CLP`);
-  
+        if (precioFinal > 0) {  
           const nullErrorMsg = null;
   
           await this.stagingProductVariantModel.updateOne(
@@ -526,9 +514,7 @@ export class StagingProductVariantService {
             }
           };
   
-          const response = await this.jumpsellerService.updateVariant(variant.productId, variant.variantId, variantTo);
-          this.logger.log(`se envio la variante : ${JSON.stringify(response)} a Jumpseller`);
-  
+          const response = await this.jumpsellerService.updateVariant(variant.productId, variant.variantId, variantTo);  
           if (!('message' in response)) {
             await this.updateVariantPriceStatus(
               variant.variantId,
@@ -536,9 +522,7 @@ export class StagingProductVariantService {
               EnumPriceAndStockState.COMPLETED,
               nullErrorMsg
             );
-            this.logger.log(`Se actualizó el precio de la variante ${variant.variantId} en Jumpseller`);
             successfulUpdates++;
-            processedResults.push(`Variante ${response.variant.id} (${response.variant.sku}) actualizada exitosamente`);
           } else {
             const errorMsg = `Status 400 - ${response.message || 'Sin detalles'}`;
             this.logger.error(errorMsg);
@@ -548,28 +532,13 @@ export class StagingProductVariantService {
               EnumPriceAndStockState.ERROR,
               errorMsg
             );
-            failedUpdates++;
-            processedResults.push(`Variante ${variant.variantId} (${variant.sku}) falló: ${errorMsg}`);
-          }
+            failedUpdates++;          }
         } else {
-          this.logger.log(`Variante ${variant.variantId} con sku ${variant.sku} omitida: precio calculado es 0 (comportamiento esperado)`);
           skippedVariants++;
-          processedResults.push(`Variante ${variant.variantId} (${variant.sku}) omitida: precio = 0 (normal)`);
         }
       }
   
-      const summary = {
-        totalProcessed: processedVariants,
-        successful: successfulUpdates,
-        failed: failedUpdates,
-        skipped: skippedVariants,
-        details: processedResults,
-        message: `Procesamiento completado: ${processedVariants} variantes procesadas. Exitosas: ${successfulUpdates}, Fallidas: ${failedUpdates}, Omitidas (precio=0): ${skippedVariants}`,
-        isComplete: true
-      };
-  
-      this.logger.log(`Resumen final del procesamiento: ${JSON.stringify(summary)}`);
-      return summary;
+      return "Se proceso la variante correctamente";
   
     } catch (error) {
       this.logger.error(`Error al calcular precios para la variante: ${error.message}`);
@@ -630,7 +599,6 @@ export class StagingProductVariantService {
 
       if (!productVariant) {
         const errorMsg = `No se encontró el producto con productId: ${variant.productId} y variantId: ${variant.variantId}`;
-        this.logger.error(errorMsg);
         throw new Error(errorMsg);
       }
 
@@ -660,14 +628,10 @@ export class StagingProductVariantService {
           EnumPriceAndStockState.COMPLETED,
           nullErrorMsg
         );
-        this.logger.log(`Se actualizó el precio de la variante ${variant.variantId} en Jumpseller`);
-
-       
          const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productVariant.productId);
 
       } else {
         const errorMsg = `Status 400 - ${response?.message || 'Sin detalles'}`;
-        this.logger.error(errorMsg);
         await this.updateVariantPriceStatus(
           variant.variantId,
           variant.productId,
@@ -718,9 +682,7 @@ export class StagingProductVariantService {
     if (!Types.ObjectId.isValid(_id)) {
       throw new BadRequestException('ID no es válido');
     }
-    
-    this.logger.log(`Actualizando variante con ID ${_id} con datos: ${JSON.stringify(variant)}`);
-    
+        
     try {
       // Usar directamente el string del OID sin convertirlo
      const variante = await this.stagingProductVariantModel.findById(new Types.ObjectId(_id)).exec();
@@ -740,7 +702,6 @@ export class StagingProductVariantService {
         { new: true }
       );
       
-      this.logger.log(`Variante actualizada exitosamente: ${updatedVariant}`);
       return updatedVariant;
     } catch (error) {
       this.logger.error(`Error al actualizar variante: ${error.message}`);

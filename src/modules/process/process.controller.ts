@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Patch, Post } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
@@ -7,22 +7,19 @@ import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 
 @Controller('process')
 export class ProcessController {
-  constructor(private readonly processService: ProcessService,
-  ) { }
-
+  constructor(private readonly processService: ProcessService) {}
+  /**
+   * Endpoint que Obtiene las cartas de Magic desde Scryfall
+   */
   @Post('magic')
-  async procesarCardMagic(): Promise<string> {
-    try{
-      await this.processService.initCardMagic();
-    }catch(error){
-      return error
-    }
+  async procesarCardMagic(): Promise<void> {
+    return this.processService.initCardMagic();
   }
+
   @Post('stock')
   async updateStock(@Body() variants: IStockFromFront[]) {
     try{
-      const response = await this.processService.updateStockQueue(variants);
-      return response
+      return await this.processService.updateStockQueue(variants)
     }catch(error){
       return error
     }
@@ -31,8 +28,7 @@ export class ProcessController {
   @Post('prices/update-from-front')
   async updatePrices(@Body() variants: IPriceFromFront[]){
     try{
-      const response = await this.processService.updatePricesFromFrontQueue(variants);
-      return response
+      return await this.processService.updatePricesFromFrontQueue(variants)
     }
     catch(error){
       return error
@@ -44,8 +40,7 @@ export class ProcessController {
     @Body() basePrices: RecalculatePricesByBaseDto
   ) {
     try {
-      const response = await this.processService.recalculatePricesByBase(basePrices);
-      return response ;
+      return await this.processService.recalculatePricesByBase(basePrices) ;
     } catch (error) {
       return { error: error.message };
     }
@@ -55,8 +50,7 @@ export class ProcessController {
     @Body() usdPrices: RecalculatePricesByUsdDto,
   ) {
     try {
-      const response = await this.processService.recalculatePricesByUsd(usdPrices);
-      return response ;
+      return await this.processService.recalculatePricesByUsd(usdPrices) ;
     } catch (error) {
       return { error: error.message };
     }

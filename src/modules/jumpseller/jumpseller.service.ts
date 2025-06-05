@@ -1,402 +1,125 @@
-import { Body, Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import { Injectable, Logger } from '@nestjs/common';
+import axios, { AxiosInstance } from 'axios';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from './interfaces/jumpsellerProducts/jumpsellerCreateProductResponse.interface';
 import { JumpsellerCreateVariantRequest } from './interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
 import { JumpsellerCreateVariantResponse } from './interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface';
-import { JumpsellerCreateImageRequest } from './interfaces/jumpsellerImages/jumpsellerCreateImageRequest.interface';
-import { JumpsellerCreateImageResponse } from './interfaces/jumpsellerImages/jumpsellerCreateImageResponse.interface';
-import { JumpsellerUpdateProductRequest } from './interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
-import { JumpsellerUpdateProductResponse } from './interfaces/jumpsellerProducts/jumpsellerUpdateProductResponse.interface';
-import { CreateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/createCustomFieldResponse.interface';
-import { createCustomFieldRequest } from './interfaces/jumpselllerCustomFields/createCustomfieldRequest.interface';
+import { ICreateImageResponse, ICreateImageRequest } from './interfaces/create-image.interface';
 import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
 import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductResponse.interface';
-import { JumpsellerGetAllProductResponse } from './interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
-import { UpdateCustomFieldRequest } from './interfaces/jumpselllerCustomFields/updateCustomFieldRequest.interface';
-import { UpdateCustomFieldResponse } from './interfaces/jumpselllerCustomFields/updateCustomFieldResponse.interface';
 import { StockJumpsellerRequest } from './interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerUpdateVariantRequest } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
 import { JumpsellerUpdateVariantResponse, JumpsellerUpdateVariantResponseError } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantResponse.interface';
 import { GetAllCustomFieldResponse } from './interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
+import { JumpsellerEndpoints } from './endpoints.enum';
+import { EnvConfiguration } from '../../config/app.config';
 
 @Injectable()
-export class JumpsellerService {  
+export class JumpsellerService {
   private readonly logger = new Logger(JumpsellerService.name);
-
-    //crear producto en jumpseller
-    async createJumpsellerProducts(product:JumpsellerProductRequest): Promise<JumpsellerProductResponse> { 
-      const jumpsellerApiUrl = 'https://api.jumpseller.com/v1/products.json';
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+  private readonly apiUrl: string;
+  private readonly login: string;
+  private readonly authToken: string;
+  private readonly client: AxiosInstance;
+  constructor() {
+    this.apiUrl = EnvConfiguration().jumpseller_url;
+    this.login = EnvConfiguration().jumpseller_login;
+    this.authToken = EnvConfiguration().jumpseller_authtoken;
+    this.client = axios.create({
+      baseURL: this.apiUrl,
+      headers: {
+        'Content-Type': 'application/json',
+      },params: {
+        login: this.login,
+        authtoken: this.authToken,
+      },
+    });
+  }
+  private registerError(error: any): void {
+    if (error.response) {
+      this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
+      this.logger.error(`Código de estado: ${error.response.status}`);
+      this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
+    }
+  }
+    async createProduct(product:JumpsellerProductRequest): Promise<JumpsellerProductResponse> {
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
-        const {data}= await axios.post(
-          jumpsellerApiUrl,
-          product , 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as JumpsellerProductResponse;
+        this.logger.debug(`Enviando solicitud a Jumpseller: ${product.product.sku}`);
+        const { data } = await this.client.post<JumpsellerProductResponse>(JumpsellerEndpoints.PRODUCTS, product)
+        return data;
       } catch (error) {
         this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
+        this.registerError(error);
       }
     }
-
-    //obtener todos los productos de jumpseller
-    async getAllJumpsellerProducts() : Promise<JumpsellerGetAllProductResponse> { 
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+    async getJumpsellerProductById(productId: number): Promise<JumpsellerProductResponse> {
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        const {data}= await axios.get(
-          jumpsellerApiUrl,
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as JumpsellerProductResponse;
-      } catch (error) {
-        this.logger.error(`❌ Error al traer todos los productos de Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
-      }
-    }
-
-    //obtener un producto por id de jumpseller
-    async getJumpsellerProductById(productId: number): Promise<JumpsellerGetAllProductResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
-      try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        const {data}= await axios.get(
-          jumpsellerApiUrl,
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as JumpsellerProductResponse;
+        const { data } = await this.client.get<JumpsellerProductResponse>(`${JumpsellerEndpoints.PRODUCT}/${productId}.json`)
+        return data;
       } catch (error) {
         this.logger.error(`❌ Error al traer el producto ${productId} de Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
+        this.registerError(error);
       }
     }
-
-    //actualizar producto en jumpseller
-    async updateJumpsellerProduct(productId: number, product:JumpsellerUpdateProductRequest): Promise<JumpsellerUpdateProductResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+    async insertImages(productId: number, images: ICreateImageRequest): Promise<ICreateImageResponse> {
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
-        const {data}= await axios.put<JumpsellerUpdateProductResponse>(
-          jumpsellerApiUrl,
-          { product }, 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as JumpsellerUpdateProductResponse;
-      } catch (error) {
-        this.logger.error(`❌ Error al actualizar producto en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
-      }
-    }
-    
-
-    //crear imagenes de producto en jumpseller
-    async insertJumpsellerImages(productId: number, images: JumpsellerCreateImageRequest): Promise<JumpsellerCreateImageResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/images.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
-      try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(images)}`);
-        const {data}= await axios.post<JumpsellerCreateImageResponse>(
-          jumpsellerApiUrl,
-           images, 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const { data } = await this.client.post<ICreateImageResponse>(`${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.IMAGES}`, images)
         return data;
       } catch (error) {
         this.logger.error(`❌ Error al insertar imágenes en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
+        this.registerError(error);
       }
     }
-
-    //crear campos personalizados en jumpseller
-    async createJumpsellerCustomFields(customFields: createCustomFieldRequest): Promise<CreateCustomFieldResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/custom_fields.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+    async getAllCustomFields(): Promise<GetAllCustomFieldResponse> {
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(customFields)}`);
-        const {data}= await axios.post<CreateCustomFieldResponse>(
-          jumpsellerApiUrl,
-          { customFields }, 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as CreateCustomFieldResponse;
-      } catch (error) {
-        this.logger.error(`❌ Error al crear campos personalizados en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
-      }
-    }
-
-    //actualizar campo personalizado en jumpseller
-    async updateJumpsellerCustomFields(customFieldId: number, customFields: UpdateCustomFieldRequest): Promise<UpdateCustomFieldResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/custom_fields/${customFieldId}.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
-      try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(customFields)}`);
-        const {data}= await axios.put<UpdateCustomFieldResponse>(
-          jumpsellerApiUrl,
-          { customFields }, 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as UpdateCustomFieldResponse;
-      } catch (error) {
-        this.logger.error(`❌ Error al actualizar campos personalizados en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
-      }
-    }
-
-    //obtener todos los custom fields de la tienda d
-    async getAllJumpsellerCustomFields(): Promise<GetAllCustomFieldResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/custom_fields.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
-      try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        const {data}= await axios.get<GetAllCustomFieldResponse>(
-          jumpsellerApiUrl,
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
+        const { data } = await this.client.get<GetAllCustomFieldResponse>(JumpsellerEndpoints.CUSTOM_FIELDS);
         return data;
       } catch (error) {
         this.logger.error(`❌ Error al obtener campos personalizados en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
+        this.registerError(error);
       }
     }
-
-    //agregar un campo personalizado existente a un producto en jumpseller
-    async addAnExistingCustomFieldToAProduct(productId: number, customFields: AddAnExistingCustomFieldToAProductRequest): Promise<AddAnExistingCustomFieldToAProductResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/fields.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+    async addCustomFieldInProduct(productId: number, customFields: AddAnExistingCustomFieldToAProductRequest): Promise<void> {
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(customFields)}`);
-        const {data}= await axios.post<AddAnExistingCustomFieldToAProductResponse>(
-          jumpsellerApiUrl,
-           customFields , 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as AddAnExistingCustomFieldToAProductResponse;
+        await this.client.post(`${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.FIELDS}`, customFields);
       } catch (error) {
         this.logger.error(`❌ Error al crear campos personalizados en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-        }
+        this.registerError(error);
       }
     }
 
-    async addStocktoJumpseller(product: StockJumpsellerRequest): Promise<StockJumpsellerResponse> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products_locations`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
+    async addStock(stock: StockJumpsellerRequest): Promise<StockJumpsellerResponse> {
       try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(product)}`);
-        const data = await axios.put(
-          jumpsellerApiUrl,
-          product, 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data.data
+        const { data } = await this.client.put<StockJumpsellerResponse>(JumpsellerEndpoints.STOCK, stock);
+        return data;
       } catch (error) {
         this.logger.error(`❌ Error actualizar stock en Jumpseller: ${error.message}`);
-        if (error.response) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-          
-          // Devolver información estructurada del error
-          return {
-            status: error.response.status,
-            message: error.response.data.message || error.message,
-          };
-        }
-        
-        // Error genérico si no hay respuesta
-        return {
-          status: 500,
-          message: error.message,
-        };
+        this.registerError(error);
+        if (error.response) return { status: error.response.status, message: error.response.data.message || error.message };
+        return { status: 500, message: error.message };
       }
     }
-
-    // Crear una variante de producto en Jumpseller
-    async createJumpsellerVariant(
-      productId: number,
-      variantReq: JumpsellerCreateVariantRequest
-    ): Promise<JumpsellerCreateVariantResponse> {
-      const login = process.env.JUMPSELLER_LOGIN;
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN;
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/variants.json`;
-      this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-      this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(variantReq)}`);
-      const { data } = await axios.post<JumpsellerCreateVariantResponse>(
-        jumpsellerApiUrl,
-        variantReq,
-        {
-          headers: {
-            Authorization: `Basic ${authToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      return data;
+    async createJumpsellerVariant( productId: number, variantReq: JumpsellerCreateVariantRequest): Promise<JumpsellerCreateVariantResponse> {
+      try {
+        const { data } = await this.client.post<JumpsellerCreateVariantResponse>(
+          `${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.VARIANTS}`, variantReq
+        );
+        return data;
+      } catch (error) {
+        this.logger.error(`❌ Error al crear variante en Jumpseller: ${error.message}`);
+        this.registerError(error);
+      }
     }
 
     async updateVariant(productId: number, variantId: number, variant: JumpsellerUpdateVariantRequest): Promise<JumpsellerUpdateVariantResponse | JumpsellerUpdateVariantResponseError> {
-      const jumpsellerApiUrl = `https://api.jumpseller.com/v1/products/${productId}/variants/${variantId}.json`;
-      const login = process.env.JUMPSELLER_LOGIN
-      const authtoken = process.env.JUMPSELLER_AUTHTOKEN
-      const authToken = Buffer.from(`${login}:${authtoken}`).toString('base64');  
-      try {
-        this.logger.debug(`Enviando solicitud a Jumpseller: ${jumpsellerApiUrl}`);
-        this.logger.debug(`Cuerpo de la solicitud: ${JSON.stringify(variant)}`);
-        const {data}= await axios.put<JumpsellerUpdateVariantResponse>(
-          jumpsellerApiUrl,
-          variant, 
-          { 
-            headers: {
-              Authorization: `Basic ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        return data as JumpsellerUpdateVariantResponse;
-      } catch (error) {
-        console.error(` ${error}`);
-        this.logger.error(`❌ Error actualizar stock en Jumpseller: ${error.message}`);
-        if (error.message) {
-          this.logger.error(`Detalles del error: ${JSON.stringify(error.response.data)}`);
-          this.logger.error(`Código de estado: ${error.response.status}`);
-          this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
-          
-          // Devolver información estructurada del error
-          return {
-            message: error.response.data.message || error.message,
-          };
-        }
-        
-        // Error genérico si no hay respuesta
-        return {
-          message: error.message,
-        };
-      }
+    try {
+      const { data } = await this.client.put<JumpsellerUpdateVariantResponse>(`${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.VARIANT}/${variantId}`, variant);
+      return data;
+    } catch (error) {
+      this.logger.error(`❌ Error al actualizar variante en Jumpseller: ${error.message}`);
+      this.registerError(error);
+      if (error.response) return { message: error.response.data.message || error.message };
+      return { message: error.message };
     }
-    }
-
-
-
-
+  }
+}

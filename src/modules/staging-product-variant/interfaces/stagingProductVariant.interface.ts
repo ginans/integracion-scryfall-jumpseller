@@ -33,6 +33,8 @@ export interface IStagingProductVariant {
     jumpsellerStatus: JumpsellerStatus;
     salesByCard: number | 0;
     fatherProduct: {
+        id: string | null;
+        collectorNumber: string | null;
         oracleId: string | null;
         sku?: string | null;
         description: string | null;

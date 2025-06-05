@@ -1,9 +1,8 @@
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-
 import { Injectable, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
-import { IenumURLLang } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
+import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
@@ -11,8 +10,6 @@ import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto
 import { StagingProductVariantService } from '../staging-product-variant/staging-product-variant.service';
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
-import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
-import { QueuesRecalculatePricesByBase } from './queues/prices/queues.recalculate-prices-by-base';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
 
 @Injectable()
@@ -25,11 +22,10 @@ export class ProcessService {
    */
   private readonly logger = new Logger(ProcessService.name);
   constructor(
-    private readonly scryfallService: ScryfallService,
     private readonly variantService: StagingProductVariantService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
-    @InjectQueue('queues-magic') private readonly queuesMagic: Queue,
+    @InjectQueue('1-sync-magic-cards') private readonly syncMagicCardsQueue: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
     @InjectQueue('queues-api-prices') private readonly queuesApiPrices: Queue,
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
@@ -87,34 +83,6 @@ export class ProcessService {
   }
 
   async initCardMagic(): Promise<void> {
-    //ejecutar proceso en ingles
-    await this.addQuesMagic(IenumURLLang.EN);
-    //ejecutar proceso en español
-    await this.addQuesMagic(IenumURLLang.ES);
-  }
-
-  private async addQuesMagic(lg:IenumURLLang): Promise<void> {
-    let page = 1;//inicio de paginacion
-    let process = true; // Controla la ejecución del bucle
-    do {
-      // Obtener lista de getScryfallCards
-      // const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, );
-      const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page, undefined, "plst");
-      // agregar colas con data obtenidad 
-      console.log(data.length);
-      
-      for(let row of data){
-        await this.queuesMagic.add(lg, row);
-      }
-      
-      this.logger.warn(`procesando pagina queues-magic ${page}`);
-      //detener proceso si has_more es false
-      // process = has_more;
-      //comentar esto en produccion
-      if(page==1){// para las pruebas solo consultamos la primera pagina 
-        process = false;
-      }
-      page++;
-    } while (process)
+    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN });
   }
 }

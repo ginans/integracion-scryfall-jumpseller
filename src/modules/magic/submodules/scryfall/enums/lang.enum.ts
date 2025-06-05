@@ -1,10 +1,10 @@
-export enum IenumURLLang {
+export enum ILangUrlEnum {
   ES = "lang:es",
   EN = "lang:en"
 }
 
 
-export enum IenumLangResponse {
+export enum LangEnum {
     ES = 'es',
     EN = 'en'
 }

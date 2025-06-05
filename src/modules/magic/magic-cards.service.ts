@@ -489,13 +489,9 @@ export class MagicCardsService {
         );
       
         if (!scryfallResponse || !scryfallResponse.data || scryfallResponse.data.length === 0) {
-          throw new NotFoundException(`No se encontraron cartas para oracleId: ${existingCard.oracleId} y lang: ${form.lenguaje}`);
+          throw new NotFoundException(`No se encontraron cartas para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje}, collectorNumber: ${existingCard.collectorNumber}, set: ${existingCard.get('set')}`);
         }
-        
         this.logger.log(`Se trajeron ${scryfallResponse.data.length} cartas ${scryfallResponse.data.length < 10? "😎": "💀"} de scryfall`);
-        if (scryfallResponse.data.length == 0) {
-          throw new NotFoundException(`No existe la carta para oracleId: ${existingCard.oracleId}, lang: ${form.lenguaje}, collectorNumber: ${existingCard.collectorNumber} y set : ${existingCard.get('set')}`);
-        }
         return scryfallResponse.data;
 
         

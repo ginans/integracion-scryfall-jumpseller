@@ -33,21 +33,21 @@ export class ProcessService {
     @InjectQueue("queues-recalculate-prices-by-base") private readonly QueuesRecalculatePricesByBase: Queue,
   ) { }
 
-  async rateLimiter() {
+  async jumpsellerGateway() {
     // Implement rate limiting logic here
   }
 
   async updateStockQueue(variants: IStockFromFront[]) {
     for(const variant of variants){
-      await this.queuesStock.add('update-stock', variant
-    )}
+      await this.queuesStock.add('update-stock', variant);
+    }
   }
-  
+
   //actualizar precios de las variantes desde el front
   async updatePricesFromFrontQueue(variants: IPriceFromFront[]) {
     for(const variant of variants){
-      await this.queuesPricesFromFront.add('update-prices-from-front', variant
-    )}
+      await this.queuesPricesFromFront.add('update-prices-from-front', variant);
+    }
   }
 
   //actualizar precios de las variantes desde el api

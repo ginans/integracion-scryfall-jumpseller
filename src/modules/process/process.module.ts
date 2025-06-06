@@ -14,13 +14,14 @@ import { BasePricesModule } from '../prices/base-prices/base-prices.module';
 import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
-import { CreateMagicCardsProcessor } from './processors/create-magic-cards.processor';
-import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor';
-import { CreateProductJumpsellerProcessor } from './processors/create-product-jumpseller.processor';
+import { SaveMagicCardsProcessor } from './processors/2-save-magic-cards.processor';
+import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.processor';
+import { CreateProductJumpsellerProcessor } from './processors/3-create-product-jumpseller.processor';
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
-import { CreateVariantsRequestProcessor } from './processors/create-variants-request.processor';
-import { CreateVariantJumpsellerProcessor } from './processors/create-variant-jumpseller.processor';
+import { CreateVariantsRequestProcessor } from './processors/4-create-variants-request.processor';
+import { CreateVariantJumpsellerProcessor } from './processors/5-create-variant-jumpseller.processor';
+import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.processor';
 
 @Module({
   imports: [
@@ -40,13 +41,13 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '2-create-magic-cards',
+      name: '2-save-magic-cards',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '2-create-magic-cards',
+      name: '2-save-magic-cards',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
@@ -83,7 +84,18 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       name: '5-create-variant-jumpseller',
       adapter: BullMQAdapter,
     }),
-    // Other queues
+    //job jumpseller gateway
+    BullModule.registerQueue({
+      name: '6-jumpseller-gateway',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '6-jumpseller-gateway',
+      adapter: BullMQAdapter,
+    }),
+    // enviar stock cargado desde el front a jumpseller
     BullModule.registerQueue({
       name: 'queues-stock',
       defaultJobOptions: {
@@ -95,7 +107,7 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       name: 'queues-stock',
       adapter: BullMQAdapter,
     }),
-    //
+    //calcular y enviar precios de api a jumpseller
     BullModule.registerQueue({
       name: 'queues-api-prices',
       defaultJobOptions: {
@@ -107,7 +119,7 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       name: 'queues-api-prices',
       adapter: BullMQAdapter,
     }),
-    //
+    //recalcular precios por precios base
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-base",
       defaultJobOptions: {
@@ -119,7 +131,7 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       name: "queues-recalculate-prices-by-base",
       adapter: BullMQAdapter,
     }),
-    //
+    //recalcular precios por precios del dolar
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-usd",
       defaultJobOptions: {
@@ -131,7 +143,7 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       name: "queues-recalculate-prices-by-usd",
       adapter: BullMQAdapter,
     }),
-    //
+    //actualizar precios desde el front, individuales y masivos
     BullModule.registerQueue({
       name: "update-prices-from-front",
       defaultJobOptions: {
@@ -156,10 +168,11 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
     JumpsellerMapperService,
     JumpsellerService,
     SyncMagicCardsProcessor,
-    CreateMagicCardsProcessor,
+    SaveMagicCardsProcessor,
     CreateProductJumpsellerProcessor,
     CreateVariantsRequestProcessor,
-    CreateVariantJumpsellerProcessor
+    CreateVariantJumpsellerProcessor,
+    JumpsellerGatewayProcessor
   ],
 })
 export class ProcessModule {}

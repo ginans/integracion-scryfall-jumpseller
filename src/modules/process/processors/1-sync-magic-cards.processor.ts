@@ -9,7 +9,7 @@ import { ScryfallCardResponse } from '../../magic/submodules/scryfall/interfaces
 export class SyncMagicCardsProcessor extends WorkerHost {
   constructor(
     private readonly scryfallService: ScryfallService,
-    @InjectQueue('2-create-magic-cards') private readonly CreateMagicCards: Queue<{ card: ScryfallCardResponse }, string, string>,
+    @InjectQueue('2-save-magic-cards') private readonly SaveMagicCards: Queue<{ card: ScryfallCardResponse }, string, string>,
   ) {
     super();
   }
@@ -24,10 +24,10 @@ export class SyncMagicCardsProcessor extends WorkerHost {
         const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page);
         /**
          * Para probar el flujo de solo 1 card, descomentar la siguiente línea
-         * await this.CreateMagicCards.add(`Card:${data[0].id}`, { card: data[0] },{jobId: data[0].id, })
+         * await this.SaveMagicCards.add(`Card:${data[0].id}`, { card: data[0] },{jobId: data[0].id, })
          */
         await Promise.all(
-          data.map(row => this.CreateMagicCards.add(`Card:${row.id}`, { card: row },{jobId: row.id, }))
+          data.map(row => this.SaveMagicCards.add(`Card:${row.id}`, { card: row },{jobId: row.id, }))
         );
         count += data.length;
         process = has_more;

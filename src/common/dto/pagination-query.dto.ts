@@ -19,13 +19,13 @@ export class PaginationQueryDto {
   @Min(1, { message: 'page must be greater than or equal to 1' })
   page?: number = 1;
 
-  @ApiProperty({ required: false, default: 10 })
+  @ApiProperty({ required: false, default: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
-  @Max(100, { message: 'limit must be lower than or equal to 100' })
-  limit?: number = 10;
+  @Max(500, { message: 'limit must be lower than or equal to 500' })
+  limit?: number = 100;
 
   @ApiProperty({ required: false })
   @IsOptional()

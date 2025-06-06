@@ -9,6 +9,7 @@ Sistema backend desarrollado en NestJS para la **venta de cartas sueltas de Magi
 4. **Variantes**: Cartas en español/otros idiomas → Variantes del producto base
 5. **E-commerce**: Sistema completo de inventario, ventas y creacion de nuevas variantes automatizado
 
+
 Integración completa con **Jumpseller** para e-commerce y **Scryfall** como fuente de datos oficial de cartas.
 
 ## 🚀 Características Principales

@@ -33,6 +33,10 @@ export class ProcessService {
     @InjectQueue("queues-recalculate-prices-by-base") private readonly QueuesRecalculatePricesByBase: Queue,
   ) { }
 
+  async rateLimiter() {
+    // Implement rate limiting logic here
+  }
+
   async updateStockQueue(variants: IStockFromFront[]) {
     for(const variant of variants){
       await this.queuesStock.add('update-stock', variant

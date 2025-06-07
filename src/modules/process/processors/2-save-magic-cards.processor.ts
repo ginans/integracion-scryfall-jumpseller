@@ -23,7 +23,11 @@ export class SaveMagicCardsProcessor extends WorkerHost {
       if (newEnCard && versionES) {
         //crear la versión en español si existe
         newEsCard = await this.magicCardsService.createMagicCards(versionES);
-        thereIsSpanishVersion = true
+        if (newEsCard) {
+          thereIsSpanishVersion = true
+        }else {
+          thereIsSpanishVersion = false
+        }
       }
       await job.updateProgress(50);
       // Enviar a la cola de creación de productos en Jumpseller

@@ -1,13 +1,9 @@
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
-import { BasePricesService } from '../../../prices/base-prices/base-prices.service';
 import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
 import { IStagingProductVariant } from 'src/modules/staging-product-variant/interfaces/stagingProductVariant.interface';
-
-
-
 
 @Processor("queues-recalculate-prices-by-usd")
 export class QueuesRecalculatePricesByUds extends WorkerHost {

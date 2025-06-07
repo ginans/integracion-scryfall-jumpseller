@@ -5,7 +5,7 @@ import { ScryfallCardResponse } from 'src/modules/magic/submodules/scryfall/inte
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 
 
-@Processor('2-save-magic-cards', { concurrency: 20 })
+@Processor('2-save-magic-cards', { concurrency: 40 })
 export class SaveMagicCardsProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService:MagicCardsService,

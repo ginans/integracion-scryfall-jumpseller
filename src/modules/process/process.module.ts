@@ -99,7 +99,6 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     BullModule.registerQueue({
       name: 'queues-stock',
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
@@ -123,7 +122,6 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-base",
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
@@ -135,7 +133,6 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     BullModule.registerQueue({
       name: "queues-recalculate-prices-by-usd",
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
@@ -147,7 +144,6 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     BullModule.registerQueue({
       name: "update-prices-from-front",
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),

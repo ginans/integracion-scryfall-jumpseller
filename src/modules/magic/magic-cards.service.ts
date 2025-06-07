@@ -310,16 +310,6 @@ export class MagicCardsService {
 //endpoint para buscar en bd y traer si no existe en scryfall
   async findByCollectorNumberAndLang( form: findByCardByLangDto, _id: string ) : Promise<{ oracleId: string; message: string } | ScryfallCardResponse[]> {
     try {
-      //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
-      //TODO: REVISAR SI PODRIA LLEGAR MAS DE UNA CARTA AQUI
-      // const existingCardInBD = await this.model.findOne({ lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
-      // if (existingCardInBD) {
-      //   return { 
-      //     oracleId: existingCardInBD.oracleId,
-      //     message: `La carta con collectorNumber ${existingCardInBD.collectorNumber} y lenguaje ${existingCardInBD.lang} ya existe en la base de datos`
-      //   };
-      // }
-
       //consultar solo por id para tomar el oracleId en caso de que sea distinta
       const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id) }).exec();
       if (!existingCard) {

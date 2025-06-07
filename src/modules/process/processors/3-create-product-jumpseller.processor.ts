@@ -17,13 +17,17 @@ export class CreateProductJumpsellerProcessor extends WorkerHost {
   async process(job: Job<MagicCardDocument, number, string>) {
     const versionES = await this.magicCardsService.getCardInOtherLang(ILangUrlEnum.ES, job.data.oracleId, job.data.collectorNumber, job.data.set);
     try {
+      //pregunta si existe la carta en español, si existe le pasa el nombre en español
       let descriptions: string[] = [];
       if (versionES) {
         const lang = await this.magicCardsService.translatedLanguages(versionES.lang);
         descriptions.push(`Nombre en ${lang}: ${versionES.printed_name}.`);
       }
+      //mapea la carta a un formato que Jumpseller entienda como producto
       const request = await this.magicCardsService.mapCardData(job.data, descriptions);
       await job.updateProgress(25);
+      //envia la solicitud a Jumpseller para crear el producto
+      //TODO: ENVIAR A JOB FINAL PARA MANEJAR RATE LIMIT
       const response = await this.magicCardsService.createProductJumpseller(request);
       await this.magicCardsService.updateJumpsellerId(job.data.id, response.product.id);
       if (versionES) {
@@ -34,15 +38,18 @@ export class CreateProductJumpsellerProcessor extends WorkerHost {
       /**
        * Cargar Imágenes
        */
+      //mapeo de imagenes a un formato que Jumpseller entienda
       const images = await this.magicCardsService.createImagesRequests(job.data)
       for (const image of images) {
         try {
+          //envia la solicitud a Jumpseller para crear la imagen
+          //TODO: ENVIAR A JOB FINAL PARA MANEJAR RATE LIMIT
           await this.magicCardsService.insertImages(response.product.id, image);
         } catch (error) {
           console.error(`❌ Error al subir imagen: ${error.message}`);
         }
         //delay para evitar problemas de rate limit
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // await new Promise(resolve => setTimeout(resolve, 200));
       }
       await job.updateProgress(75);
       /**

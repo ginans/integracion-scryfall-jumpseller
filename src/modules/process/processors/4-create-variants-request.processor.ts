@@ -18,6 +18,7 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
       const languages: Language[] = []
       languages.push({ code: EnumLanguage.INGLES, name: 'Inglés' });//TODO: Cambiar a un enum
       if (job.data.esCard) languages.push({ code: EnumLanguage.ESPAÑOL, name: 'Español' });
+      
       const variantsRequest = await this.magicCardsService.createVariantsBody(job.data.enCard, job.data.lang);
       await Promise.all(variantsRequest.map((variant) => {
         this.createVariantQueue.add(`Variant: ${variant.variant.sku}`, { variant, productId: job.data.productId});

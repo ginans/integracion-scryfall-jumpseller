@@ -1,5 +1,9 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
+import { JumpsellerVariant } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
+import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+import { MagicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
 
 @Processor('6-jumpseller-gateway')
@@ -9,18 +13,26 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
   ) {
     super();
   }
-  async process(job: Job<any, string, string>) {
+  async process(job: Job<{
+    productRequest: JumpsellerProductRequest, 
+    enCard: MagicCardDocument, 
+    thereIsSpanishVersion: boolean,
+    mappedVariant: JumpsellerCreateVariantRequest
+  }, string, string>) {
     try {
       //centralizar aqui los envios a jumpseller
       //enviar productos
-      const createdProduct = await this.magicCardsService.createProductJumpseller(request);
+      const createdProduct = await this.magicCardsService.createProductJumpseller(job.data.productRequest);
+      //actualizar el id de jumpseller en la carta
       await this.magicCardsService.updateJumpsellerId(job.data.enCard.id, createdProduct.product.id); //hacer lo mismo con la version en español
-     
+      if (job.data.thereIsSpanishVersion) {
+        //TODO:ver como reconocer la version en español
+        await this.magicCardsService.updateJumpsellerId(job.data.enCard.id, createdProduct.product.id);
+      }
       //enviar variantes
-     
       const variantResponse = await this.magicCardsService.createJumpsellerVariant(
-        job.data.productId, //id del producto
-        job.data.variant //variante mapeada
+        createdProduct.product.id, //id del producto
+        job.data.mappedVariant //variante mapeada
       );
      
       //enviar custom fields
@@ -35,7 +47,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
       //enviar precios
      
       //TODO: REFACTORIZAR PARA QUE ESTA FUNCION SOLO ENVIE LOS PRECIOS, CREAR OTRA FUNCION PARA PROCESAR Y PASAR A NUEVO JOB
-      await this.magicCardsService.calculatePrice(job.data.productId, variantResponse.variant.id); //id del producto, id de la variante
+      await this.magicCardsService.calculatePrice(job.data.enCard.idJumpSeller, variantResponse.variant.id); //id del producto, id de la variante
     } catch (error) {
       console.error(error);
       throw new Error(`Job failed at step: ${error.message}`);

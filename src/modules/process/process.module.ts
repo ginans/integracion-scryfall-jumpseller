@@ -16,7 +16,7 @@ import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
 import { SaveMagicCardsProcessor } from './processors/2-save-magic-cards.processor';
 import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.processor';
-import { CreateProductJumpsellerProcessor } from './processors/3-create-product-jumpseller.processor';
+import { CreateProductJumpsellerProcessor } from './processors/3-create-product-request.processor';
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
 import { CreateVariantsRequestProcessor } from './processors/4-create-variants-request.processor';

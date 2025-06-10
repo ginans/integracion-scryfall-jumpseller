@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
-import { Order, OrderDocument } from './entities/order.entity';
+import { Order, OrderDocument, Products } from './entities/order.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
@@ -30,7 +30,7 @@ export class OrdersService {
     }
   }
 
-  async findAllOrders(query: PaginationQueryDto) {
+  async findAllFullOrders(query: PaginationQueryDto) {
      const { limit, page, sortBy, sortOrder, to, from, search } = query;
     
         const sort: { [key: string]: 1 | -1 } = {
@@ -89,6 +89,109 @@ export class OrdersService {
               totalPages: Math.ceil(total / limit),
               currentPage: page,
               hasNextPage: total > (page * limit),
+              hasPreviousPage: page > 1,
+            }
+          }
+        } catch (error) {
+          throw new InternalServerErrorException(`Error fetching Orders: ${error.message}`);
+        }
+  }
+
+  //TODO:refactorizar
+  async findAllOrders(query: PaginationQueryDto) {
+     const { limit, page, sortBy, sortOrder, to, from, search } = query;
+    
+        const sort: { [key: string]: 1 | -1 } = {
+          [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
+        };
+    
+        const skip = (page - 1) * limit;
+        const filters: { $or?: any[], $and?: any[] } = {};
+    
+        if (search && search.length > 0) {
+          const searchValue = search.trim();
+          filters.$or = [];
+          if (!isNaN(Number(searchValue))) {
+            filters.$or.push({ orderId: Number(searchValue) });
+          }
+          filters.$or.push({
+            $expr: {
+              $regexMatch: {
+                input: { $toString: "$sku" },
+                regex: searchValue,
+                options: "i"
+              }
+            }
+          });
+        
+
+          // filters.$or.push({
+          //   products: {
+          //     $elemMatch: {
+          //       sku: { $regex: searchValue, $options: "i" }
+          //     }
+          //   }
+          // });
+        }
+    
+        if (from && to) {
+          filters.$and = [
+            {
+              createdAt: {
+                $gte: new Date(`${from}T00:00:00.000Z`),
+                $lte: new Date(`${to}T23:59:59.999Z`)
+              }
+            },
+          ];
+        }
+        try {
+          // Primero obtener todas las órdenes que coinciden con los filtros (sin limit para contar productos)
+          const allOrders = await this.orderModel.find(filters).exec();
+          
+          // Expandir todos los productos para contar el total real
+          const allProducts = allOrders.map((order: OrderDocument) => {
+            return order.products.map((product: Products) => ({
+              _id: order._id,
+              orderId: order.orderId,
+              productId: product.id,
+              variantId: product.variantId,
+              sku: product.sku,
+              name: product.name,
+              image: product.image,
+              price: product.price,
+              discount: product.discount,
+              qty: product.qty,
+              shipping: order.shipping,
+              total: order.total,
+              orderStatus: order.statusJumpseller,
+              saleCreationDate: order.saleCreationDate,
+              saleCompletedDate: order.saleCompletedDate,
+            }))
+          }).flat();
+
+          // Aplicar paginación sobre los productos expandidos
+          const skip = (page - 1) * limit;
+          const paginatedProducts = allProducts
+            .sort((a, b) => {
+              const field = sortBy;
+              if (sortOrder === SortOrder.ASC) {
+                return a[field] > b[field] ? 1 : -1;
+              } else {
+                return a[field] < b[field] ? 1 : -1;
+              }
+            })
+            .slice(skip, skip + limit);
+
+          const totalProducts = allProducts.length;
+
+          return {
+            items: paginatedProducts,
+            meta: {
+              totalItems: totalProducts,
+              itemsPerPage: paginatedProducts.length,
+              totalPages: Math.ceil(totalProducts / limit),
+              currentPage: page,
+              hasNextPage: totalProducts > (page * limit),
               hasPreviousPage: page > 1,
             }
           }

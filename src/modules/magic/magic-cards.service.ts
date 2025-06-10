@@ -265,7 +265,7 @@ export class MagicCardsService {
         meta: {
           totalItems: total,
           itemsPerPage: productCards.length,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.ceil(total / limit), 
           currentPage: page,
           hasNextPage: total > (page * limit),
           hasPreviousPage: page > 1,

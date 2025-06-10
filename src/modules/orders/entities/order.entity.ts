@@ -186,9 +186,6 @@ export class Order {
     @Prop({ type: Number, required: true, unique: true })
     orderId: number;
 
-    @Prop({ type: [String], required: true })
-    sku: string[];
-
     @Prop({ type: Object, nullable: true }) 
     source?: Source
 

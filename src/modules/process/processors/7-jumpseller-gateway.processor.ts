@@ -45,14 +45,21 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
       await job.updateProgress(15);
       //enviar variantes
       const variantResponse = await this.magicCardsService.createJumpsellerVariant(
-        job.data.productId,
+        createdProduct.product.id,
         job.data.variantRequest
       );
       await job.updateProgress(20);
+      
       //actualizar el id de jumpseller en la variante
-      const card = await this.magicCardsService.findCardByJumpsellerId(job.data.productId)
+      if (job.data.thereIsSpanishVersion && job.data.esCard) {
+        await this.magicCardsService.updateJumpsellerId(
+          job.data.esCard.id,
+          createdProduct.product.id
+        );
+      }
       await job.updateProgress(25);
       
+      const card = await this.magicCardsService.findCardByJumpsellerId(job.data.productId)
       //crear la variante en la base de datos
       await this.magicCardsService.createVariantInApp(card, variantResponse, job.data.variantRequest.condition, job.data.variantRequest.finish);
       await job.updateProgress(30);

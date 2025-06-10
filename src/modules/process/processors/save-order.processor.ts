@@ -13,7 +13,7 @@ export class SaveOrderProcessor extends WorkerHost {
   ) {
     super();
   }
-  async process(job: Job< ISaleData , string, string>) {
+  async process(job: Job<ISaleData , string, string>) {
     console.log('Processing job:', job.id, 'with data:', job.data);
     if (!job.data || !job.data.order) {
       throw new Error('Job data is missing or invalid');

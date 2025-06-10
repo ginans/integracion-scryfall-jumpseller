@@ -34,6 +34,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
       esCard?: MagicCardDocument | null,
       lang: Language[]
     }, string, string>
+    
   ) {
     super();
   }

@@ -1,12 +1,9 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
-// import { ILangUrlEnum } from '../../magic/submodules/scryfall/enums/lang.enum';
 import { MagicCardsService } from '../../magic/magic-cards.service';
 import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.customfields.mapper.service';
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
-// import { EnumLanguage } from '../../magic/enums/lang.enum';
-// import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 
 @Processor('5-create-custom-fields-request')
 export class CreateCustomFieldsRequestProcessor extends WorkerHost {
@@ -22,7 +19,6 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
     super();
   }
 
-  //TODO: ESTE JOB SOLO DEBE PROCESAR LA CREACION DEL PRODUCTO EN JUMPSELLER, DEBE SER UN JOB INDEPENDIENTE
   async process(job: Job<MagicCardDocument, number, string>) {
     try {
       const fetchedCustomFields = await this.magicCardsService.getAllCustomFields();

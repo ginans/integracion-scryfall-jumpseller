@@ -9,12 +9,14 @@ import { MagicCardDocument } from 'src/modules/magic/entities/magic-card.entity'
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
 import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.customfields.mapper.service';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
+import { JumpsellerRateLimiterService } from '../jumpseller-rate-limiter.service';
 
-@Processor('7-jumpseller-gateway')
+@Processor('7-jumpseller-gateway', { concurrency: 80 })
 export class JumpsellerGatewayProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     private readonly jumpsellerService: JumpsellerService,
+    private readonly rateLimiter: JumpsellerRateLimiterService,
   ) {
     super();
   }
@@ -35,7 +37,11 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
       //centralizar aqui los envios a jumpseller
       //enviar productos
       await job.updateProgress(5);
-      const createdProduct = await this.magicCardsService.createProductJumpseller(job.data.productRequest);
+   
+     const createdProduct = await this.rateLimiter.schedule(() => 
+        this.magicCardsService.createProductJumpseller(job.data.productRequest)
+      );
+
       //actualizar el id de jumpseller en la carta
       await job.updateProgress(10);
       await this.magicCardsService.updateJumpsellerId(job.data.enCard.id, createdProduct.product.id); //hacer lo mismo con la version en español
@@ -44,17 +50,21 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
       }
       await job.updateProgress(15);
       //enviar variantes
-      const variantResponse = await this.magicCardsService.createJumpsellerVariant(
-        createdProduct.product.id,
-        job.data.variantRequest
+      const variantResponse = await this.rateLimiter.schedule(() => 
+        this.magicCardsService.createJumpsellerVariant(
+          createdProduct.product.id,
+          job.data.variantRequest
+        )
       );
       await job.updateProgress(20);
       
       //actualizar el id de jumpseller en la variante
       if (job.data.thereIsSpanishVersion && job.data.esCard) {
-        await this.magicCardsService.updateJumpsellerId(
-          job.data.esCard.id,
-          createdProduct.product.id
+        await this.rateLimiter.schedule(() =>
+          this.magicCardsService.updateJumpsellerId(
+            job.data.esCard.id,
+            createdProduct.product.id
+          )
         );
       }
       await job.updateProgress(25);
@@ -65,19 +75,23 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
       await job.updateProgress(30);
       
       //enviar custom fields
-      await this.jumpsellerService.addCustomFieldInProduct(job.data.customFieldCard.idJumpSeller, job.data.customFieldRequest);
+      await this.rateLimiter.schedule(() => 
+        this.jumpsellerService.addCustomFieldInProduct(job.data.customFieldCard.idJumpSeller, job.data.customFieldRequest)
+      );
       await job.updateProgress(35);
-      
+
       //enviar imagenes, 
-      await this.jumpsellerService.insertImages(job.data.imageProductId, job.data.image);
+      await this.rateLimiter.schedule(() =>
+        this.jumpsellerService.insertImages(job.data.imageProductId, job.data.image)
+      );
       await job.updateProgress(40);
       //enviar precios
       
-      // //calcular el precio de la variante TODO: REFACTORIZAR Y MOVER A UN JOB INDEPENDIENTE
-      // await this.magicCardsService.calculatePrice(job.data.productId, variantDb.variantId);
+      //calcular el precio de la variante TODO: REFACTORIZAR Y MOVER A UN JOB INDEPENDIENTE
+      await this.rateLimiter.schedule(() =>
+        this.magicCardsService.calculatePrice(createdProduct.product.id, variantResponse.variant.id)
+      );
 
-      //TODO: REFACTORIZAR PARA QUE ESTA FUNCION SOLO ENVIE LOS PRECIOS, CREAR OTRA FUNCION PARA PROCESAR Y PASAR A NUEVO JOB
-      // await this.magicCardsService.calculatePrice(job.data.enCard.idJumpSeller, variantResponse.variant.id); //id del producto, id de la variante
     } catch (error) {
       console.error(error);
       throw new Error(`Job failed at step: ${error.message}`);

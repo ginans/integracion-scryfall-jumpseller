@@ -5,7 +5,7 @@ import { MagicCardsService } from '../../magic/magic-cards.service';
 import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.customfields.mapper.service';
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
 
-@Processor('5-create-custom-fields-request')
+@Processor('5-create-custom-fields-request', { concurrency: 80 })
 export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,

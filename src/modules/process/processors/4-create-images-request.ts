@@ -11,7 +11,7 @@ import { ICreateImageRequest } from 'src/modules/jumpseller/interfaces/create-im
 // import { EnumLanguage } from '../../magic/enums/lang.enum';
 // import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 
-@Processor('4-create-images-request')
+@Processor('4-create-images-request', { concurrency: 80 })
 export class CreateImagesRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,

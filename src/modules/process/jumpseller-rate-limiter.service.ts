@@ -11,9 +11,9 @@ export class JumpsellerRateLimiterService {
       reservoir: 20,
       reservoirRefreshAmount: 20,
       reservoirRefreshInterval: 1000,
-      maxConcurrent: 15,
+      maxConcurrent: 20,
       highWater: 1000,
-      strategy: Bottleneck.strategy.OVERFLOW,
+      strategy: Bottleneck.strategy.OVERFLOW_PRIORITY,
     });
 
     this.apiLimiter.on('failed', (error) => {

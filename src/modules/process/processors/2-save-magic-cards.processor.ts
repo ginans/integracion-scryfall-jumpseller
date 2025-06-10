@@ -6,7 +6,7 @@ import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 
 
-@Processor('2-save-magic-cards', { concurrency: 40 })
+@Processor('2-save-magic-cards', { concurrency: 80 })
 export class SaveMagicCardsProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService:MagicCardsService,

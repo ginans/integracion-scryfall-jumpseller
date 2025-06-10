@@ -6,7 +6,7 @@ import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 
-@Processor('6-create-variants-request', { concurrency: 20 })
+@Processor('6-create-variants-request', { concurrency: 80 })
 export class CreateVariantsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,

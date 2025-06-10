@@ -8,7 +8,7 @@ import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { ICreateImageRequest } from 'src/modules/jumpseller/interfaces/create-image.interface';
 
-@Processor('3-create-product-request')
+@Processor('3-create-product-request', { concurrency: 80 })
 export class CreateProductRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
@@ -34,7 +34,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
       esCard?: MagicCardDocument | null,
       lang: Language[]
     }, string, string>
-    
+
   ) {
     super();
   }

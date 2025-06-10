@@ -1,0 +1,127 @@
+//mapear ordenes
+
+import { IOrder } from "src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface";
+
+export const mapOrders = (order: IOrder): IMappedOrders => {
+  console.log("entro al mapeo de ordenes", order);
+  
+  const mappedOrders = {
+    orderId: order.id,
+    source: order.source ? {
+      name: order.source.source_name,
+      medium: order.source.medium,
+      campaign: order.source.campaign,
+      referralUrl: order.source.referral_url,
+      referralCode: order.source.referral_code,
+      userAgent: order.source.user_agent,
+      firstPageVisited: order.source.first_page_visited,
+      firstPageVisitedAt: order.source.first_page_visited_at,
+      referralSource: order.source.referral_source,
+      createdFrom: order.source.created_from,
+      createdFromAppCode: order.source.created_from_app_code,
+    } : null,
+    saleCreationDate: order.created_at,
+    saleCompletedDate: order.completed_at,
+    currency: order.currency,
+    subTotal: order.subtotal,
+    tax: order.tax,
+    shippingTax: order.shipping_tax,
+    shipping: order.shipping,
+    total: order.total,
+    discount: order.discount,
+    shippingDiscount: order.shipping_discount,
+    fullfillmentStatus: order.fulfillment_status,
+    shippingMethodName: order.shipping_method_name,
+    paymentMethodName: order.payment_method_name,
+    paymentMethodType: order.payment_method_type,
+    paymentInformation: order.payment_information,
+    checkoutUrl: order.checkout_url,
+    coupon: order.coupons,
+    customer: order.customer ? {
+      id: order.customer.id,
+      name: order.customer.fullname,
+      email: order.customer.email,
+      phone: order.customer.phone,
+      phonePrefix: order.customer.phone_prefix,
+      ip: order.customer.ip,
+    } : null,
+    shippingBranch: order.shipping_branch ? {
+      id: order.shipping_branch.id,
+      name: order.shipping_branch.name,
+    } : null,
+    shippingAddress: order.shipping_address ? {
+      name: order.shipping_address.name,
+      surName: order.shipping_address.surname,
+      address: order.shipping_address.address,
+      city: order.shipping_address.city,
+      region: order.shipping_address.region,
+      country: order.shipping_address.country,
+      streetNumber: order.shipping_address.street_number,
+      municipality: order.shipping_address.municipality,
+    } : null,
+    billingAddress: order.billing_address ? {
+      name: order.billing_address.name,
+      surName: order.billing_address.surname,
+      address: order.billing_address.address,
+      city: order.billing_address.city,
+      region: order.billing_address.region,
+      country: order.billing_address.country,
+      streetNumber: order.billing_address.street_number,
+      municipality: order.billing_address.municipality,
+    } : null,
+    pickupAddress: order.pickup_address ? {
+      name: order.pickup_address.name,
+      surName: order.pickup_address.surname,
+      address: order.pickup_address.address,
+      city: order.pickup_address.city,
+      region: order.pickup_address.region,
+      country: order.pickup_address.country,
+      streetNumber: order.pickup_address.street_number,
+      municipality: order.pickup_address.municipality,
+      pickUpPlaceName: order.pickup_address.pickup_place_name,
+    } : null,
+    products: order.products?.map(product => ({
+      id: product.id,
+      variantId: product.variant_id,
+      sku: product.sku,
+      name: product.name,
+      image: product.image,
+      qty: product.qty,
+      price: product.price,
+      discount: product.discount,
+      taxes: product.taxes?.map(tax => ({
+        id: tax.id,
+        name: tax.name,
+        rate: tax.rate,
+      })) || [],
+      stockLocations: product.stock_locations?.map(stockLocation => ({
+        locationId: stockLocation.location_id,
+        stock: stockLocation.stock,
+      })) || [],
+    })) || [],
+    shippingTaxes: order.shipping_taxes?.map(tax => ({
+      id: tax.id,
+      name: tax.name,
+      country: tax.country,
+      region: tax.region,
+      rate: tax.rate,
+    })) || [],
+    statusJumpseller: order.status,
+    statusJumpsellerName: order.status_name,
+    statusJumpsellerEnum: order.status_enum,
+    trackingUrl: order.tracking_url,
+    trackingNumber: order.tracking_number,
+    shippingOption: order.shipping_option,
+    sameDayDelivery: order.same_day_delivery,
+    shipmentStatus: order.shipment_status,
+    shipmentStatusEnum: order.shipment_status_enum,
+    recoveredFrom: order.recovered_from,
+    billingInformation: order.billing_information ? {
+      businessActivity: order.billing_information.business_activity,
+      companyName: order.billing_information.company_name,
+      taxpayerType: order.billing_information.taxpayer_type,
+    } : null
+  }
+  
+  return mappedOrders;
+}

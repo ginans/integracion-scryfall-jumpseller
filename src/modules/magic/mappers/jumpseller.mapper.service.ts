@@ -1,7 +1,7 @@
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
-import { JumpsellerProductRequest, JumpsellerStatus } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
-import { JumpsellerUpdateProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
-import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerProductRequest, JumpsellerStatus } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
+import { JumpsellerUpdateProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/JumpsellerUpdateProductRequest.interface';
+import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { EnumGame } from 'src/common/enums/game.enum';
 import { EnumCondition } from '../enums/condition.enum';

@@ -25,24 +25,24 @@ import { EnumGame } from '../../common/enums/game.enum';
 import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 import { JumpsellerMapperService, Language } from './mappers/jumpseller.mapper.service';
-import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
+import { JumpsellerCustomField } from '../jumpseller/interfaces/custom-fields-jumpseller/getAllCustomFields.interface';
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 import { mapCardData } from './mappers/scryfall-to-db.mapper';
 import { mappedStaggingProductVariant } from './mappers/staging-product-variant.mapper';
 import { ProcessService } from '../process/process.service';
 import {
   JumpsellerProductRequest,
-} from '../jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
+} from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import {
   JumpsellerProductResponse,
-} from '../jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductResponse.interface';
+} from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { EnumStatus } from './enums/status.enum';
 import {
   JumpsellerCreateVariantRequest,
-} from '../jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+} from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import {
   JumpsellerCreateVariantResponse,
-} from '../jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface';
+} from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
 
 @Injectable()

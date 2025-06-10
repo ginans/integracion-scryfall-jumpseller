@@ -16,12 +16,16 @@ import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
 import { SaveMagicCardsProcessor } from './processors/2-save-magic-cards.processor';
 import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.processor';
-import { CreateProductJumpsellerProcessor } from './processors/3-create-product-request.processor';
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
 import { CreateVariantsRequestProcessor } from './processors/4-create-variants-request.processor';
 import { CreateVariantJumpsellerProcessor } from './processors/5-create-variant-jumpseller.processor';
 import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.processor';
+import { CreateImagesJumpsellerProcessor } from './processors/4.1-create-images-jumpseller';
+import { CreateCustomFieldsJumpsellerProcessor } from './processors/4.2-create-custom-fields-jumpseller';
+import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
+import { SaveOrderProcessor } from './processors/save-order.processor';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
   imports: [
@@ -30,6 +34,7 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     StagingProductVariantModule,
     BasePricesModule,
     UsdPricesModule,
+    OrdersModule,
     BullModule.registerQueue({
       name: '1-sync-magic-cards',
       defaultJobOptions: {
@@ -51,16 +56,15 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '3-create-product-jumpseller',
+      name: '3-create-product-request',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '3-create-product-jumpseller',
+      name: '3-create-product-request',
       adapter: BullMQAdapter,
     }),
-
     //Job Check Variants Cards
     BullModule.registerQueue({
       name: '4-create-variants-request',
@@ -70,6 +74,26 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     }),
     BullBoardModule.forFeature({
       name: '4-create-variants-request',
+      adapter: BullMQAdapter,
+    }),
+    BullModule.registerQueue({
+      name: '4.1-create-images-jumpseller',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '4.1-create-images-jumpseller',
+      adapter: BullMQAdapter,
+    }),
+    BullModule.registerQueue({
+      name: '4.2-create-custom-fields-jumpseller',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '4.2-create-custom-fields-jumpseller',
       adapter: BullMQAdapter,
     }),
 
@@ -151,6 +175,17 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
       name: "update-prices-from-front",
       adapter: BullMQAdapter,
     }),
+    //recibir y guardar orden desde el webhook de jumpseller
+    BullModule.registerQueue({
+      name: "save-order",
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: "save-order",
+      adapter: BullMQAdapter,
+    }),
   ],
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
@@ -165,10 +200,13 @@ import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.pr
     JumpsellerService,
     SyncMagicCardsProcessor,
     SaveMagicCardsProcessor,
-    CreateProductJumpsellerProcessor,
+    CreateProductRequestProcessor,
     CreateVariantsRequestProcessor,
     CreateVariantJumpsellerProcessor,
-    JumpsellerGatewayProcessor
+    CreateImagesJumpsellerProcessor,
+    CreateCustomFieldsJumpsellerProcessor,
+    JumpsellerGatewayProcessor,
+    SaveOrderProcessor
   ],
 })
 export class ProcessModule {}

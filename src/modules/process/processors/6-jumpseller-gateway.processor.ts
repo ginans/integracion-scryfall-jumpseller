@@ -1,8 +1,8 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
-import { JumpsellerVariant } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerGetAllProduct.interface';
-import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
+import { JumpsellerVariant } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerGetAllProduct.interface';
+import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { MagicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
 

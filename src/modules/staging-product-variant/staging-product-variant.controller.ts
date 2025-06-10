@@ -3,6 +3,7 @@ import { StagingProductVariantService } from './staging-product-variant.service'
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
+import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
 
 @Controller('staging-product-variant')
 export class StagingProductVariantController {
@@ -45,6 +46,11 @@ export class StagingProductVariantController {
     @Body('isPriceUpdateable') isPriceUpdateable: boolean
   ) {
     return await this.stagingProductVariantService.updateAllIsPriceUpdateable(isPriceUpdateable);
+  }
+
+   @Post("webhook/sale")
+  async jumpsellerWebhookSale(@Body() body: ISaleData){
+      return this.stagingProductVariantService.updateStock(body.order); 
   }
   
 }

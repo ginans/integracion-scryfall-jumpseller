@@ -9,12 +9,16 @@ import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.en
 import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { UsdPricesModule } from 'src/modules/prices/usd-prices/usd-prices.module';
 import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.module';
+import { StockAndSalesHistory, StockAndSalesHistorySchema } from './entities/stock-discount-and-sales-history.entity';
 
 @Module({
   controllers: [StagingProductVariantController],
   providers: [StagingProductVariantService],
   imports: [
-    MongooseModule.forFeature([{ name: StagingProductVariant.name, schema: StagingProductVariantSchema }]),
+    MongooseModule.forFeature([
+      { name: StagingProductVariant.name, schema: StagingProductVariantSchema },
+      { name: StockAndSalesHistory.name, schema: StockAndSalesHistorySchema },
+    ]),
     JumpsellerModule,
     UsdPricesModule,
     BasePricesModule,

@@ -10,7 +10,7 @@ import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.e
 export class SaveMagicCardsProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService:MagicCardsService,
-    @InjectQueue('3-create-product-jumpseller') private readonly createProductJumpsellerQueue: Queue<{enCard: MagicCardDocument, esCard?: MagicCardDocument | null, thereIsSpanishVersion: boolean}, string, string>,
+    @InjectQueue('3-create-product-request') private readonly createProductJumpsellerQueue: Queue<{enCard: MagicCardDocument, esCard?: MagicCardDocument | null, thereIsSpanishVersion: boolean}, string, string>,
     ) { super() }
   async process(job: Job<{card: ScryfallCardResponse}, string, string>): Promise<any> {
     let thereIsSpanishVersion = false

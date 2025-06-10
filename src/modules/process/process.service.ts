@@ -1,9 +1,9 @@
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
-import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
@@ -11,6 +11,8 @@ import { StagingProductVariantService } from '../staging-product-variant/staging
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
+import { IOrder, ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
+import { In } from 'typeorm';
 
 @Injectable()
 export class ProcessService {
@@ -31,7 +33,18 @@ export class ProcessService {
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
     @InjectQueue("queues-recalculate-prices-by-usd") private readonly QueuesRecalculatePricesByUsd: Queue,
     @InjectQueue("queues-recalculate-prices-by-base") private readonly QueuesRecalculatePricesByBase: Queue,
+    @InjectQueue('save-order') private readonly SaveOrderProcessor: Queue,
   ) { }
+
+  async handleOrdersWebhook(order: ISaleData) {
+    try {
+      this.logger.log('Received order webhook', order);
+      await this.SaveOrderProcessor.add('save-order', order );
+    } catch (error) {
+      this.logger.error('Error procesando el webhook de la orden', error);
+      throw new InternalServerErrorException('Error procesando el webhook de la orden');
+    }
+  }
 
   async updateStockQueue(variants: IStockFromFront[]) {
     for(const variant of variants){

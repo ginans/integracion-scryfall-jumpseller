@@ -2,7 +2,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
-import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
+import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 
 @Processor('3-create-product-request')
 export class CreateProductRequestProcessor extends WorkerHost {

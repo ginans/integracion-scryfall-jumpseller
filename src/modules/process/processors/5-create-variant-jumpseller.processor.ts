@@ -3,7 +3,7 @@ import { Job } from 'bullmq';
 import { MagicCardsService } from '../../magic/magic-cards.service';
 import {
   JumpsellerCreateVariantRequest
-} from '../../jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+} from '../../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 
 @Processor('5-create-variant-jumpseller')
 export class CreateVariantJumpsellerProcessor extends WorkerHost {

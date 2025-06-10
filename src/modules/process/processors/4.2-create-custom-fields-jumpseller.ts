@@ -1,13 +1,13 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
-import { ILangUrlEnum } from '../../magic/submodules/scryfall/enums/lang.enum';
+// import { ILangUrlEnum } from '../../magic/submodules/scryfall/enums/lang.enum';
 import { MagicCardsService } from '../../magic/magic-cards.service';
-import { EnumLanguage } from '../../magic/enums/lang.enum';
-import { Language } from '../../magic/mappers/jumpseller.mapper.service';
+// import { EnumLanguage } from '../../magic/enums/lang.enum';
+// import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 
-@Processor('3-create-product-jumpseller')
-export class CreateProductJumpsellerProcessor extends WorkerHost {
+@Processor('4.2-create-custom-fields-jumpseller')
+export class CreateCustomFieldsJumpsellerProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     @InjectQueue('4-create-variants-request') private readonly checkVariantsQueue: Queue

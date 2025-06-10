@@ -1,16 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios';
-import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
-import { JumpsellerProductResponse } from './interfaces/jumpsellerProducts/jumpsellerCreateProductResponse.interface';
-import { JumpsellerCreateVariantRequest } from './interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
-import { JumpsellerCreateVariantResponse } from './interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface';
+import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
+import { JumpsellerProductResponse } from './interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
+import { JumpsellerCreateVariantRequest } from './interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerCreateVariantResponse } from './interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageResponse, ICreateImageRequest } from './interfaces/create-image.interface';
-import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductRequest.interface';
-import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/jumpselllerCustomFields/addAnExistingCustomFieldToAProductResponse.interface';
-import { StockJumpsellerRequest } from './interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
-import { JumpsellerUpdateVariantRequest } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
-import { JumpsellerUpdateVariantResponse, JumpsellerUpdateVariantResponseError } from './interfaces/jumpsellerVariants/jumpsellerUpdateVariantResponse.interface';
-import { GetAllCustomFieldResponse } from './interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
+import { AddAnExistingCustomFieldToAProductRequest } from './interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
+import { AddAnExistingCustomFieldToAProductResponse } from './interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductResponse.interface';
+import { StockJumpsellerRequest } from './interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
+import { JumpsellerUpdateVariantRequest } from './interfaces/variants-jumpseller/jumpsellerUpdateVariantRequest.interface';
+import { JumpsellerUpdateVariantResponse, JumpsellerUpdateVariantResponseError } from './interfaces/variants-jumpseller/jumpsellerUpdateVariantResponse.interface';
+import { GetAllCustomFieldResponse } from './interfaces/custom-fields-jumpseller/getAllCustomFields.interface';
 import { JumpsellerEndpoints } from './endpoints.enum';
 import { EnvConfiguration } from '../../config/app.config';
 

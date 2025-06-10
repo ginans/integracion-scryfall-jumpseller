@@ -24,6 +24,6 @@ import { ProcessModule } from '../process/process.module';
   ],
   controllers: [MagicCardsController],
   providers: [MagicCardsService, JumpsellerMapperService, CustomFieldsMapperService],
-  exports:[ScryfallModule, MagicCardsService, MongooseModule]
+  exports:[ScryfallModule, MagicCardsService, MongooseModule, CustomFieldsMapperService]
 })
 export class MagicCardsModule {}

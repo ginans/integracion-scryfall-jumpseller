@@ -25,15 +25,13 @@ export class SaveMagicCardsProcessor extends WorkerHost {
         newEsCard = await this.magicCardsService.createMagicCards(versionES);
         if (newEsCard) {
           thereIsSpanishVersion = true
-        }else {
-          thereIsSpanishVersion = false
         }
       }
       await job.updateProgress(50);
       // Enviar a la cola de creación de productos en Jumpseller
       await this.createProductJumpsellerQueue.add(
         `DB product: ${newEnCard._id}`,//nombre del job
-        { enCard: newEnCard, esCard: newEsCard, thereIsSpanishVersion }, //datos del job
+        { enCard: newEnCard, esCard: newEsCard, thereIsSpanishVersion },//datos del job
         { jobId: newEnCard._id.toString() } //identificador único del job
       );
       await job.updateProgress(100);

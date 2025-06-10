@@ -18,14 +18,15 @@ import { SaveMagicCardsProcessor } from './processors/2-save-magic-cards.process
 import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.processor';
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
-import { CreateVariantsRequestProcessor } from './processors/4-create-variants-request.processor';
-import { CreateVariantJumpsellerProcessor } from './processors/5-create-variant-jumpseller.processor';
-import { JumpsellerGatewayProcessor } from './processors/6-jumpseller-gateway.processor';
-import { CreateImagesJumpsellerProcessor } from './processors/4.1-create-images-jumpseller';
-import { CreateCustomFieldsJumpsellerProcessor } from './processors/4.2-create-custom-fields-jumpseller';
+import { CreateVariantsRequestProcessor } from './processors/6-create-variants-request.processor';
+import { JumpsellerGatewayProcessor } from './processors/7-jumpseller-gateway.processor';
 import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
 import { SaveOrderProcessor } from './processors/save-order.processor';
 import { OrdersModule } from '../orders/orders.module';
+import { JumpsellerRateLimiterService } from './jumpseller-rate-limiter.service';
+import { CreateImagesRequestProcessor } from './processors/4-create-images-request';
+import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request';
+import { CustomFieldsMapperService } from '../magic/mappers/jumpseller.customfields.mapper.service';
 
 @Module({
   imports: [
@@ -67,56 +68,44 @@ import { OrdersModule } from '../orders/orders.module';
     }),
     //Job Check Variants Cards
     BullModule.registerQueue({
-      name: '4-create-variants-request',
+      name: '4-create-images-request',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '4-create-variants-request',
+      name: '4-create-images-request',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '4.1-create-images-jumpseller',
+      name: '5-create-custom-fields-request',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '4.1-create-images-jumpseller',
+      name: '5-create-custom-fields-request',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '4.2-create-custom-fields-jumpseller',
+      name: '6-create-variants-request',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '4.2-create-custom-fields-jumpseller',
-      adapter: BullMQAdapter,
-    }),
-
-    //Job Create Variants
-    BullModule.registerQueue({
-      name: '5-create-variant-jumpseller',
-      defaultJobOptions: {
-        lifo: true,
-      },
-    }),
-    BullBoardModule.forFeature({
-      name: '5-create-variant-jumpseller',
+      name: '6-create-variants-request',
       adapter: BullMQAdapter,
     }),
     //job jumpseller gateway
     BullModule.registerQueue({
-      name: '6-jumpseller-gateway',
+      name: '7-jumpseller-gateway',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '6-jumpseller-gateway',
+      name: '7-jumpseller-gateway',
       adapter: BullMQAdapter,
     }),
     // enviar stock cargado desde el front a jumpseller
@@ -201,12 +190,12 @@ import { OrdersModule } from '../orders/orders.module';
     SyncMagicCardsProcessor,
     SaveMagicCardsProcessor,
     CreateProductRequestProcessor,
+    CreateImagesRequestProcessor,
+    CreateCustomFieldsRequestProcessor,
     CreateVariantsRequestProcessor,
-    CreateVariantJumpsellerProcessor,
-    CreateImagesJumpsellerProcessor,
-    CreateCustomFieldsJumpsellerProcessor,
     JumpsellerGatewayProcessor,
-    SaveOrderProcessor
+    SaveOrderProcessor,
+    JumpsellerRateLimiterService
   ],
 })
 export class ProcessModule {}

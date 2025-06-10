@@ -7,6 +7,7 @@ export const mapOrders = (order: IOrder): IMappedOrders => {
   
   const mappedOrders = {
     orderId: order.id,
+    sku: order.products.flatMap(product => product.sku),
     source: order.source ? {
       name: order.source.source_name,
       medium: order.source.medium,

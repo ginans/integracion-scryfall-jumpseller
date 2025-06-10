@@ -114,24 +114,24 @@ export class OrdersService {
           if (!isNaN(Number(searchValue))) {
             filters.$or.push({ orderId: Number(searchValue) });
           }
-          filters.$or.push({
-            $expr: {
-              $regexMatch: {
-                input: { $toString: "$sku" },
-                regex: searchValue,
-                options: "i"
-              }
-            }
-          });
-        
-
           // filters.$or.push({
-          //   products: {
-          //     $elemMatch: {
-          //       sku: { $regex: searchValue, $options: "i" }
+          //   $expr: {
+          //     $regexMatch: {
+          //       input: { $toString: "$sku" },
+          //       regex: searchValue,
+          //       options: "i"
           //     }
           //   }
           // });
+        
+
+          filters.$or.push({
+            products: {
+              $elemMatch: {
+                sku: { $regex: searchValue, $options: "i" }
+              }
+            }
+          });
         }
     
         if (from && to) {
@@ -200,13 +200,30 @@ export class OrdersService {
         }
   }
 
-  async findOneOrder(_id: string): Promise<Order> {
+  async findOneOrder(_id: string) {
     try {
       if (!Types.ObjectId.isValid(_id))
         throw new BadRequestException('Formato de ID inválido');
       const order = await this.orderModel.findOne({ _id: new Types.ObjectId(_id) }).exec();
       if (!order) throw new NotFoundException('Order no encontrada');
-      return order;
+      const orderbyId = order.products.map((product: Products) => ({
+        _id: order._id,
+        orderId: order.orderId,
+        productId: product.id,
+        variantId: product.variantId,
+        sku: product.sku,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        discount: product.discount,
+        qty: product.qty,
+        shipping: order.shipping,
+        total: order.total,
+        orderStatus: order.statusJumpseller,
+        saleCreationDate: order.saleCreationDate,
+        saleCompletedDate: order.saleCompletedDate,
+      }));
+      return orderbyId;
     } catch (error) {
       throw new InternalServerErrorException(`Error fetching Order: ${error.message}`);
     }

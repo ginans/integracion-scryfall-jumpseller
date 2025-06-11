@@ -23,10 +23,8 @@ import { JumpsellerGatewayProcessor } from './processors/7-jumpseller-gateway.pr
 import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
 import { SaveOrderProcessor } from './processors/save-order.processor';
 import { OrdersModule } from '../orders/orders.module';
-import { JumpsellerRateLimiterService } from './jumpseller-rate-limiter.service';
 import { CreateImagesRequestProcessor } from './processors/4-create-images-request';
 import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request';
-import { CustomFieldsMapperService } from '../magic/mappers/jumpseller.customfields.mapper.service';
 
 @Module({
   imports: [
@@ -195,7 +193,6 @@ import { CustomFieldsMapperService } from '../magic/mappers/jumpseller.customfie
     CreateVariantsRequestProcessor,
     JumpsellerGatewayProcessor,
     SaveOrderProcessor,
-    JumpsellerRateLimiterService
   ],
 })
 export class ProcessModule {}

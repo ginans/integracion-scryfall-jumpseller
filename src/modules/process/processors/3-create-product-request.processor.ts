@@ -5,14 +5,16 @@ import { MagicCardsService } from '../../magic/magic-cards.service';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
+import { RequestTypeEnum } from '../enums/request-type.enum';
 
-@Processor('3-create-product-request', { concurrency: 80 })
+@Processor('3-create-product-request')
 export class CreateProductRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
-    @InjectQueue("7-jumpseller-gateway") 
+    @InjectQueue('7-jumpseller-gateway')
     private readonly jumpsellerGatewayQueue: Queue<{
-      productRequest: JumpsellerProductRequest, 
+      productRequest: JumpsellerProductRequest;
+      requestType: RequestTypeEnum;
     }, string, string>,
 
     @InjectQueue("4-create-images-request") 
@@ -23,7 +25,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
 
     @InjectQueue("5-create-custom-fields-request") 
     private readonly CreateCustomFieldsRequestQueue: Queue<{
-      card: MagicCardDocument, 
+      enCard: MagicCardDocument, 
     }, string, string>,
     
     @InjectQueue("6-create-variants-request") 
@@ -58,14 +60,20 @@ export class CreateProductRequestProcessor extends WorkerHost {
         "create-product", //nombre del job
         { 
           productRequest: mappedEnProduct,
-        } //data
+          requestType: RequestTypeEnum.PRODUCTS
+        }, //data
+        {
+          jobId: String(job.data.enCard.idJumpSeller),
+          // parent: {id: job.data.enCard.id, queue: job.queueName},
+          priority: 0
+        }
       );
 
       await job.updateProgress(75);
       //enviar a cleacion de custom fields
       await this.CreateCustomFieldsRequestQueue.add(
         "create-custom-fields", //nombre del job
-        { card: job.data.enCard });
+        { enCard: job.data.enCard });
       //Enviar a creacion de imagenes
       await this.CreateImagesRequestQueue.add(
         "create-images", //nombre del job

@@ -5,7 +5,7 @@ import { ILangUrlEnum } from '../../magic/submodules/scryfall/enums/lang.enum';
 import { ScryfallCardResponse } from '../../magic/submodules/scryfall/interfaces/scryfall.interface';
 
 
-@Processor('1-sync-magic-cards')
+@Processor('1-sync-magic-cards',)
 export class SyncMagicCardsProcessor extends WorkerHost {
   constructor(
     private readonly scryfallService: ScryfallService,
@@ -21,16 +21,16 @@ export class SyncMagicCardsProcessor extends WorkerHost {
       let page = 1;
       let process = true;
       do {
-        const { data, has_more } = await this.scryfallService.getScryfallCards(lg, page);
+        const data = await this.scryfallService.getScryfallCards(lg, page);
         /**
          * Para probar el flujo de solo 1 card, descomentar la siguiente línea
          * await this.SaveMagicCards.add(`Card:${data[0].id}`, { card: data[0] },{jobId: data[0].id, })
          */
         await Promise.all(
-          data.map(row => this.SaveMagicCards.add(`Card:${row.id}`, { card: row },{jobId: row.id, }))
+          data.data.map(row => this.SaveMagicCards.add(`Card:${row.id}`, { card: row },{jobId: row.id, }))
         );
-        count += data.length;
-        process = has_more;
+        count += data.data.length;
+        process = data.has_more;
         /**
          * Para probar el flujo de solo 1 página, descomentar la siguiente línea;
          */

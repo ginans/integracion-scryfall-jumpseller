@@ -11,8 +11,7 @@ import { StagingProductVariantService } from '../staging-product-variant/staging
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
-import { IOrder, ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
-import { In } from 'typeorm';
+import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
 
 @Injectable()
 export class ProcessService {

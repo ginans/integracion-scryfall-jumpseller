@@ -680,6 +680,16 @@ export class StagingProductVariantService {
     return variantResponse;
   }
 
+  async findByVariantId(variantId: number): Promise<IStagingProductVariant | null> {
+    try {
+      const variant = await this.stagingProductVariantModel.findOne({ variantId }).exec();
+      return variant as unknown as IStagingProductVariant;
+    } catch (error) {
+      this.logger.error(`Error al buscar variante por ID: ${error.message}`);
+      throw new InternalServerErrorException(`Error al buscar variante por ID: ${error.message}`);
+    }
+  }
+
   //actualizar variante por id
   async updateVariantById(_id: string, variant: Partial<IStagingProductVariant>) {
     if (!Types.ObjectId.isValid(_id)) {

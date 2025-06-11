@@ -4,16 +4,18 @@ import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
 import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.customfields.mapper.service';
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
+import { RequestTypeEnum } from '../enums/request-type.enum';
 
-@Processor('5-create-custom-fields-request', { concurrency: 80 })
+@Processor('5-create-custom-fields-request', { concurrency: 20 })
 export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
     @InjectQueue("7-jumpseller-gateway") 
     private readonly jumpsellerGatewayQueue: Queue<{
-    card: MagicCardDocument,  
+    enCard: MagicCardDocument,  
     customFieldRequest: AddAnExistingCustomFieldToAProductRequest, 
+    requestType: RequestTypeEnum
     }, string, string>
     ) {
     super();
@@ -27,8 +29,12 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
       for (const customField of requestsCustomFields) {
         try {
           await this.jumpsellerGatewayQueue.add('add-custom-field', {
-            card: job.data,
+            enCard: job.data,
             customFieldRequest: customField,
+            requestType: RequestTypeEnum.CUSTOM_FIELDS
+          },
+          {
+            priority: 1
           });
         } catch (error) {
          throw new Error(`❌ Error al subir custom field: ${error.message}`);

@@ -8,102 +8,159 @@ import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { MagicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
-import { JumpsellerRateLimiterService } from '../jumpseller-rate-limiter.service';
 import { EnumStatus } from 'src/modules/magic/enums/status.enum';
+import { RequestTypeEnum } from '../enums/request-type.enum';
+import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
 
-@Processor('7-jumpseller-gateway', { concurrency: 80 })
+@Processor('7-jumpseller-gateway', {
+  concurrency: 15,
+  limiter: { max: 15, duration: 1000 },
+})
 export class JumpsellerGatewayProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     private readonly jumpsellerService: JumpsellerService,
-    private readonly rateLimiter: JumpsellerRateLimiterService,
+    private readonly stagingVariantsService: StagingProductVariantService
   ) {
     super();
   }
-  async process(job: Job<{
-    productRequest: JumpsellerProductRequest, 
-    enCard: MagicCardDocument, 
-    esCard?: MagicCardDocument | null, 
-    thereIsSpanishVersion: boolean,
-    variantRequest: JumpsellerCreateVariantRequest,
-    lang: Language[], 
-    productId: number,
-    imageProductId: number,
-    image: ICreateImageRequest,
-    customFieldCard: MagicCardDocument,
-    customFieldRequest: AddAnExistingCustomFieldToAProductRequest
-  }, string, string>) {
+  async process(
+    job: Job<
+      {
+        productRequest: JumpsellerProductRequest;
+        enCard: MagicCardDocument;
+        esCard?: MagicCardDocument | null;
+        thereIsSpanishVersion: boolean;
+        variantRequest: JumpsellerCreateVariantRequest;
+        lang: Language[];
+        productId: number;
+        imageRequest: ICreateImageRequest;
+        customFieldCard: MagicCardDocument;
+        customFieldRequest: AddAnExistingCustomFieldToAProductRequest;
+        requestType: RequestTypeEnum;
+      },
+      string,
+      string
+    >,
+  ) {
+    const {
+      requestType,
+      enCard,
+      esCard,
+      imageRequest,
+      productRequest,
+      variantRequest,
+      thereIsSpanishVersion,
+      productId,
+      customFieldRequest,
+    } = job.data;
     try {
-      //centralizar aqui los envios a jumpseller
-      //enviar productos
-      await job.updateProgress(5);
-   
-     const createdProduct = await this.rateLimiter.schedule(() => 
-        this.magicCardsService.createProductJumpseller(job.data.productRequest),
-        { id: `create-product-${job.data.enCard.id}` }
-      );
-      //actualizar el id de jumpseller en la carta
-      await job.updateProgress(10);
-      if (!createdProduct){
-        throw new Error(`Fallo al crear producto para carta con id: ${job.data.enCard.id}`);
+      switch (requestType) {
+        case RequestTypeEnum.PRODUCTS:
+          await job.updateProgress(5);
+          const createdProduct =
+            await this.magicCardsService.createProductJumpseller(
+              productRequest,
+            );
+          await job.updateProgress(10);
+          if (!createdProduct) {
+            throw new Error(
+              `Fallo al crear producto para carta con id: ${enCard.id}`,
+            );
+          }
+          await this.magicCardsService.updateJumpsellerId(
+            enCard.id,
+            createdProduct.product.id,
+          );
+          await job.updateProgress(15);
+          const isCreatedProduct =
+            await this.magicCardsService.findCardByJumpsellerId(
+              productId,
+            );
+          if (
+            !isCreatedProduct &&
+            isCreatedProduct.status !== EnumStatus.COMPLETED
+          ) {
+            throw new Error(
+              `El producto con el id ${productId} no esta creado aún.`,
+            );
+          }
+
+          break;
+        case RequestTypeEnum.CUSTOM_FIELDS:
+          if (!customFieldRequest || !createdProduct || !isCreatedProduct) {
+            throw new Error(
+              `Faltan datos para crear el campo personalizado en el producto con id: ${createdProduct.product.id}`,
+            );
+          }
+          await this.jumpsellerService.addCustomFieldInProduct(
+            createdProduct.product.id,
+            customFieldRequest,
+          );
+          await job.updateProgress(75);
+          break;
+        case RequestTypeEnum.IMAGES:
+          //enviar imagenes,
+          if (!createdProduct || !imageRequest || !isCreatedProduct) {
+            throw new Error(
+              `Missing image data for product ID ${createdProduct.product.id}`,
+            );
+          }
+
+          await this.jumpsellerService.insertImages(
+            createdProduct.product.id,
+            imageRequest,
+          );
+          break;
+        case RequestTypeEnum.VARIANTS:
+            if (!createdProduct || !variantRequest || !isCreatedProduct) {
+            throw new Error(
+              `Missing variant data for product ID ${createdProduct.product.id}`,
+            );
+          }
+          const variantResponse = await this.magicCardsService.createJumpsellerVariant(
+            createdProduct.product.id,
+            variantRequest,
+          );
+
+          if (thereIsSpanishVersion && esCard) {
+            await this.magicCardsService.updateJumpsellerId(
+              esCard.id,
+              createdProduct.product.id,
+            );
+          }
+          const card = await this.magicCardsService.findCardByJumpsellerId(
+            enCard.idJumpSeller,
+          );
+          //crear la variante en la base de datos
+          await this.magicCardsService.createVariantInApp(
+            card,
+            variantResponse,
+            variantRequest.condition,
+            variantRequest.finish,
+          );
+          break;
+
+        case RequestTypeEnum.PRICES:
+          //consultar staging
+         const stagingVariant = await this.stagingVariantsService.findByVariantId(
+            variantResponse.variant.id,
+          );
+          if (!variantResponse.variant || !stagingVariant) {
+            throw new Error(
+              `Variant ID is missing for product ID ${createdProduct.product.id}`,
+            );
+          }
+          await this.magicCardsService.calculatePrice(
+            createdProduct.product.id,
+            variantResponse.variant.id,
+          );
+          break;
+        default:
+          console.log('Tipo de solicitud no reconocido:', requestType);
+          throw new Error(`Tipo de solicitud no reconocido: ${requestType}`);
       }
-      await this.magicCardsService.updateJumpsellerId(job.data.enCard.id, createdProduct.product.id);
-      await job.updateProgress(15);
-      //enviar variantes
-
-      const isCreatedProduct = await this.magicCardsService.findCardByJumpsellerId(job.data.productId);
-
-      if (!isCreatedProduct && isCreatedProduct.status !== EnumStatus.COMPLETED) {
-        throw new Error(`El producto con el id ${job.data.productId} no esta creado aún.`);
-      }
-      const variantResponse = await this.rateLimiter.schedule(() => 
-        this.magicCardsService.createJumpsellerVariant(
-          createdProduct.product.id,
-          job.data.variantRequest
-        ),
-          { id: `create-variant-${job.data.enCard.id}` }
-      );
-      await job.updateProgress(20);
-      
-      if (job.data.thereIsSpanishVersion && job.data.esCard) {
-        await this.magicCardsService.updateJumpsellerId(job.data.esCard.id, createdProduct.product.id);
-      }
-      
-      await job.updateProgress(25);
-
-      const card = await this.magicCardsService.findCardByJumpsellerId(job.data.productId);
-      //crear la variante en la base de datos
-      await this.magicCardsService.createVariantInApp(card, variantResponse, job.data.variantRequest.condition, job.data.variantRequest.finish);
-      await job.updateProgress(30);
-      
-      //enviar custom fields
-      await this.rateLimiter.schedule(() => 
-        this.jumpsellerService.addCustomFieldInProduct(job.data.customFieldCard.idJumpSeller, job.data.customFieldRequest),
-        { id: `add-custom-field-${job.data.customFieldCard.id}` }
-      );
-      await job.updateProgress(35);
-
-      //enviar imagenes, 
-      if (!job.data.imageProductId || !job.data.image) {
-        throw new Error(`Missing image data for product ID ${createdProduct.product.id}`);
-      }
-
-      await this.rateLimiter.schedule(() =>
-        this.jumpsellerService.insertImages(job.data.imageProductId, job.data.image),
-        { id: `insert-images-${job.data.imageProductId}` }
-      );
-      await job.updateProgress(40);
-      //enviar precios
-      
-      //calcular el precio de la variante TODO: REFACTORIZAR Y MOVER A UN JOB INDEPENDIENTE
-      if (!variantResponse.variant || !variantResponse.variant.id) {
-        throw new Error(`Variant ID is missing for product ID ${createdProduct.product.id}`);
-      }
-      await this.rateLimiter.schedule(() =>
-        this.magicCardsService.calculatePrice(createdProduct.product.id, variantResponse.variant.id),
-        { id: `calculate-price-${createdProduct.product.id}-${variantResponse.variant.id}` }
-      );
-
+      await job.updateProgress(100);
     } catch (error) {
       console.error(error);
       throw new Error(`Job failed at step: ${error.message}`);

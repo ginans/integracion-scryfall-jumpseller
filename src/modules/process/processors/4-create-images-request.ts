@@ -8,18 +8,19 @@ import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interface
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { ICreateImageRequest } from 'src/modules/jumpseller/interfaces/create-image.interface';
+import { RequestTypeEnum } from '../enums/request-type.enum';
 // import { EnumLanguage } from '../../magic/enums/lang.enum';
 // import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 
-@Processor('4-create-images-request', { concurrency: 80 })
+@Processor('4-create-images-request', { concurrency: 10 })
 export class CreateImagesRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     @InjectQueue("7-jumpseller-gateway") 
     private readonly jumpsellerGatewayQueue: Queue<{
-      imageProductId: number,
       lang?: Language[], 
-      imageRequest: ICreateImageRequest
+      imageRequest: ICreateImageRequest,
+      requestType: RequestTypeEnum
     }, string, string>
   ) {
     super();
@@ -31,7 +32,10 @@ export class CreateImagesRequestProcessor extends WorkerHost {
       const enImages = await this.magicCardsService.createImagesRequests(job.data.enCard)
       for (const image of enImages) {
         try {
-          await this.jumpsellerGatewayQueue.add(`Image to gateway`, { imageProductId: job.data.enCard.id, imageRequest: image });
+          await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
+            imageRequest: image,
+            requestType: RequestTypeEnum.IMAGES
+          });
         } catch (error) {
           console.error(`❌ Error al subir imagen: ${error.message}`);
         }
@@ -40,7 +44,13 @@ export class CreateImagesRequestProcessor extends WorkerHost {
         const esImages = await this.magicCardsService.createImagesRequests(job.data.esCard);
         for (const image of esImages) {
           try {
-            await this.jumpsellerGatewayQueue.add(`Image to gateway`, { imageProductId: job.data.esCard.id, imageRequest: image });
+            await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
+              imageRequest: image,
+              requestType: RequestTypeEnum.IMAGES
+            },
+            {
+              priority: 1
+            });
           } catch (error) {
             console.error(`❌ Error al subir imagen: ${error.message}`);
           }

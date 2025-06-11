@@ -32,7 +32,7 @@ export class SaveMagicCardsProcessor extends WorkerHost {
       await this.createProductJumpsellerQueue.add(
         `DB product: ${newEnCard._id}`,//nombre del job
         { enCard: newEnCard, esCard: newEsCard, thereIsSpanishVersion },//datos del job
-        { jobId: newEnCard._id.toString() } //identificador único del job
+        { jobId: String(newEnCard._id) } //identificador único del job
       );
       await job.updateProgress(100);
       return {

@@ -3,10 +3,8 @@ import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
-import { EnumLang } from 'src/common/enums/query.enum';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
-import { ICreateImageRequest } from 'src/modules/jumpseller/interfaces/create-image.interface';
 
 @Processor('3-create-product-request', { concurrency: 80 })
 export class CreateProductRequestProcessor extends WorkerHost {

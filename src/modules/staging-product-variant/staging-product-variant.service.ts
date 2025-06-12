@@ -16,6 +16,8 @@ import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.en
 import { EnumGame, EnumGamePrefix } from 'src/common/enums/game.enum';
 import { CreateStockDto } from './dto/stock/create-stock.dto';
 import { CreatePricesDto } from './dto/prices/create-prices.dto';
+import { StockAndSalesHistory, StockAndSalesHistoryDocument } from './entities/stock-discount-and-sales-history.entity';
+import { IOrder } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
 
 @Injectable()
 export class StagingProductVariantService {
@@ -24,6 +26,7 @@ export class StagingProductVariantService {
     @InjectModel(MagicCard.name) private magicCardModel: Model<MagicCard>,
     @InjectModel(UsdPrice.name) private usdPriceModel: Model<UsdPrice>,
     @InjectModel(BasePrice.name) private basePriceModel: Model<BasePrice>,
+    @InjectModel(StockAndSalesHistory.name) private readonly stockDiscountAndSalesHistoryModel: Model<StockAndSalesHistoryDocument>,
     private readonly jumpsellerService: JumpsellerService,
     private readonly logger: LoggerService
   ) {}
@@ -731,5 +734,54 @@ export class StagingProductVariantService {
       throw new InternalServerErrorException(`Error al actualizar isPriceUpdateable: ${error.message}`);
     }
   }
+
+  async updateStock(order: IOrder) {
+    // iterar sobre todos los productos del webhook
+    const results = []
+    for (const webhookProduct of order.products) {
+      const variantToUpdate = await this.stagingProductVariantModel.findOne({ productId: webhookProduct.id, variantId: webhookProduct.variant_id }).exec();
+      if (variantToUpdate) {
+        // calcular el nuevo stock general (stock en bd - cantidad vendida)
+        const newStock =  variantToUpdate.variantStock - webhookProduct.qty;
+        
+        // Calcular el nuevo historySales (historial de ventas + cantidad vendida)
+        const newHistorySales = (variantToUpdate.salesByCard || 0) + webhookProduct.qty;
+
+        const stockDiscountAndSalesHistoryEntry = await this.stockDiscountAndSalesHistoryModel.create({
+           orderId: order.id,
+           productId: webhookProduct.id,
+           variantId: webhookProduct.variant_id,
+           quantityDiscounted: webhookProduct.qty,
+           date: new Date(order.completed_at),
+           previousStock: variantToUpdate.variantStock,
+           newStock: newStock,
+           salesByCard: newHistorySales
+        });
+
+        // actualizar el stock de la variante en bd y agregar historial de ventas por carta
+        await this.stagingProductVariantModel.updateOne(
+          { productId: webhookProduct.id, variantId: webhookProduct.variant_id },
+          {
+            $set: { 
+              variantStock: newStock,
+              salesByCard: newHistorySales
+            }, 
+          }
+        );
+
+        this.logger.log(`stock actualizado para el id: ${webhookProduct.id}: el nuevo stock es ${newStock}, historySales: ${newHistorySales}`);
+      
+
+        results.push(
+          stockDiscountAndSalesHistoryEntry
+        );
+
+      } else {
+        this.logger.warn(`id producto no encontrado ${webhookProduct.id}`);
+      }
+    }
+    return results; 
+  }
+
   
 }

@@ -37,7 +37,6 @@ export class ProcessService {
 
    async handleOrdersWebhook(order: ISaleData) {
     try {
-      this.logger.log('Received order webhook', order);
       await this.SaveOrderProcessor.add('save-order', order );
     } catch (error) {
       this.logger.error('Error procesando el webhook de la orden', error);

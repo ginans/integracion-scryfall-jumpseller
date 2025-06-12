@@ -6,7 +6,7 @@ import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
 import { RequestTypeEnum } from '../enums/request-type.enum';
 
-@Processor('5-create-custom-fields-request', { concurrency: 20 })
+@Processor('5-create-custom-fields-request', { concurrency: 40 })
 export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
@@ -24,6 +24,8 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   async process(job: Job<MagicCardDocument, number, string>) {
     try {
       const fetchedCustomFields = await this.magicCardsService.getAllCustomFields();
+      const delay = Math.floor(Math.random() * 500) + 500; // entre 500 y 1000 ms
+      await new Promise(resolve => setTimeout(resolve, delay));
       if (!fetchedCustomFields || fetchedCustomFields.length === 0) return;
       const requestsCustomFields = await this.customFieldsMapperService.mappedCustomFields(job.data, fetchedCustomFields);
       for (const customField of requestsCustomFields) {
@@ -34,8 +36,10 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
             requestType: RequestTypeEnum.CUSTOM_FIELDS
           },
           {
-            priority: 1
+            priority: 3
           });
+          const delay = Math.floor(Math.random() * 500) + 500; // entre 500 y 1000 ms
+          await new Promise(resolve => setTimeout(resolve, delay));
         } catch (error) {
          throw new Error(`❌ Error al subir custom field: ${error.message}`);
         }

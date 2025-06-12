@@ -95,6 +95,6 @@ export class ProcessService {
   }
 
   async initCardMagic(): Promise<void> {
-    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN });
+    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN }, {priority: 0});
   }
 }

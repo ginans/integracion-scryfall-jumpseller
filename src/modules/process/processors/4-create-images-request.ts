@@ -12,7 +12,7 @@ import { RequestTypeEnum } from '../enums/request-type.enum';
 // import { EnumLanguage } from '../../magic/enums/lang.enum';
 // import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 
-@Processor('4-create-images-request', { concurrency: 10 })
+@Processor('4-create-images-request', { concurrency: 40 })
 export class CreateImagesRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
@@ -49,7 +49,7 @@ export class CreateImagesRequestProcessor extends WorkerHost {
               requestType: RequestTypeEnum.IMAGES
             },
             {
-              priority: 1
+              priority: 3
             });
           } catch (error) {
             console.error(`❌ Error al subir imagen: ${error.message}`);

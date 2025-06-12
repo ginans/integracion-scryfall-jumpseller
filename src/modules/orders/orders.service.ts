@@ -4,6 +4,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
+import { okOrderDto } from './dto/ok-order.dto';
+import { StateOrderEnum } from './enums/state-order.enum';
 
 @Injectable()
 export class OrdersService {
@@ -108,4 +110,27 @@ export class OrdersService {
     }
   }
 
+  async completedOrder(_id: string, isOrderOk: okOrderDto): Promise<OrderDocument> {
+    try {
+      if (isOrderOk.isOrderOk === true) {
+        const order = await this.orderModel.findOneAndUpdate(
+          { _id: new Types.ObjectId(_id) },
+          { $set: { state: StateOrderEnum.COMPLETED } },
+          { new: true }
+        );
+        if (!order) throw new NotFoundException('Order no encontrada');
+        return order;
+      }else{
+        const order = await this.orderModel.findOneAndUpdate(
+          { _id: new Types.ObjectId(_id) },
+          { $set: { state: StateOrderEnum.PENDING } },
+          { new: true }
+        );
+        if (!order) throw new NotFoundException('Order no encontrada');
+        return order;
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(`Error updating Order: ${error.message}`);
+    }
+  }
 }

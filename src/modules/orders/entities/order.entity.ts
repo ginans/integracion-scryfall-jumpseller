@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
+import { StateOrderEnum } from "../enums/state-order.enum";
 
 @Schema({ _id: false })
 export class Source {
@@ -294,6 +295,8 @@ export class Order {
     @Prop({type: Object, nullable: true })
     billingInformation?: BillingInformation
 
+    @Prop({ type: String, default: StateOrderEnum.PENDING })
+    state: StateOrderEnum;
 }
 
 export type OrderDocument = HydratedDocument<Order>;

@@ -60,7 +60,8 @@ export class ProcessController {
    @Post("webhook/orders")
   async handleOrdersWebhook(@Body() order: ISaleData) {
     try {
-      return await this.processService.handleOrdersWebhook(order);
+      await this.processService.handleOrdersWebhook(order);
+      return { success: true, status: 200, message: "Orden Procesada Correctamente" };
     } catch (error) {
       return { error: error.message };
     }

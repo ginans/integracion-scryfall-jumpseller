@@ -21,6 +21,9 @@ import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.serv
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
 import { CreateVariantsRequestProcessor } from './processors/create-variants-request.processor';
 import { CreateVariantJumpsellerProcessor } from './processors/create-variant-jumpseller.processor';
+import { SaveOrderProcessor } from './processors/save-order.processor';
+import { Order } from '../orders/entities/order.entity';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
   imports: [
@@ -29,6 +32,7 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
     StagingProductVariantModule,
     BasePricesModule,
     UsdPricesModule,
+    OrdersModule,
     BullModule.registerQueue({
       name: '1-sync-magic-cards',
       defaultJobOptions: {
@@ -143,6 +147,17 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
       name: "update-prices-from-front",
       adapter: BullMQAdapter,
     }),
+    //recibir y guardar orden desde el webhook de jumpseller
+    BullModule.registerQueue({
+      name: "save-order",
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: "save-order",
+      adapter: BullMQAdapter,
+    }),
   ],
   controllers: [ProcessController],
   exports: [ProcessService, BullModule],
@@ -159,7 +174,8 @@ import { CreateVariantJumpsellerProcessor } from './processors/create-variant-ju
     CreateMagicCardsProcessor,
     CreateProductJumpsellerProcessor,
     CreateVariantsRequestProcessor,
-    CreateVariantJumpsellerProcessor
+    CreateVariantJumpsellerProcessor,
+    SaveOrderProcessor
   ],
 })
 export class ProcessModule {}

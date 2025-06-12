@@ -4,6 +4,7 @@ import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stoc
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
+import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
 
 @Controller('process')
 export class ProcessController {
@@ -51,6 +52,16 @@ export class ProcessController {
   ) {
     try {
       return await this.processService.recalculatePricesByUsd(usdPrices) ;
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+   @Post("webhook/orders")
+  async handleOrdersWebhook(@Body() order: ISaleData) {
+    try {
+      console.log("data entrante", order);
+      return await this.processService.handleOrdersWebhook(order);
     } catch (error) {
       return { error: error.message };
     }

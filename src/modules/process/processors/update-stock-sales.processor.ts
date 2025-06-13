@@ -1,9 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { OrdersService } from 'src/modules/orders/orders.service';
-import { mapOrders } from 'src/modules/orders/mappers/orders.mapper';
-import { OrderDocument } from 'src/modules/orders/entities/order.entity';
-import { IOrder, ISaleData } from 'src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface';
+import { ISaleData } from 'src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface';
 import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
 
 

@@ -186,7 +186,6 @@ import { UpdateStockSalesProcessor } from './processors/update-stock-sales.proce
     CreateVariantsRequestProcessor,
     CreateVariantJumpsellerProcessor,
     SaveOrderProcessor,
-    UpdateStockSalesProcessor
-  ],
+    UpdateStockSalesProcessor  ],
 })
 export class ProcessModule {}

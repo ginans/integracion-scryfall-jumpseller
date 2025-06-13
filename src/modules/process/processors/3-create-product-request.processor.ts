@@ -4,8 +4,8 @@ import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
-import { EnumStatus } from 'src/modules/magic/enums/status.enum';
-import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
+import { RequestTypeEnum } from '../enums/request-type.enum';
+import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 
 @Processor('3-create-product-request', { concurrency: 80 })
 export class CreateProductRequestProcessor extends WorkerHost {
@@ -14,7 +14,8 @@ export class CreateProductRequestProcessor extends WorkerHost {
     @InjectQueue('7-jumpseller-gateway')
     private readonly jumpsellerGatewayQueue: Queue<
       {
-        productResponse: JumpsellerProductResponse;
+        mappedEnProductToJumpseller: JumpsellerProductRequest;
+        requestType: RequestTypeEnum;
       },
       string,
       string
@@ -80,33 +81,14 @@ export class CreateProductRequestProcessor extends WorkerHost {
         job.data.enCard,
         descriptions,
       );
-      //jumpseller gateway
-      const createdProduct = await this.magicCardsService.createProductJumpseller(mappedEnProduct);
-      await job.updateProgress(10);
-      if (!createdProduct) {
-        throw new Error(
-          `Fallo al crear producto para carta con id: ${job.data.enCard.id} y nombre: ${job.data.enCard.printedName}.`,
-        );
-      }
-      await this.magicCardsService.updateJumpsellerId(
-        job.data.enCard.id,
-        createdProduct.product.id,
-      );
       await job.updateProgress(15);
-      const isCreatedProduct =
-        await this.magicCardsService.findCardByJumpsellerId(createdProduct.product.id);
-      if (
-        !isCreatedProduct &&
-        isCreatedProduct.status !== EnumStatus.COMPLETED
-      ) {
-        throw new Error(
-          `El producto con el id ${createdProduct.product.id} no esta creado aún.`,
-        );
-      }
+      
+      //enviar al job final de Jumpseller Gateway
       await this.jumpsellerGatewayQueue.add(
         'create-product', //nombre del job
         {
-          productResponse: createdProduct,
+          mappedEnProductToJumpseller: mappedEnProduct,
+          requestType: RequestTypeEnum.PRODUCTS,
         }, //data
         {
           jobId: String(job.data.enCard.idJumpSeller),

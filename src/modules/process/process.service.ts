@@ -32,12 +32,15 @@ export class ProcessService {
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
     @InjectQueue("queues-recalculate-prices-by-usd") private readonly QueuesRecalculatePricesByUsd: Queue,
     @InjectQueue("queues-recalculate-prices-by-base") private readonly QueuesRecalculatePricesByBase: Queue,
-     @InjectQueue('save-order') private readonly SaveOrderProcessor: Queue,
+    @InjectQueue('save-order') private readonly SaveOrderProcessor: Queue,
+    @InjectQueue('update-stock-sales') private readonly UpdateStockSalesProcessor: Queue,
   ) { }
 
    async handleOrdersWebhook(order: ISaleData) {
     try {
       await this.SaveOrderProcessor.add('save-order', order );
+      
+      await this.UpdateStockSalesProcessor.add('update-stock-sales', order);
     } catch (error) {
       this.logger.error('Error procesando el webhook de la orden', error);
       throw new InternalServerErrorException('Error procesando el webhook de la orden');

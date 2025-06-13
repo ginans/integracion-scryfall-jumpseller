@@ -13,4 +13,5 @@ export const JoiValidationSchema = Joi.object({
   JUMPSELLER_API_URL: Joi.string().required(),
   JUMPSELLER_LOGIN: Joi.string().required(),
   JUMPSELLER_AUTHTOKEN: Joi.string().required(),
+  JUMPSELLER_WEBHOOK_TOKEN: Joi.string().required(),
 });

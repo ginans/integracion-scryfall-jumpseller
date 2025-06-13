@@ -204,7 +204,7 @@ import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom
     CreateVariantsRequestProcessor,
     JumpsellerGatewayProcessor,
     UpdateStockSalesProcessor,
+    SaveOrderProcessor,
   ],
-  SaveOrderProcessor,
 })
 export class ProcessModule {}

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,7 +9,7 @@ import { EnumPriceAndStockState } from './enums/price-and-stock-state.enum';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
-import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
+import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/variants-jumpseller/jumpsellerUpdateVariantRequest.interface';
 import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { MagicCard } from 'src/modules/magic/entities/magic-card.entity';
 import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
@@ -678,6 +678,16 @@ export class StagingProductVariantService {
     if (!variant) throw new NotFoundException('Variante no encontrada');
     const variantResponse = variant as unknown as IStagingProductVariant;
     return variantResponse;
+  }
+
+  async findByVariantId(variantId: number): Promise<IStagingProductVariant | null> {
+    try {
+      const variant = await this.stagingProductVariantModel.findOne({ variantId }).exec();
+      return variant as unknown as IStagingProductVariant;
+    } catch (error) {
+      this.logger.error(`Error al buscar variante por ID: ${error.message}`);
+      throw new InternalServerErrorException(`Error al buscar variante por ID: ${error.message}`);
+    }
   }
 
   //actualizar variante por id

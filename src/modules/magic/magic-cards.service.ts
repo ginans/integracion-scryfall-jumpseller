@@ -25,24 +25,24 @@ import { EnumGame } from '../../common/enums/game.enum';
 import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
 import { JumpsellerMapperService, Language } from './mappers/jumpseller.mapper.service';
-import { JumpsellerCustomField } from '../jumpseller/interfaces/jumpselllerCustomFields/getAllCustomFields.interface';
+import { JumpsellerCustomField } from '../jumpseller/interfaces/custom-fields-jumpseller/getAllCustomFields.interface';
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 import { mapCardData } from './mappers/scryfall-to-db.mapper';
 import { mappedStaggingProductVariant } from './mappers/staging-product-variant.mapper';
 import { ProcessService } from '../process/process.service';
 import {
   JumpsellerProductRequest,
-} from '../jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
+} from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import {
   JumpsellerProductResponse,
-} from '../jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductResponse.interface';
+} from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { EnumStatus } from './enums/status.enum';
 import {
   JumpsellerCreateVariantRequest,
-} from '../jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+} from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import {
   JumpsellerCreateVariantResponse,
-} from '../jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface';
+} from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
 
 @Injectable()
@@ -129,175 +129,6 @@ export class MagicCardsService {
   }
   async insertImages(productId: number, images: ICreateImageRequest): Promise<void> {
     await this.jumpsellerService.insertImages(productId, images);
-  }
-  async processAndInsertCustomFields(card: MagicCard, idJumpseller: number): Promise<void> {
-    const customFields = await this.getAllCustomFields();
-    if (!customFields || customFields.length === 0) return;
-    const requestsCustomFields = await this.customFieldsMapperService.mappedCustomFields(card, customFields);
-      for (const customField of requestsCustomFields) {
-        try {
-          await this.jumpsellerService.addCustomFieldInProduct(idJumpseller, customField);
-        } catch (error) {
-          this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
-        }
-        await this.delay(300);
-      }
-  }
-  async procesarCardMagic(cards: ScryfallCardResponse, lg: ILangUrlEnum): Promise<void> {
-    try {
-      // 1. guardar en BD todas las versiones (fetchAndCreateCards)
-      const versions: MagicCard[] = [];
-      
-      // Guardar la carta original
-      const originalCard = await this.createMagicCards(cards);
-      versions.push(originalCard);
-      //TODO: REVISAR
-      // Verificación de seguridad: si la carta no está en inglés, buscarla 
-      if (originalCard.lang?.toLowerCase() !== 'en') {
-        this.logger.warn(`⚠️ Carta no está en inglés: ${originalCard.name}`);
-        //TODO: revisar paginacion
-        const versionEN = await this.scryfallService.getScryfallCards(ILangUrlEnum.EN, 1, cards.oracle_id);
-        await this.delay(300);
-        if (versionEN?.data?.length) {
-          versions.push(await this.createMagicCards(versionEN.data[0]));
-        }
-      }
-
-      const versionES = await this.scryfallService.getScryfallCards(ILangUrlEnum.ES, 1, cards.oracle_id);
-      await this.delay(300);
-      if (versionES?.data?.length) {
-        versions.push(await this.createMagicCards(versionES.data[0]));
-      }
-
-      // 2. crear producto base en Jumpseller (versión en inglés)
-      const enCard = versions.find(v => v.lang?.toLowerCase() === 'en');
-      if (enCard && !enCard.idJumpSeller) {
-        const baseReq = await this.jumpsellerMapperService.mapDBProductToJumpseller(enCard, []);
-        const baseRes = await this.jumpsellerService.createProduct(baseReq);
-        enCard.idJumpSeller = baseRes.product?.id;
-        await this.updateByStatus(enCard.id, { idJumpSeller: enCard.idJumpSeller });
-      }
-      await this.delay(300);
-
-      // 4. crear variantes para idiomas != 'en'
-      this.logger.log(`👽 Creando variantes para idiomas diferentes a 'en'`);
-      // construir array de todos los idiomas
-      const langs = versions
-        .map(version => {
-          const code = version.lang! as EnumLanguage;
-          const key = Object.entries(EnumLanguage).find(([, val]) => val === code)?.[0];
-          const name = key
-            ? key.charAt(0) + key.slice(1).toLowerCase().replace(/_/g, ' ')
-            : version.lang!;
-          return { code, name };
-        });
-      // generar todas las variantes de una vez
-      const variantReqs = await this.jumpsellerMapperService.mapVariantsToJumpseller(enCard, langs);
-      for (const { variant, finish, condition } of variantReqs) {
-        if (enCard.idJumpSeller ) {
-          const varRes = await this.jumpsellerService.createJumpsellerVariant(
-            enCard.idJumpSeller,
-            {variant}
-          );
-          // TODO: await this.updateByStatus(id de variante, { idJumpSeller: enCard.idJumpSeller });
-          await this.delay(300);
-          
-          //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
-          const cardWithStock : IStagingProductVariant = await this.stagingProductVariantModel.findOne({
-            variantId: varRes.variant.id,
-            productId: enCard.idJumpSeller,
-            sku: varRes.variant.sku
-          });
-          
-          if (!cardWithStock) {
-            //solo agregar al stock si no existe
-            this.logger.log(`Agregando nueva variante al stock: ${varRes.variant.id}`);
-
-            const saveStagingVariant =  mappedStaggingProductVariant(enCard, varRes, condition, finish)
-            await this.stagingProductVariantModel.create( 
-              saveStagingVariant
-            );
-
-          //job de calculo de precios 
-          await this.processService.updateApiPricesQueue({ productId: enCard.idJumpSeller, variantId: varRes.variant.id })
-          
-        } else {
-            this.logger.log(`La variante ${varRes.variant.id} ya existe en el stock, omitiendo duplicado`);
-          }
-          await this.delay(300);
-        }
-      }
-
-      //TODO: Imagenes y custom fields
-      // 6. insertar imágenes
-      if (enCard.idJumpSeller) {
-        // Subir imagen principal solo si existe
-        const imgReq = await this.jumpsellerMapperService.mapImageToJumpseller(enCard);
-        if (imgReq) {
-          try {
-            await this.jumpsellerService.insertImages(enCard.idJumpSeller, imgReq);
-            this.logger.log(`✅ Imagen principal subida para carta ${enCard.name}`);
-          } catch (error) {
-            this.logger.error(`❌ Error al subir imagen principal: ${error.message}`);
-          }
-          await this.delay(300);
-        }
-        
-        // Verificar si es una carta de doble cara y procesar imágenes de ambas caras
-        if (enCard.cardFaces && enCard.cardFaces.length >= 2) {
-          // Subir imagen cara 1 si existe
-          const mappedCardFace1Image = await this.jumpsellerMapperService.mapCardFace1ImageToJumpseller(enCard);
-          if (mappedCardFace1Image) {
-            try {
-              await this.jumpsellerService.insertImages(enCard.idJumpSeller, mappedCardFace1Image);
-              this.logger.log(`✅ Imagen cara 1 subida para carta ${enCard.name}`);
-            } catch (error) {
-              this.logger.error(`❌ Error al subir imagen cara 1: ${error.message}`);
-            }
-            await this.delay(300);
-          }
-          
-          // Subir imagen cara 2 si existe
-          const mappedCardFace2Image = await this.jumpsellerMapperService.mapCardFace2ImageToJumpseller(enCard);
-          if (mappedCardFace2Image) {
-            try {
-              await this.jumpsellerService.insertImages(enCard.idJumpSeller, mappedCardFace2Image);
-              this.logger.log(`✅ Imagen cara 2 subida para carta ${enCard.name}`);
-            } catch (error) {
-              this.logger.error(`❌ Error al subir imagen cara 2: ${error.message}`);
-            }
-            await this.delay(300);
-          }
-
-        }
-      }
-
-      // 7. enviar custom fields
-      if (enCard.idJumpSeller) {
-        const customFields = await this.getAllCustomFields();
-        const mappedCFields = await this.customFieldsMapperService.mappedCustomFields(enCard, customFields)
-
-        for (const customField of mappedCFields) {
-          try {
-            await this.jumpsellerService.addCustomFieldInProduct(
-              enCard.idJumpSeller,
-              customField
-            );
-            await this.delay(300);
-            this.logger.log(`✅ Custom field ${customField.field.id} agregado a la carta ${enCard.name}`);
-          } catch (error) {
-            this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
-          }
-        }
-        
-      }
-      await this.delay(300);
-      // 8. completar flujo
-      await this.updateByStatus(enCard.id, { status: 'completed' });
-      this.logger.log(`✅ Proceso completo para carta ${enCard.oracleId}`);
-    } catch (error) {
-      this.logger.error(error);
-    }
   }
 
   //buscar actualizar o crear magic card
@@ -420,7 +251,7 @@ export class MagicCardsService {
         meta: {
           totalItems: total,
           itemsPerPage: productCards.length,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.ceil(total / limit), 
           currentPage: page,
           hasNextPage: total > (page * limit),
           hasPreviousPage: page > 1,
@@ -465,16 +296,6 @@ export class MagicCardsService {
 //endpoint para buscar en bd y traer si no existe en scryfall
   async findByCollectorNumberAndLang( form: findByCardByLangDto, _id: string ) : Promise<{ oracleId: string; message: string } | ScryfallCardResponse[]> {
     try {
-      //revisar si ya existe una copia exacta de la carta que se quiere crear en bd
-      //TODO: REVISAR SI PODRIA LLEGAR MAS DE UNA CARTA AQUI
-      // const existingCardInBD = await this.model.findOne({ lang: form.lenguaje, _id: new Types.ObjectId(_id)}).exec();
-      // if (existingCardInBD) {
-      //   return { 
-      //     oracleId: existingCardInBD.oracleId,
-      //     message: `La carta con collectorNumber ${existingCardInBD.collectorNumber} y lenguaje ${existingCardInBD.lang} ya existe en la base de datos`
-      //   };
-      // }
-
       //consultar solo por id para tomar el oracleId en caso de que sea distinta
       const existingCard = await this.model.findOne({ _id: new Types.ObjectId(_id) }).exec();
       if (!existingCard) {

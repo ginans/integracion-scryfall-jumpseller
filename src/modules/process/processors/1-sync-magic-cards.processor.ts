@@ -30,12 +30,12 @@ export class SyncMagicCardsProcessor extends WorkerHost {
           data.data.map(row => this.SaveMagicCards.add(`Card:${row.id}`, { card: row },{jobId: row.id, priority: 1 }) )
         );
         count += data.data.length;
-        process = data.has_more;
+        // process = data.has_more;
         /**
          * Para probar el flujo de solo 1 página, descomentar la siguiente línea;
          */
         if (page == 1) process = false;
-        page++;
+        // page++;
         await new Promise(resolve => setTimeout(resolve, 300));
       } while (process);
       await job.updateProgress(100);

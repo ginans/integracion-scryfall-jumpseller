@@ -5,43 +5,84 @@ import { MagicCardsService } from '../../magic/magic-cards.service';
 import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.customfields.mapper.service';
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
 import { RequestTypeEnum } from '../enums/request-type.enum';
+import { RateLimiterService } from 'src/common/services/rate-limiter.service';
 
 @Processor('5-create-custom-fields-request', { concurrency: 40 })
 export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
-    @InjectQueue("7-jumpseller-gateway") 
-    private readonly jumpsellerGatewayQueue: Queue<{
-    enCard: MagicCardDocument,  
-    customFieldRequest: AddAnExistingCustomFieldToAProductRequest, 
-    requestType: RequestTypeEnum
-    }, string, string>
-    ) {
+    @InjectQueue('7-jumpseller-gateway')
+    private readonly jumpsellerGatewayQueue: Queue<
+      {
+        enCard: MagicCardDocument;
+        customFieldRequest: AddAnExistingCustomFieldToAProductRequest;
+        requestType: RequestTypeEnum;
+      },
+      string,
+      string
+    >,
+  ) {
     super();
+  }
+
+  // Cache estático para los custom fields y su timestamp
+  private static customFieldsCache: any[] | null = null;
+  private static customFieldsCacheTimestamp: number = 0;
+  private static readonly CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
+
+  /**
+   * Obtiene los custom fields desde cache si está vigente, o los refresca si expiró.
+   * Esto evita hacer múltiples requests concurrentes a la base/API por cada job.
+   * TTL (tiempo de vida del cache) definido por CACHE_TTL_MS.
+   *
+   * @returns {Promise<any[]>} Lista de custom fields actualizada o cacheada.
+   */
+  private async getCachedCustomFields() {
+    const now = Date.now();
+    // Si el cache está vacío o expiró, refrescarlo
+    if (
+      !CreateCustomFieldsRequestProcessor.customFieldsCache ||
+      now - CreateCustomFieldsRequestProcessor.customFieldsCacheTimestamp >
+        CreateCustomFieldsRequestProcessor.CACHE_TTL_MS
+    ) {
+      // Fetch real a la base/API
+      const fetched = await this.magicCardsService.getAllCustomFields();
+      // Guardar en cache y actualizar timestamp
+      CreateCustomFieldsRequestProcessor.customFieldsCache = fetched;
+      CreateCustomFieldsRequestProcessor.customFieldsCacheTimestamp = now;
+    }
+    // Retornar el cache (vigente o recién actualizado)
+    return CreateCustomFieldsRequestProcessor.customFieldsCache;
   }
 
   async process(job: Job<MagicCardDocument, number, string>) {
     try {
-      const fetchedCustomFields = await this.magicCardsService.getAllCustomFields();
-      const delay = Math.floor(Math.random() * 500) + 500; // entre 500 y 1000 ms
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // Usar cache de custom fields
+      const fetchedCustomFields = await this.getCachedCustomFields();
       if (!fetchedCustomFields || fetchedCustomFields.length === 0) return;
-      const requestsCustomFields = await this.customFieldsMapperService.mappedCustomFields(job.data, fetchedCustomFields);
+      const requestsCustomFields =
+        await this.customFieldsMapperService.mappedCustomFields(
+          job.data,
+          fetchedCustomFields,
+        );
       for (const customField of requestsCustomFields) {
         try {
-          await this.jumpsellerGatewayQueue.add('add-custom-field', {
-            enCard: job.data,
-            customFieldRequest: customField,
-            requestType: RequestTypeEnum.CUSTOM_FIELDS
-          },
-          {
-            priority: 3
-          });
-          const delay = Math.floor(Math.random() * 500) + 500; // entre 500 y 1000 ms
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await RateLimiterService.schedule(() =>
+            this.jumpsellerGatewayQueue.add(
+              'add-custom-field',
+              {
+                enCard: job.data,
+                customFieldRequest: customField,
+                requestType: RequestTypeEnum.CUSTOM_FIELDS,
+              },
+              {
+                priority: 3,
+              },
+            ),
+          );
         } catch (error) {
-         throw new Error(`❌ Error al subir custom field: ${error.message}`);
+          throw new Error(`❌ Error al subir custom field: ${error.message}`);
         }
       }
       await job.updateProgress(100);

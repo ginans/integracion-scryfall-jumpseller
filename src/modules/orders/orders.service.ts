@@ -5,7 +5,8 @@ import { Model, Types } from 'mongoose';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { StateOrderEnum } from './enums/state-order.enum';
-import { OrderStateDto } from './dto/ok-order.dto';
+import { OrderStateDto } from './dto/order-state.dto';
+import { PaginationOrdersQueryDto } from './dto/pagination-query.dto';
 
 @Injectable()
 export class OrdersService {
@@ -31,9 +32,9 @@ export class OrdersService {
     }
   }
 
-  async findAllOrders(query: PaginationQueryDto) {
-     const { limit, page, sortBy, sortOrder, to, from, search } = query;
-    
+  async findAllOrders(query: PaginationOrdersQueryDto) {
+     const { limit, page, sortBy, sortOrder, to, from, search, state } = query;
+
         const sort: { [key: string]: 1 | -1 } = {
           [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
         };
@@ -50,22 +51,27 @@ export class OrdersService {
           filters.$or.push({
             $expr: {
               $regexMatch: {
-                input: { $toString: "$name" },
+                input: "$shippingMethodName",
                 regex: searchValue,
                 options: "i"
               }
             }
           });
-        
-
-          // filters.$or.push({
-          //   products: {
-          //     $elemMatch: {
-          //       sku: { $regex: searchValue, $options: "i" }
-          //     }
-          //   }
-          // });
+          filters.$or.push({
+            products: {
+              $elemMatch: {
+                sku: { $regex: searchValue, $options: "i" }
+              }
+            }
+          });
         }
+
+        //filtro por estado
+        if (state) {
+          const stateFilter = { state: { $regex: `^${state}$`, $options: "i" } };
+          filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
+        }
+
     
         if (from && to) {
           filters.$and = [

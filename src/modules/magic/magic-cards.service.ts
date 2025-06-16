@@ -109,6 +109,9 @@ export class MagicCardsService {
   async findCardByJumpsellerId(idJumpSeller: number): Promise<MagicCard> {
     return await this.model.findOne({ idJumpSeller: idJumpSeller }).exec();
   }
+  async findCardByScryfallId(id: string): Promise<MagicCardDocument> {
+    return await this.model.findOne({ id: id }).exec();
+  }
   async calculatePrice(productId: number, variantId: number): Promise<void> {
     await this.processService.updateApiPricesQueue({ productId, variantId });
   }
@@ -146,7 +149,8 @@ export class MagicCardsService {
       );
     } else {
       const doc = new this.model(newCard);
-      return await doc.save();
+      const savedCard = await doc.save();
+      return savedCard as MagicCardDocument;
     }
   }
   //buscar paginar magic card

@@ -1,4 +1,5 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
+import { Logger } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
@@ -6,14 +7,18 @@ import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { RequestTypeEnum } from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
-
 @Processor('3-create-product-request', { concurrency: 80 })
 export class CreateProductRequestProcessor extends WorkerHost {
+  private readonly logger = new Logger(CreateProductRequestProcessor.name);
+
   constructor(
     private readonly magicCardsService: MagicCardsService,
     @InjectQueue('7-jumpseller-gateway')
     private readonly jumpsellerGatewayQueue: Queue<
       {
+        enCard: MagicCardDocument;
+        esCard?: MagicCardDocument | null;
+        thereIsSpanishVersion: boolean;
         mappedEnProductToJumpseller: JumpsellerProductRequest;
         requestType: RequestTypeEnum;
       },
@@ -81,17 +86,22 @@ export class CreateProductRequestProcessor extends WorkerHost {
         job.data.enCard,
         descriptions,
       );
+      this.logger.log(
+        `Mapped product for Jumpseller: ${JSON.stringify(mappedEnProduct)}`,
+      );
       await job.updateProgress(15);
-      
       //enviar al job final de Jumpseller Gateway
       await this.jumpsellerGatewayQueue.add(
         'create-product', //nombre del job
         {
+          enCard: job.data.enCard,
+          esCard: job.data.esCard,
+          thereIsSpanishVersion: job.data.thereIsSpanishVersion,
           mappedEnProductToJumpseller: mappedEnProduct,
           requestType: RequestTypeEnum.PRODUCTS,
         }, //data
         {
-          jobId: String(job.data.enCard.idJumpSeller),
+          jobId: String(job.data.enCard.id),
           // parent: {id: job.data.enCard.id, queue: job.queueName},
           priority: 2,
         },
@@ -107,8 +117,8 @@ export class CreateProductRequestProcessor extends WorkerHost {
       await this.CreateImagesRequestQueue.add(
         'create-images', //nombre del job
         {
-          esCard: job.data.esCard,
           enCard: job.data.enCard,
+          esCard: job.data.esCard,
         },
       );
 

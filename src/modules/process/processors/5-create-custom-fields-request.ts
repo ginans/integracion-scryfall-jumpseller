@@ -6,6 +6,7 @@ import { CustomFieldsMapperService } from 'src/modules/magic/mappers/jumpseller.
 import { AddAnExistingCustomFieldToAProductRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/addAnExistingCustomFieldToAProductRequest.interface';
 import { RequestTypeEnum } from '../enums/request-type.enum';
 import { RateLimiterService } from 'src/common/services/rate-limiter.service';
+import { JumpsellerCustomField } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/getAllCustomFields.interface';
 
 @Processor('5-create-custom-fields-request', { concurrency: 40 })
 export class CreateCustomFieldsRequestProcessor extends WorkerHost {
@@ -27,7 +28,7 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   }
 
   // Cache estático para los custom fields y su timestamp
-  private static customFieldsCache: any[] | null = null;
+  private static customFieldsCache: JumpsellerCustomField[] | null = null;
   private static customFieldsCacheTimestamp: number = 0;
   private static readonly CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
 
@@ -56,31 +57,29 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
     return CreateCustomFieldsRequestProcessor.customFieldsCache;
   }
 
-  async process(job: Job<MagicCardDocument, number, string>) {
+  async process(job: Job<{ enCard: MagicCardDocument }, number, string>) {
     try {
       // Usar cache de custom fields
       const fetchedCustomFields = await this.getCachedCustomFields();
       if (!fetchedCustomFields || fetchedCustomFields.length === 0) return;
       const requestsCustomFields =
         await this.customFieldsMapperService.mappedCustomFields(
-          job.data,
+          job.data.enCard,
           fetchedCustomFields,
         );
       for (const customField of requestsCustomFields) {
         try {
-          await RateLimiterService.schedule(() =>
-            this.jumpsellerGatewayQueue.add(
-              'add-custom-field',
-              {
-                enCard: job.data,
-                customFieldRequest: customField,
-                requestType: RequestTypeEnum.CUSTOM_FIELDS,
-              },
+          this.jumpsellerGatewayQueue.add(
+            'add-custom-field',
+            {
+              enCard: job.data.enCard,
+              customFieldRequest: customField,
+              requestType: RequestTypeEnum.CUSTOM_FIELDS,
+            },
               {
                 priority: 3,
               },
-            ),
-          );
+            );
         } catch (error) {
           throw new Error(`❌ Error al subir custom field: ${error.message}`);
         }

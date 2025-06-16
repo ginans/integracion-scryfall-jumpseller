@@ -15,9 +15,12 @@ import { RequestTypeEnum } from '../enums/request-type.enum';
 @Processor('4-create-images-request', { concurrency: 40 })
 export class CreateImagesRequestProcessor extends WorkerHost {
   constructor(
-    private readonly magicCardsService: MagicCardsService,
+    private readonly magicCardsService: MagicCardsService,    
     @InjectQueue("7-jumpseller-gateway") 
     private readonly jumpsellerGatewayQueue: Queue<{
+      enCard: MagicCardDocument;
+      esCard?: MagicCardDocument | null;
+      thereIsSpanishVersion: boolean;
       lang?: Language[], 
       imageRequest: ICreateImageRequest,
       requestType: RequestTypeEnum
@@ -27,12 +30,14 @@ export class CreateImagesRequestProcessor extends WorkerHost {
   }
 
   async process(job: Job<{ enCard: MagicCardDocument, esCard?: MagicCardDocument | null }, number, string>) {
-    try {
-      //mapeo de imagenes a un formato que Jumpseller entienda
+    try {      //mapeo de imagenes a un formato que Jumpseller entienda
       const enImages = await this.magicCardsService.createImagesRequests(job.data.enCard)
       for (const image of enImages) {
         try {
           await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
+            enCard: job.data.enCard,
+            esCard: job.data.esCard,
+            thereIsSpanishVersion: !!job.data.esCard,
             imageRequest: image,
             requestType: RequestTypeEnum.IMAGES
           });
@@ -45,6 +50,9 @@ export class CreateImagesRequestProcessor extends WorkerHost {
         for (const image of esImages) {
           try {
             await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
+              enCard: job.data.enCard,
+              esCard: job.data.esCard,
+              thereIsSpanishVersion: true,
               imageRequest: image,
               requestType: RequestTypeEnum.IMAGES
             },

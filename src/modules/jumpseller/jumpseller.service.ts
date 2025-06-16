@@ -41,8 +41,7 @@ export class JumpsellerService {
       this.logger.error(`Código de estado: ${error.response.status}`);
       this.logger.error(`Encabezados de respuesta: ${JSON.stringify(error.response.headers)}`);
     }
-  }
-    async createProduct(product:JumpsellerProductRequest): Promise<JumpsellerProductResponse> {
+  }    async createProduct(product:JumpsellerProductRequest): Promise<JumpsellerProductResponse> {
       try {
         this.logger.debug(`Enviando solicitud a Jumpseller: ${product.product.sku}`);
         const { data } = await this.client.post<JumpsellerProductResponse>(JumpsellerEndpoints.PRODUCTS, product)
@@ -50,15 +49,16 @@ export class JumpsellerService {
       } catch (error) {
         this.logger.error(`❌ Error al crear producto en Jumpseller: ${error.message}`);
         this.registerError(error);
+        throw error; // Lanzar el error para que no retorne undefined
       }
-    }
-    async getJumpsellerProductById(productId: number): Promise<JumpsellerProductResponse> {
+    }    async getJumpsellerProductById(productId: number): Promise<JumpsellerProductResponse> {
       try {
         const { data } = await this.client.get<JumpsellerProductResponse>(`${JumpsellerEndpoints.PRODUCT}/${productId}.json`)
         return data;
       } catch (error) {
         this.logger.error(`❌ Error al traer el producto ${productId} de Jumpseller: ${error.message}`);
         this.registerError(error);
+        throw error;
       }
     }
     async insertImages(productId: number, images: ICreateImageRequest): Promise<ICreateImageResponse> {

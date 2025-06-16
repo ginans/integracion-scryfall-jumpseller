@@ -14,7 +14,11 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
     @InjectQueue('7-jumpseller-gateway')
     private readonly jumpsellerGatewayQueue: Queue<
       {
+        enCard: MagicCardDocument;
+        esCard?: MagicCardDocument | null;
+        thereIsSpanishVersion: boolean;
         variantRequest: JumpsellerCreateVariantRequest;
+        lang: Language[];
         productId: number;
         requestType: RequestTypeEnum;
       },
@@ -52,7 +56,11 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
           this.jumpsellerGatewayQueue.add(
             `Variant request: ${variant.variant.sku}`, //nombre del job
             {
+              enCard: job.data.enCard,
+              esCard: job.data.esCard,
+              thereIsSpanishVersion: !!job.data.esCard,
               variantRequest: variant,
+              lang: job.data.lang,
               productId: job.data.enCard.idJumpSeller,
               requestType: RequestTypeEnum.VARIANTS,
             },

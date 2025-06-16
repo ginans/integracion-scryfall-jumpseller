@@ -18,7 +18,7 @@ export class OrdersController {
     return this.ordersService.findOneOrder(id);
   }
 
-  @Patch('isOrderOk/:id')
+  @Patch('change-state/:id')
   patchOrder(@Param('id') id: string, @Body() state: OrderStateDto) {
     return this.ordersService.changeOrderStates(id, state);
   }

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { okOrderDto } from './dto/ok-order.dto';
+import { OrderStateDto } from './dto/ok-order.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -19,8 +19,8 @@ export class OrdersController {
   }
 
   @Patch('isOrderOk/:id')
-  patchOrder(@Param('id') id: string, @Body() isOrderOk: okOrderDto) {
-    return this.ordersService.completedOrder(id, isOrderOk);
+  patchOrder(@Param('id') id: string, @Body() state: OrderStateDto) {
+    return this.ordersService.changeOrderStates(id, state);
   }
 
 }

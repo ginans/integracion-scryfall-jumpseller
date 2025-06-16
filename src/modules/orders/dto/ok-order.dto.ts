@@ -1,11 +1,7 @@
-import { IsBoolean, IsNotEmpty } from "class-validator";
+import { IsEnum } from "class-validator";
+import { StateOrderEnum } from "../enums/state-order.enum";
 
-export class okOrderDto {    
-    @IsNotEmpty({
-        message: 'isOrderOk no puede estar vacio',
-    })
-    @IsBoolean({
-        message: 'isOrderOk tiene que ser de Tipo Boolean',
-    })
-    isOrderOk: boolean
+export class OrderStateDto {    
+    @IsEnum(StateOrderEnum)
+    state: StateOrderEnum;
 }

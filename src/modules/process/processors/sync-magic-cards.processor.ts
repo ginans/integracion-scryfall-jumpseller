@@ -1,3 +1,9 @@
+
+
+
+
+
+
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { ScryfallService } from '../../magic/submodules/scryfall/scryfall.service';
@@ -30,11 +36,11 @@ export class SyncMagicCardsProcessor extends WorkerHost {
           data.map(row => this.CreateMagicCards.add(`Card:${row.id}`, { card: row },{jobId: row.id, }))
         );
         count += data.length;
-        process = has_more;
+        // process = has_more;
         /**
          * Para probar el flujo de solo 1 página, descomentar la siguiente línea;
          */
-        // if (page == 1) process = false;
+        if (page == 1) process = false;
         page++;
         await new Promise(resolve => setTimeout(resolve, 300));
       } while (process);

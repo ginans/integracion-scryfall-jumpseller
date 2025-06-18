@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
@@ -11,6 +11,7 @@ import { StagingProductVariantService } from '../staging-product-variant/staging
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
+import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
 
 @Injectable()
 export class ProcessService {
@@ -31,19 +32,32 @@ export class ProcessService {
     @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
     @InjectQueue("queues-recalculate-prices-by-usd") private readonly QueuesRecalculatePricesByUsd: Queue,
     @InjectQueue("queues-recalculate-prices-by-base") private readonly QueuesRecalculatePricesByBase: Queue,
+    @InjectQueue('save-order') private readonly SaveOrderProcessor: Queue,
+    @InjectQueue('update-stock-sales') private readonly UpdateStockSalesProcessor: Queue,
   ) { }
+
+   async handleOrdersWebhook(order: ISaleData) {
+    try {
+      await this.SaveOrderProcessor.add('save-order', order );
+      
+      await this.UpdateStockSalesProcessor.add('update-stock-sales', order);
+    } catch (error) {
+      this.logger.error('Error procesando el webhook de la orden', error);
+      throw new InternalServerErrorException('Error procesando el webhook de la orden');
+    }
+  }
 
   async updateStockQueue(variants: IStockFromFront[]) {
     for(const variant of variants){
-      await this.queuesStock.add('update-stock', variant
-    )}
+      await this.queuesStock.add('update-stock', variant);
+    }
   }
-  
+
   //actualizar precios de las variantes desde el front
   async updatePricesFromFrontQueue(variants: IPriceFromFront[]) {
     for(const variant of variants){
-      await this.queuesPricesFromFront.add('update-prices-from-front', variant
-    )}
+      await this.queuesPricesFromFront.add('update-prices-from-front', variant);
+    }
   }
 
   //actualizar precios de las variantes desde el api

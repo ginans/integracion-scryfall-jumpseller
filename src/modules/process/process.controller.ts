@@ -1,12 +1,17 @@
-import { Body, Controller, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Patch, Post, UseGuards, Logger, Req, UseInterceptors } from '@nestjs/common';
 import { ProcessService } from './process.service';
 import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
+import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
+import { JumpsellerWebhookGuard } from 'src/common/guards/jumpseller-webhook.guard';
+import { RawBodyInterceptor } from 'src/common/interceptors/raw-body.interceptor';
 
 @Controller('process')
 export class ProcessController {
+  private readonly logger = new Logger(ProcessController.name);
+  
   constructor(private readonly processService: ProcessService) {}
   /**
    * Endpoint que Obtiene las cartas de Magic desde Scryfall
@@ -54,6 +59,17 @@ export class ProcessController {
     } catch (error) {
       return { error: error.message };
     }
-  }
+  }  @Post("webhook/orders")
+  @UseInterceptors(RawBodyInterceptor)
+  @UseGuards(JumpsellerWebhookGuard)
+  async handleOrdersWebhook(@Body() order: ISaleData) {
+    try {
+      this.logger.log('Webhook recibido correctamente');
+      await this.processService.handleOrdersWebhook(order);
+      return { success: true, status: 200, message: "Orden Procesada Correctamente" };
+    } catch (error) {
+      this.logger.error('Error procesando webhook:', error);
+      return { error: error.message };
+    }  }
 
 }

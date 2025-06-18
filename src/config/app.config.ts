@@ -12,4 +12,5 @@ export const EnvConfiguration = () => ({
   jumpseller_url: process.env.JUMPSELLER_API_URL || 'https://api.jumpseller.com',
   jumpseller_login: process.env.JUMPSELLER_LOGIN,
   jumpseller_authtoken: process.env.JUMPSELLER_AUTHTOKEN,
+  jumpseller_webhook_token: process.env.JUMPSELLER_WEBHOOK_TOKEN
 });

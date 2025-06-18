@@ -14,7 +14,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { ExpressAdapter } from '@bull-board/express';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { RequestLoggerInterceptor } from './common/interceptor/request-logger.interceptor';
+import { RequestLoggerInterceptor } from './common/interceptors/request-logger.interceptor';
 import { LoggerService } from './common/logger/logger.service';
 import { LoggerModule } from './common/logger/logger.module';
 import { ServeStaticModule } from '@nestjs/serve-static';

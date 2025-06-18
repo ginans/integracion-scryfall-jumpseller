@@ -10,7 +10,7 @@ export class PaginationService {
     dto: PaginationQueryDto,
     searchableFields: string[] = [],
   ): Promise<PaginatedResponse<T>> {
-    const { page = 1, limit = 10, sortBy, sortOrder, search, filters } = dto;
+    const { page = 1, limit = 100, sortBy, sortOrder, search, filters } = dto;
     const skip = (page - 1) * limit;
     // Construir el objeto de consulta
     const query: FilterQuery<T> = {};

@@ -50,6 +50,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
       {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
+        thereIsSpanishVersion: boolean;
         // lang: Language[];
       },
       string,
@@ -138,7 +139,8 @@ export class CreateProductRequestProcessor extends WorkerHost {
         'create-variants', //nombre del job
         {
           enCard: job.data.enCard,
-          esCard: job.data.esCard || null
+          esCard: job.data.esCard || null,
+          thereIsSpanishVersion: job.data.thereIsSpanishVersion
           // lang:
           //   job.data.thereIsSpanishVersion === true 
           //     ? [{ code: EnumLanguage.ESPAÑOL, name: 'Español' }]

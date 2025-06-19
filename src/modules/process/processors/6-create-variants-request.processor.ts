@@ -42,6 +42,7 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
     try {
       await job.updateProgress(25);
       const languages: Language[] = [];
+      //TODO: revisar envio de variantes
       languages.push({ code: EnumLanguage.INGLES, name: 'Inglés' }); //TODO: Cambiar a un enum
       if (job.data.thereIsSpanishVersion === true) {
         languages.push({ code: EnumLanguage.ESPAÑOL, name: 'Español' });

@@ -1,5 +1,5 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Logger } from '@nestjs/common';
+import { Logger, Body } from '@nestjs/common';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
@@ -19,7 +19,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
-        mappedEnProductToJumpseller: JumpsellerProductRequest;
+        body: JumpsellerProductRequest;
         requestType: RequestTypeEnum;
       },
       string,
@@ -63,7 +63,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
     job: Job<
       {
         enCard: MagicCardDocument;
-        esCard: MagicCardDocument | null;
+        esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
       },
       number,
@@ -86,6 +86,18 @@ export class CreateProductRequestProcessor extends WorkerHost {
         job.data.enCard,
         descriptions,
       );
+      // Solo crear producto si no existe y si tenemos los datos mapeados
+      if (!mappedEnProduct) {
+        throw new Error(
+          `Datos del producto no mapeados para carta con id: ${job.data.enCard.id} y nombre: ${job.data.enCard.name}`,
+        );
+      }
+
+      console.log(
+        `📦 Datos del producto mapeado:`,
+        JSON.stringify(mappedEnProduct),
+      );
+
       this.logger.log(
         `Mapped product for Jumpseller: ${JSON.stringify(mappedEnProduct)}`,
       );
@@ -95,14 +107,13 @@ export class CreateProductRequestProcessor extends WorkerHost {
         'create-product', //nombre del job
         {
           enCard: job.data.enCard,
-          esCard: job.data.esCard,
+          esCard: job.data.esCard || null,
           thereIsSpanishVersion: job.data.thereIsSpanishVersion,
-          mappedEnProductToJumpseller: mappedEnProduct,
+          body: mappedEnProduct,
           requestType: RequestTypeEnum.PRODUCTS,
         }, //data
         {
           jobId: String(job.data.enCard.id),
-          // parent: {id: job.data.enCard.id, queue: job.queueName},
           priority: 2,
         },
       );
@@ -118,7 +129,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
         'create-images', //nombre del job
         {
           enCard: job.data.enCard,
-          esCard: job.data.esCard,
+          esCard: job.data.esCard || null, //si no existe la carta en español, se envía null
         },
       );
 
@@ -127,7 +138,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
         'create-variants', //nombre del job
         {
           enCard: job.data.enCard,
-          esCard: job.data.esCard,
+          esCard: job.data.esCard || null,
           lang:
             job.data.esCard && job.data.thereIsSpanishVersion
               ? [{ code: EnumLanguage.ESPAÑOL, name: 'Español' }]

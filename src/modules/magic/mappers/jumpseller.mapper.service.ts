@@ -1,7 +1,7 @@
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
 import { JumpsellerProductRequest, JumpsellerStatus } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { JumpsellerUpdateProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/JumpsellerUpdateProductRequest.interface';
-import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerCreateVariantRequest, JumpsellerCreateVariantRequestForBD, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { EnumGame } from 'src/common/enums/game.enum';
 import { EnumCondition } from '../enums/condition.enum';
@@ -267,7 +267,7 @@ async mapVariantsToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
   
-  const variants: JumpsellerCreateVariantRequest[] = [];
+  const variants: JumpsellerCreateVariantRequestForBD[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
@@ -305,7 +305,7 @@ async mapVariantFromNewCardToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
   
-  const variants: JumpsellerCreateVariantRequest[] = [];
+  const variants: JumpsellerCreateVariantRequestForBD[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {

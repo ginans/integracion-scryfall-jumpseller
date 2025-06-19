@@ -1,17 +1,11 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
-// import { ILangUrlEnum } from '../../magic/submodules/scryfall/enums/lang.enum';
 import { MagicCardsService } from '../../magic/magic-cards.service';
-import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
-import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
-import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { ICreateImageRequest } from 'src/modules/jumpseller/interfaces/create-image.interface';
 import { RequestTypeEnum } from '../enums/request-type.enum';
-// import { EnumLanguage } from '../../magic/enums/lang.enum';
-// import { Language } from '../../magic/mappers/jumpseller.mapper.service';
-
+                                             
 @Processor('4-create-images-request', { concurrency: 40 })
 export class CreateImagesRequestProcessor extends WorkerHost {
   constructor(
@@ -33,6 +27,7 @@ export class CreateImagesRequestProcessor extends WorkerHost {
     try {      //mapeo de imagenes a un formato que Jumpseller entienda
       const enImages = await this.magicCardsService.createImagesRequests(job.data.enCard)
       for (const image of enImages) {
+        console.log(`🔧 Enviando imagen al gateway POZOLE: ${image}`);
         try {
           await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
             enCard: job.data.enCard,

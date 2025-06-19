@@ -4,7 +4,7 @@ import { MagicCardsService } from '../../magic/magic-cards.service';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { Language } from '../../magic/mappers/jumpseller.mapper.service';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
-import { JumpsellerCreateVariantRequest } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerCreateVariantRequestForBD } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { RequestTypeEnum } from '../enums/request-type.enum';
 
 @Processor('6-create-variants-request', { concurrency: 40 })
@@ -17,9 +17,8 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
-        variantRequest: JumpsellerCreateVariantRequest;
-        lang: Language[];
-        productId: number;
+        body: JumpsellerCreateVariantRequestForBD;
+        // lang: Language[];
         requestType: RequestTypeEnum;
       },
       string,
@@ -50,18 +49,22 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
         job.data.enCard,
         job.data.lang,
       );
+      console.log(
+        `🔧 Enviando VARIANTE al POZOLE ✨: ${JSON.stringify(variantsRequest)}`,
+      );
       await job.updateProgress(75);
       await Promise.all(
         variantsRequest.map((variant) => {
+          console.log(
+            `🔧 Enviando variante al gateway POZOLE ✨: ${variant.variant.sku}`,
+          );
           this.jumpsellerGatewayQueue.add(
             `Variant request: ${variant.variant.sku}`, //nombre del job
             {
               enCard: job.data.enCard,
               esCard: job.data.esCard,
               thereIsSpanishVersion: !!job.data.esCard,
-              variantRequest: variant,
-              lang: job.data.lang,
-              productId: job.data.enCard.idJumpSeller,
+              body: variant,
               requestType: RequestTypeEnum.VARIANTS,
             },
             {

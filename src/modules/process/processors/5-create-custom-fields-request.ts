@@ -17,7 +17,7 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
     private readonly jumpsellerGatewayQueue: Queue<
       {
         enCard: MagicCardDocument;
-        customFieldRequest: AddAnExistingCustomFieldToAProductRequest;
+        body: AddAnExistingCustomFieldToAProductRequest;
         requestType: RequestTypeEnum;
       },
       string,
@@ -62,6 +62,7 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
       // Usar cache de custom fields
       const fetchedCustomFields = await this.getCachedCustomFields();
       if (!fetchedCustomFields || fetchedCustomFields.length === 0) return;
+      console.log(`🔧 Enviando CUSTOMFIELDS al MAPEO POZOLE ✨: ${JSON.stringify(fetchedCustomFields)}`);
       const requestsCustomFields =
         await this.customFieldsMapperService.mappedCustomFields(
           job.data.enCard,
@@ -73,7 +74,7 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
             'add-custom-field',
             {
               enCard: job.data.enCard,
-              customFieldRequest: customField,
+              body: customField,
               requestType: RequestTypeEnum.CUSTOM_FIELDS,
             },
               {

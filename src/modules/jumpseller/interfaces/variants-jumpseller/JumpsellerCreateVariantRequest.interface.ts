@@ -12,10 +12,11 @@ export interface JumpsellerCreateVariantRequest {
         image_id?: number;
         options?: JumpsellerVariantOption[];
     }
+}
+export interface JumpsellerCreateVariantRequestForBD extends JumpsellerCreateVariantRequest {
     finish?: string;
     condition?: string;
 }
-
 interface JumpsellerVariantOption {
     name: string;
     option_type: JumpsellerOptionType;

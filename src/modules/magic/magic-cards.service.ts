@@ -103,7 +103,6 @@ export class MagicCardsService {
   }
   async createVariantInApp(card: MagicCard, variant: JumpsellerCreateVariantResponse, condition: string, finish: string): Promise<StagingProductVariantDocument> {
     const stagingVariant = mappedStaggingProductVariant(card, variant, condition, finish);
-    //TODO: Pasar a Entidad de BD
     return await this.stagingProductVariantModel.create(stagingVariant)
   }
   async findCardByJumpsellerId(idJumpSeller: number): Promise<MagicCard> {

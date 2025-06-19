@@ -14,9 +14,7 @@ export class CreateImagesRequestProcessor extends WorkerHost {
     private readonly jumpsellerGatewayQueue: Queue<{
       enCard: MagicCardDocument;
       esCard?: MagicCardDocument | null;
-      thereIsSpanishVersion: boolean;
-      lang?: Language[], 
-      imageRequest: ICreateImageRequest,
+      body: ICreateImageRequest,
       requestType: RequestTypeEnum
     }, string, string>
   ) {
@@ -24,39 +22,26 @@ export class CreateImagesRequestProcessor extends WorkerHost {
   }
 
   async process(job: Job<{ enCard: MagicCardDocument, esCard?: MagicCardDocument | null }, number, string>) {
-    try {      //mapeo de imagenes a un formato que Jumpseller entienda
-      const enImages = await this.magicCardsService.createImagesRequests(job.data.enCard)
-      for (const image of enImages) {
-        console.log(`🔧 Enviando imagen al gateway POZOLE: ${image}`);
+    try {    
+      const enImages = await this.magicCardsService.createImagesRequests(job.data.enCard);
+      const esImages = job.data.esCard ? await this.magicCardsService.createImagesRequests(job.data.esCard) : [];
+      const allImages = enImages.concat(esImages);
+
+      for (const image of allImages) {
+        console.log(`🔧 Enviando IMAGEN al POZOLE ✨: ${JSON.stringify(image)}`);
         try {
-          await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
+          await this.jumpsellerGatewayQueue.add(`Image to gateway`, {
             enCard: job.data.enCard,
-            esCard: job.data.esCard,
-            thereIsSpanishVersion: !!job.data.esCard,
-            imageRequest: image,
+            esCard: job.data.esCard || null,
+            body: image,
             requestType: RequestTypeEnum.IMAGES
-          });
+          },
+            {
+              priority: 3,
+            }
+          );
         } catch (error) {
           console.error(`❌ Error al subir imagen: ${error.message}`);
-        }
-      }
-      if (job.data.esCard) {
-        const esImages = await this.magicCardsService.createImagesRequests(job.data.esCard);
-        for (const image of esImages) {
-          try {
-            await this.jumpsellerGatewayQueue.add(`Image to gateway`, { 
-              enCard: job.data.enCard,
-              esCard: job.data.esCard,
-              thereIsSpanishVersion: true,
-              imageRequest: image,
-              requestType: RequestTypeEnum.IMAGES
-            },
-            {
-              priority: 3
-            });
-          } catch (error) {
-            console.error(`❌ Error al subir imagen: ${error.message}`);
-          }
         }
       }
       await job.updateProgress(75);

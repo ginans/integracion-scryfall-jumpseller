@@ -50,7 +50,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
       {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
-        lang: Language[];
+        // lang: Language[];
       },
       string,
       string
@@ -138,11 +138,11 @@ export class CreateProductRequestProcessor extends WorkerHost {
         'create-variants', //nombre del job
         {
           enCard: job.data.enCard,
-          esCard: job.data.esCard || null,
-          lang:
-            job.data.esCard && job.data.thereIsSpanishVersion
-              ? [{ code: EnumLanguage.ESPAÑOL, name: 'Español' }]
-              : [],
+          esCard: job.data.esCard || null
+          // lang:
+          //   job.data.thereIsSpanishVersion === true 
+          //     ? [{ code: EnumLanguage.ESPAÑOL, name: 'Español' }]
+          //     : [],
         },
       );
       await job.updateProgress(100);

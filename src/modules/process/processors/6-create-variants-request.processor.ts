@@ -16,7 +16,7 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
       {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
-        thereIsSpanishVersion: boolean;
+        // thereIsSpanishVersion: boolean;
         body: JumpsellerCreateVariantRequestForBD;
         // lang: Language[];
         requestType: RequestTypeEnum;
@@ -32,7 +32,8 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
       {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
-        lang: Language[];
+        thereIsSpanishVersion: boolean;
+        // lang: Language[];
       },
       string,
       string
@@ -42,12 +43,13 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
       await job.updateProgress(25);
       const languages: Language[] = [];
       languages.push({ code: EnumLanguage.INGLES, name: 'Inglés' }); //TODO: Cambiar a un enum
-      if (job.data.esCard)
+      if (job.data.thereIsSpanishVersion === true) {
         languages.push({ code: EnumLanguage.ESPAÑOL, name: 'Español' });
+      }
       await job.updateProgress(50);
       const variantsRequest = await this.magicCardsService.createVariantsBody(
         job.data.enCard,
-        job.data.lang,
+        languages
       );
       console.log(
         `🔧 Enviando VARIANTE al POZOLE ✨: ${JSON.stringify(variantsRequest)}`,
@@ -62,8 +64,8 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
             `Variant request: ${variant.variant.sku}`, //nombre del job
             {
               enCard: job.data.enCard,
-              esCard: job.data.esCard,
-              thereIsSpanishVersion: !!job.data.esCard,
+              esCard: job.data.esCard || null,
+              // thereIsSpanishVersion: job.data.thereIsSpanishVersion,
               body: variant,
               requestType: RequestTypeEnum.VARIANTS,
             },

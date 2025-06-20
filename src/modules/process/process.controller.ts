@@ -20,7 +20,6 @@ export class ProcessController {
   async procesarCardMagic(): Promise<void> {
     return this.processService.initCardMagic();
   }
-
   @Post('stock')
   async updateStock(@Body() variants: IStockFromFront[]) {
     try{
@@ -29,7 +28,6 @@ export class ProcessController {
       return error
     }
   }
-  
   @Post('prices/update-from-front')
   async updatePrices(@Body() variants: IPriceFromFront[]){
     try{
@@ -39,7 +37,6 @@ export class ProcessController {
       return error
     }
   }
-
   @Patch('prices/recalculate-prices-by-base')
   async recalculatePricesByBase(
     @Body() basePrices: RecalculatePricesByBaseDto

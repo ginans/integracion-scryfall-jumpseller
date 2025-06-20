@@ -9,6 +9,7 @@ import {LokiLogger} from "./common/logger/logging.service";
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule,{
     logger: new LokiLogger(),
+    rawBody: true,
   });
   app.useStaticAssets(join(__dirname, '..', 'uploads/pdfs'), {
     prefix: '/pdfs',

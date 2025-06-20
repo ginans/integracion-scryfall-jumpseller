@@ -25,7 +25,6 @@ export class JumpsellerWebhookGuard implements CanActivate {
 
     this.logger.debug(`Received hash: ${receivedHash}`);
 
-    // Usar rawBody del interceptor si está disponible
     let bodyForHmac: Buffer;
 
     if (Buffer.isBuffer(rawBody)) {

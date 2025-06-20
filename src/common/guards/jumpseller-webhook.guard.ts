@@ -65,15 +65,21 @@ export class JumpsellerWebhookGuard implements CanActivate {
     }
   }
 
+  // private calculateHmac(data: Buffer): string {
+  // return crypto
+  //   .createHmac('sha256', this.API_SECRET_KEY)
+  //   .update(data)
+  //   .digest('base64');
+  // }
   private calculateHmac(data: Buffer): string {
-  return crypto
-    .createHmac('sha256', this.API_SECRET_KEY)
-    .update(data)
-    .digest('base64');
-}
+    // const hmac = crypto.createHmac('sha256', this.API_SECRET_KEY);
+    const hmac = crypto.createHmac('sha256', this.API_SECRET_KEY);
+    hmac.update(data);
+    return hmac.digest('base64');
+  }
 
   private compareHashes(received: string, expected: string): boolean {
-    if (received.length !== expected.length) {
+    if (received !== expected) {
       return false;
     }
     

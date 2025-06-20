@@ -69,7 +69,7 @@ export class ProcessController {
       return {
         success: true,
         status: 200,
-        message: "Orden Procesada Correctamente"
+        message: "OK"
       };
     } catch (error) {
       this.logger.error('Error procesando webhook:', error);
@@ -81,16 +81,4 @@ export class ProcessController {
     }
   }
 
-
-  // @Post("webhook/test")
-  //   async testWebhook(@Req() req: RawBodyRequest<Request>) {
-  //    const raw = req.rawBody;
-  //   this.logger.log('RAW:', raw);
-  //   this.logger.log('existing raw', req['rawBody']);
-  //   this.logger.log('tipo', typeof raw);
-  //   this.logger.log('PARSED:', req.body);
-  //   this.logger.log('Headers:', req.headers);
-  //   this.logger.log('WWWENA CONCHALALORAAAA', raw? "LOGRADOOOOAAAAHHHHHHHHHHHH" : "NO LOGRADOOOOOOOOOOOOOOOOOOOOOOO:(");
-  //   return { success: true, status: 200, message: "Webhook de prueba procesado correctamente" };
-  //   }
 }

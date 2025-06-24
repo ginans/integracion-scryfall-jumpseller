@@ -20,12 +20,13 @@ import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.serv
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
 import { UpdateStockSalesProcessor } from './processors/update-stock-sales.processor';
 import { CreateVariantsRequestProcessor } from './processors/6-create-variants-request.processor';
-import { JumpsellerGatewayProcessor } from './processors/7-jumpseller-gateway.processor';
+import { JumpsellerGatewayProcessor } from './processors/8-jumpseller-gateway.processor';
 import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
 import { SaveOrderProcessor } from './processors/save-order.processor';
 import { OrdersModule } from '../orders/orders.module';
-import { CreateImagesRequestProcessor } from './processors/4-create-images-request';
-import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request';
+import { CreateImagesRequestProcessor } from './processors/4-create-images-request.processor';
+import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request.processor';
+import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller-request-coordinator.processor';
 
 @Module({
   imports: [
@@ -98,13 +99,24 @@ import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom
     }),
     //job jumpseller gateway
     BullModule.registerQueue({
-      name: '7-jumpseller-gateway',
+      name: '7-jumpseller-request-coordinator',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '7-jumpseller-gateway',
+      name: '7-jumpseller-request-coordinator',
+      adapter: BullMQAdapter,
+    }),
+    //job jumpseller gateway
+    BullModule.registerQueue({
+      name: '8-jumpseller-gateway',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '8-jumpseller-gateway',
       adapter: BullMQAdapter,
     }),
     // enviar stock cargado desde el front a jumpseller
@@ -205,6 +217,7 @@ import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom
     JumpsellerGatewayProcessor,
     UpdateStockSalesProcessor,
     SaveOrderProcessor,
+    JumpsellerRequestCoordinatorProcessor
   ],
 })
 export class ProcessModule {}

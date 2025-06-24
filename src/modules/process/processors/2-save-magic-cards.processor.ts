@@ -16,12 +16,18 @@ export class SaveMagicCardsProcessor extends WorkerHost {
     let thereIsSpanishVersion = false
      const versionES = await this.magicCardsService.getCardInOtherLang(ILangUrlEnum.ES, job.data.card.oracle_id, job.data.card.collector_number, job.data.card.set);
     try {
+      const { card } = job.data;
       await job.updateProgress(25);
       //crea en base de datos
       await this.magicCardsService.createMagicCards(job.data.card);
-      const cardInDB = await this.magicCardsService.findCardByScryfallId(job.data.card.id);
+      const cardInDB = await this.magicCardsService.findCardByScryfallId(card.id);
+      if (!cardInDB) {
+        throw new Error('Card not found in database after creation');
+      }
+      await job.updateProgress(40);
+      // Si la carta existe en español, crea la versión en español
       let newEsCard = null
-      if (job.data.card && versionES) {
+      if (card && versionES) {
         //crear la versión en español si existe
         newEsCard = await this.magicCardsService.createMagicCards(versionES);
         if (newEsCard) {

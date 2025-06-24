@@ -11,15 +11,15 @@ import { RequestTypeEnum } from '../enums/request-type.enum';
 export class CreateVariantsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
-    @InjectQueue('7-jumpseller-gateway')
+    @InjectQueue('8-jumpseller-gateway')
     private readonly jumpsellerGatewayQueue: Queue<
       {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
-        // thereIsSpanishVersion: boolean;
-        body: JumpsellerCreateVariantRequestForBD;
-        // lang: Language[];
+        thereIsSpanishVersion: boolean;
         requestType: RequestTypeEnum;
+        body: JumpsellerCreateVariantRequestForBD;
+        productId: number;
       },
       string,
       string
@@ -33,6 +33,7 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
         enCard: MagicCardDocument;
         esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
+        productId: number;
         // lang: Language[];
       },
       string,
@@ -40,6 +41,7 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
     >,
   ) {
     try {
+      const{ enCard, esCard, thereIsSpanishVersion, productId } = job.data;
       await job.updateProgress(25);
       const languages: Language[] = [];
       //TODO: revisar envio de variantes
@@ -64,11 +66,12 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
           this.jumpsellerGatewayQueue.add(
             `Variant request: ${variant.variant.sku}`, //nombre del job
             {
-              enCard: job.data.enCard,
-              esCard: job.data.esCard || null,
-              // thereIsSpanishVersion: job.data.thereIsSpanishVersion,
-              body: variant,
+              enCard: enCard,
+              esCard: esCard || null,
+              thereIsSpanishVersion: thereIsSpanishVersion,
               requestType: RequestTypeEnum.VARIANTS,
+              body: variant,
+              productId: productId,
             },
             {
               priority: 3,

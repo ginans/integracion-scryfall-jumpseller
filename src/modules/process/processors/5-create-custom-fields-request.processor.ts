@@ -13,12 +13,12 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
-    @InjectQueue('7-jumpseller-gateway')
+    @InjectQueue('8-jumpseller-gateway')
     private readonly jumpsellerGatewayQueue: Queue<
       {
-        enCard: MagicCardDocument;
-        body: AddAnExistingCustomFieldToAProductRequest;
         requestType: RequestTypeEnum;
+        body: AddAnExistingCustomFieldToAProductRequest;
+        productId: number;
       },
       string,
       string
@@ -57,15 +57,27 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
     return CreateCustomFieldsRequestProcessor.customFieldsCache;
   }
 
-  async process(job: Job<{ enCard: MagicCardDocument }, number, string>) {
+  async process(
+    job: Job<
+      {
+        enCard: MagicCardDocument;
+        productId: number;
+      },
+      number,
+      string
+    >,
+  ) {
     try {
+      const { enCard, productId } = job.data;
       // Usar cache de custom fields
       const fetchedCustomFields = await this.getCachedCustomFields();
       if (!fetchedCustomFields || fetchedCustomFields.length === 0) return;
-      console.log(`🔧 Enviando CUSTOMFIELDS al MAPEO POZOLE ✨: ${JSON.stringify(fetchedCustomFields)}`);
+      console.log(
+        `🔧 Enviando CUSTOMFIELDS al MAPEO POZOLE ✨: ${JSON.stringify(fetchedCustomFields)}`,
+      );
       const requestsCustomFields =
         await this.customFieldsMapperService.mappedCustomFields(
-          job.data.enCard,
+          enCard,
           fetchedCustomFields,
         );
       for (const customField of requestsCustomFields) {
@@ -73,14 +85,14 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
           this.jumpsellerGatewayQueue.add(
             'add-custom-field',
             {
-              enCard: job.data.enCard,
-              body: customField,
               requestType: RequestTypeEnum.CUSTOM_FIELDS,
+              body: customField,
+              productId: productId,
             },
-              {
-                priority: 3,
-              },
-            );
+            {
+              priority: 3,
+            },
+          );
         } catch (error) {
           throw new Error(`❌ Error al subir custom field: ${error.message}`);
         }

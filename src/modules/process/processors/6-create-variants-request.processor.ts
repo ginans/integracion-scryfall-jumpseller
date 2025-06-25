@@ -34,35 +34,27 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
         esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
         productId: number;
-        // lang: Language[];
+        lang: Language[];
       },
       string,
       string
     >,
   ) {
     try {
-      const{ enCard, esCard, thereIsSpanishVersion, productId } = job.data;
+      const{ enCard, esCard, thereIsSpanishVersion, productId, lang } = job.data;
       await job.updateProgress(25);
-      const languages: Language[] = [];
-      //TODO: revisar envio de variantes
-      languages.push({ code: EnumLanguage.INGLES, name: 'Inglés' }); //TODO: Cambiar a un enum
-      if (job.data.thereIsSpanishVersion === true) {
-        languages.push({ code: EnumLanguage.ESPAÑOL, name: 'Español' });
-      }
-      await job.updateProgress(50);
+     
       const variantsRequest = await this.magicCardsService.createVariantsBody(
-        job.data.enCard,
-        languages
+        enCard,
+        lang
       );
+      await job.updateProgress(50);
       console.log(
-        `🔧 Enviando VARIANTE al POZOLE ✨: ${JSON.stringify(variantsRequest)}`,
+        `🔧 Enviando VARIANTESSS al POZOLE ✨: ${JSON.stringify(variantsRequest)}`,
       );
-      await job.updateProgress(75);
-      await Promise.all(
+      await Promise.allSettled(
         variantsRequest.map((variant) => {
-          console.log(
-            `🔧 Enviando variante al gateway POZOLE ✨: ${variant.variant.sku}`,
-          );
+          console.log("comprobando la variante SOLITA del pozole 😭", variant);
           this.jumpsellerGatewayQueue.add(
             `Variant request: ${variant.variant.sku}`, //nombre del job
             {

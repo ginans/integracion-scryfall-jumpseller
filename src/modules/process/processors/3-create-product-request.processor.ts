@@ -5,6 +5,8 @@ import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { MagicCardsService } from '../../magic/magic-cards.service';
 import { RequestTypeEnum } from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
+import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
+import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 @Processor('3-create-product-request', { concurrency: 80 })
 export class CreateProductRequestProcessor extends WorkerHost {
   private readonly logger = new Logger(CreateProductRequestProcessor.name);
@@ -19,6 +21,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
         thereIsSpanishVersion: boolean;
         requestType: RequestTypeEnum;
         body: JumpsellerProductRequest;
+        lang: Language[];
       },
       string,
       string
@@ -43,9 +46,12 @@ export class CreateProductRequestProcessor extends WorkerHost {
       //pregunta si existe la carta en español, si existe le pasa el nombre en español
       await job.updateProgress(10);
       let descriptions: string[] = [];
-      if (job.data.esCard && job.data.thereIsSpanishVersion === true) {
+      const languages: Language[] = []
+      languages.push({ code: EnumLanguage.INGLES, name: 'Inglés' });
+      if (esCard && thereIsSpanishVersion === true) {
+        languages.push({ code: EnumLanguage.ESPAÑOL, name: 'Español' })
         const lang = await this.magicCardsService.translatedLanguages(
-          job.data.esCard.lang,
+          esCard.lang,
         );
         descriptions.push(`Nombre en ${lang}: ${job.data.esCard.printedName}.`);
       }
@@ -74,6 +80,7 @@ export class CreateProductRequestProcessor extends WorkerHost {
           thereIsSpanishVersion: thereIsSpanishVersion,
           requestType: RequestTypeEnum.PRODUCTS,
           body: mappedEnProduct,
+          lang: languages,
         }, //data
         {
           jobId: String(enCard.id),

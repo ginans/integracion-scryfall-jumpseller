@@ -258,7 +258,7 @@ async mapCardFaceImageToJumpseller(card: MagicCard, faceIndex: number): Promise<
 async mapVariantsToJumpseller(
   card: MagicCard,
   languages: Language[],
-  condition: EnumCondition = EnumCondition.NearMint
+  // condition: EnumCondition
 ): Promise<JumpsellerCreateVariantRequest[]> {
      
   const finishes = [
@@ -272,8 +272,6 @@ async mapVariantsToJumpseller(
   for (const lang of languages) {
     for (const finish of finishes) {
         if (!finish.available) continue;
-        
-       
         variants.push({
           variant: {
             sku: this.createSku(card, lang, finish.suffix),
@@ -281,7 +279,7 @@ async mapVariantsToJumpseller(
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
-              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: EnumCondition.NearMint },
             ],
           },
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",

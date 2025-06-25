@@ -9,6 +9,7 @@ import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
 import { RequestTypeEnum } from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
+import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 
 @Processor('8-jumpseller-gateway', {
   concurrency: 15,
@@ -25,6 +26,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
         esCard?: MagicCardDocument | null;
         productId: number;
         thereIsSpanishVersion: boolean;
+        lang?: Language[];
       },
       string,
       string
@@ -45,12 +47,13 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
         requestType: RequestTypeEnum;
         thereIsSpanishVersion?: boolean;
         productId?: number;
+        lang?: Language[]
       },
       string,
       string
     >,
   ) {
-    const { body, requestType, enCard, esCard, thereIsSpanishVersion, productId } = job.data;
+    const { body, requestType, enCard, esCard, thereIsSpanishVersion, productId, lang } = job.data;
 
     try {
       switch (requestType) {
@@ -79,6 +82,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
               esCard: esCard || null,
               thereIsSpanishVersion: thereIsSpanishVersion,
               productId: createdProduct.product.id,
+              lang: lang,
             },
             {
               delay: 500 , // Esperar 500 ms antes de procesar
@@ -123,10 +127,14 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           if (!variant || !variant.sku) {
             throw new Error(`Missing variant data for product ID ${productId}`);
           }
+          console.log (
+            `🔧 Enviando VARIANTE al BAZINGA ✨: ${JSON.stringify(variant)}`)
+          console.log (
+            `🔧 Enviando VARIANTE al BAZINGA DE JUMPSELLER ✨: ${JSON.stringify({variant})} - ID ${productId}`)
 
           const variantResponse =
             await this.magicCardsService.createJumpsellerVariant(productId, {
-              variant,
+              variant: variant,
             });
 
           if (esCard && thereIsSpanishVersion === true && variantResponse) {

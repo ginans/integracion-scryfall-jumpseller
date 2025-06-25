@@ -1,6 +1,7 @@
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
+import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 
 @Processor('7-jumpseller-request-coordinator')
 export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
@@ -31,7 +32,7 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
         esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
         productId: number;
-        // lang: Language[];
+        lang: Language[];
       },
       string,
       string
@@ -46,45 +47,45 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
         esCard?: MagicCardDocument | null;
         thereIsSpanishVersion: boolean;
         productId: number;
+        lang: Language[];
       },
       string,
       string
     >,
   ) {
     try {
-      const { enCard, esCard, thereIsSpanishVersion, productId } = job.data;
+      const { enCard, esCard, thereIsSpanishVersion, productId, lang } = job.data; // Enviar todos los jobs hijos en paralelo, manejando errores individualmente
+      const results = await Promise.allSettled([
+        // Custom fields temporalmente deshabilitado para testing
+        // this.CreateCustomFieldsRequestQueue.add(
+        //   'create-custom-fields',
+        //   { enCard: enCard, productId: productId },
+        // ),
 
-      await this.CreateCustomFieldsRequestQueue.add(
-        'create-custom-fields', //nombre del job
-        {
-          enCard: enCard,
-          productId: productId,
-        },
-      );
-      //Enviar a creacion de imagenes
-      await this.CreateImagesRequestQueue.add(
-        'create-images', //nombre del job
-        {
+        this.CreateImagesRequestQueue.add('create-images', {
           enCard: enCard,
           esCard: esCard || null,
           productId: productId,
-        },
-      );
+        }),
 
-      //Enviar a creacion de variantes
-      await this.CreateVariantsRequestQueue.add(
-        'create-variants', //nombre del job
-        {
+        this.CreateVariantsRequestQueue.add('create-variants', {
           enCard: enCard,
           esCard: esCard || null,
           thereIsSpanishVersion: thereIsSpanishVersion,
           productId: productId,
-          // lang:
-          //   job.data.thereIsSpanishVersion === true
-          //     ? [{ code: EnumLanguage.ESPAÑOL, name: 'Español' }]
-          //     : [],
-        },
-      );
+          lang: lang ,
+        }),
+      ]);
+
+      // Verificar resultados individuales
+      results.forEach((result, index) => {
+        const jobNames = ['images', 'variants'];
+        if (result.status === 'rejected') {
+          console.error(`❌ Error en job ${jobNames[index]}: ${result.reason}`);
+        } else {
+          console.log(`✅ Job ${jobNames[index]} enviado exitosamente`);
+        }
+      });
     } catch (error) {
       console.error(
         `❌ Error al procesar coordinacion de la request ${error.message}`,

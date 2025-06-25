@@ -39,6 +39,7 @@ import {
 import { EnumStatus } from './enums/status.enum';
 import {
   JumpsellerCreateVariantRequest,
+  JumpsellerCreateVariantRequestForBD,
 } from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import {
   JumpsellerCreateVariantResponse,
@@ -92,7 +93,7 @@ export class MagicCardsService {
       throw new InternalServerErrorException(`Error al actualizar JumpsellerId: ${error.message}`);
     }
   }
-  async createVariantsBody(card: MagicCard, langs: Language[]): Promise<JumpsellerCreateVariantRequest[]> {
+  async createVariantsBody(card: MagicCard, langs: Language[]): Promise<JumpsellerCreateVariantRequestForBD[]> {
     return await this.jumpsellerMapperService.mapVariantsToJumpseller(card, langs);
   }
   async createJumpsellerVariant(

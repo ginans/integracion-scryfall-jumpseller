@@ -42,17 +42,17 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
   private async getCachedCustomFields() {
     const now = Date.now();
     // Si el cache está vacío o expiró, refrescarlo
-    if (
-      !CreateCustomFieldsRequestProcessor.customFieldsCache ||
-      now - CreateCustomFieldsRequestProcessor.customFieldsCacheTimestamp >
-        CreateCustomFieldsRequestProcessor.CACHE_TTL_MS
-    ) {
-      // Fetch real a la base/API
-      const fetched = await this.magicCardsService.getAllCustomFields();
-      // Guardar en cache y actualizar timestamp
-      CreateCustomFieldsRequestProcessor.customFieldsCache = fetched;
-      CreateCustomFieldsRequestProcessor.customFieldsCacheTimestamp = now;
-    }
+    // if (
+    //   !CreateCustomFieldsRequestProcessor.customFieldsCache ||
+    //   now - CreateCustomFieldsRequestProcessor.customFieldsCacheTimestamp >
+    //     CreateCustomFieldsRequestProcessor.CACHE_TTL_MS
+    // ) {
+    //   // Fetch real a la base/API
+    //   const fetched = await this.magicCardsService.getAllCustomFields();
+    //   // Guardar en cache y actualizar timestamp
+    //   CreateCustomFieldsRequestProcessor.customFieldsCache = fetched;
+    //   CreateCustomFieldsRequestProcessor.customFieldsCacheTimestamp = now;
+    // }
     // Retornar el cache (vigente o recién actualizado)
     return CreateCustomFieldsRequestProcessor.customFieldsCache;
   }
@@ -82,17 +82,17 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
         );
       for (const customField of requestsCustomFields) {
         try {
-          this.jumpsellerGatewayQueue.add(
-            'add-custom-field',
-            {
-              requestType: RequestTypeEnum.CUSTOM_FIELDS,
-              body: customField,
-              productId: productId,
-            },
-            {
-              priority: 3,
-            },
-          );
+          // this.jumpsellerGatewayQueue.add(
+          //   'add-custom-field',
+          //   {
+          //     requestType: RequestTypeEnum.CUSTOM_FIELDS,
+          //     body: customField,
+          //     productId: productId,
+          //   },
+          //   {
+          //     priority: 3,
+          //   },
+          // );
         } catch (error) {
           throw new Error(`❌ Error al subir custom field: ${error.message}`);
         }

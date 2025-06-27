@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsEnum,
   IsNumber,
   IsOptional,
@@ -83,5 +84,4 @@ export class PaginationQueryDto {
   @IsOptional()
   @IsString()
   setName?: string;
-  
 }

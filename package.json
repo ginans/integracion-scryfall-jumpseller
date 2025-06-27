@@ -27,7 +27,8 @@
     "docker:prod:build": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml build",
     "docker:prod:stop": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml down",
     "docker:prod:logs": "./docker-scripts.sh logs prod",
-    "docker:stop:all": "./docker-scripts.sh stop dev && ./docker-scripts.sh stop prod"
+    "docker:stop:all": "./docker-scripts.sh stop dev && ./docker-scripts.sh stop prod",
+    "generate:scryfall-arrays": "ts-node scripts/generate-scryfall-arrays.ts"
   },
   "dependencies": {
     "@bull-board/api": "^6.7.7",

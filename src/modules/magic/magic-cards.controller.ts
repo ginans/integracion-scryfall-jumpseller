@@ -50,6 +50,10 @@ export class MagicCardsController {
   async findCardByOracleId(@Param('id') oracleId: string) {
     return this.magicCardsService.findCardByOracleId(oracleId);
   }
+  @Get('sets')
+  async getAllSetName() : Promise<{sets: {setName: string, setPrefix: string}[]}> {
+    return this.magicCardsService.getAllSetName();
+  }
   
   @Post("createNewCardAndVariant")
   async createNewCardAndVariant(

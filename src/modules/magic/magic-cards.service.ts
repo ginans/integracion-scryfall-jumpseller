@@ -692,6 +692,7 @@ export class MagicCardsService {
         label: CustomField.SET_NAME,
         type: 'selection',//TODO: PASAR A ENUM
         values: await this.getSetNames(),
+        //TODO: AGREGAR VISIBILIDAD EN JUMPSELLER
       },
       colors: {
         label: CustomField.COLOR,

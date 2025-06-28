@@ -6,7 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
-import { MagicCard, MagicCardDocument } from './entities/magic-card.entity';
+import {
+  MagicCard,
+  MagicCardDocument,
+} from './entities/magic-card.entity';
 import { Model, set, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -45,6 +48,9 @@ import {
 } from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { JumpsellerCreateVariantResponse } from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
+import { MapCFCollection } from '../jumpseller/interfaces/map-CF-collection.interface';
+import { CustomField, CustomFieldFallback } from './enums/custom-fields.enum';
+import {spanishRarities, translateColors} from '../../common/utils/traduction.util';
 
 @Injectable()
 export class MagicCardsService {
@@ -314,17 +320,16 @@ export class MagicCardsService {
     }
     if (set) {
       const setFilter = { set: { $regex: `^${set}$`, $options: 'i' } };
-      filters.$and = filters.$and
-        ? [...filters.$and, setFilter]
-        : [setFilter];
+      filters.$and = filters.$and ? [...filters.$and, setFilter] : [setFilter];
     }
-    if (setName) {
-      const setNameFilter = { setName: { $regex: `^${setName}$`, $options: 'i' } };
-      filters.$and = filters.$and
-        ? [...filters.$and, setNameFilter]
-        : [setNameFilter];
-    }
-   
+    // if (setName) {
+    //   const setNameFilter = {
+    //     setName: { $regex: `^${setName}$`, $options: 'i' },
+    //   };
+    //   filters.$and = filters.$and
+    //     ? [...filters.$and, setNameFilter]
+    //     : [setNameFilter];
+    // }
 
     try {
       const [productCards, total] = await Promise.all([
@@ -349,7 +354,7 @@ export class MagicCardsService {
     }
   }
 
-  async getAllSetName(): Promise<{
+  async getAllSets(): Promise<{
     sets: { setName: string; setPrefix: string }[];
   }> {
     const mappedSets: { setName: string; setPrefix: string }[] = [];
@@ -358,7 +363,6 @@ export class MagicCardsService {
       const matchedSet = await this.model.findOne({ setName });
       mappedSets.push({ setName: setName, setPrefix: matchedSet.set || '' });
     }
-
     return {
       sets: mappedSets,
     };
@@ -555,5 +559,216 @@ export class MagicCardsService {
       this.logger.error('Error trayendo los custom fields', error);
       throw error;
     }
+  }
+
+  //para crear campos personalizados en jumpseller vamos a traer todos los campos necesarios desde la bd para armar la creacion
+  async getSetNames(): Promise<string[]> {
+    const setNames = await this.model.distinct('setName').exec();
+    return this.addFallbackString(setNames, CustomFieldFallback.SET_NAME);
+  }
+  async getColors(): Promise<string[]> {
+    const colorNames = await this.model.distinct('colors').exec();
+    return this.addFallbackString(colorNames.map((name) => translateColors(name)), CustomFieldFallback.COLOR);
+  }
+  async getGameChangers(): Promise<boolean[]> {
+    const gameChangers = await this.model.distinct('gameChanger').exec();
+    const uniqueGameChangers = new Set(gameChangers);
+    return Array.from(uniqueGameChangers);
+  }
+  async getRarities(): Promise<string[]> {
+    const rarityNames = await this.model.distinct('rarity').exec();
+    return this.addFallbackString(rarityNames.map((name) => spanishRarities(name)), CustomFieldFallback.RARITY);
+  }
+  async getSetTypes(): Promise<string[]> {
+    const setTypeNames = await this.model.distinct('setType').exec();
+    return this.addFallbackString(setTypeNames, CustomFieldFallback.SET_TYPE);
+  }
+  async getManaCosts(): Promise<string[]> {
+    const manaCostNames = await this.model.distinct('manaCost').exec();
+    return this.addFallbackString(manaCostNames, CustomFieldFallback.MANA_COST);
+  }
+  async getCmcs(): Promise<number[]> {
+    const cmcNames = await this.model.distinct('cmc').exec();
+    return cmcNames;
+  }
+  async getPowers(): Promise<string[]> {
+    const powerNames = await this.model.distinct('power').exec();
+    return this.addFallbackString(powerNames, CustomFieldFallback.POWER);
+  }
+  async getToughness(): Promise<string[]> {
+    const toughnessNames = await this.model.distinct('toughness').exec();
+    return this.addFallbackString(
+      toughnessNames,
+      CustomFieldFallback.TOUGHNESS,
+    );
+  }
+
+  async getColorIdentities(): Promise<string[]> {
+    const colorIdentityNames = await this.model
+      .distinct('colorIdentity')
+      .exec();
+    return this.addFallbackString(
+      colorIdentityNames.map((name) => translateColors(name)),
+      CustomFieldFallback.COLOR_IDENTITY,
+    );
+  }
+  async getKeywords(): Promise<string[]> {
+    const keywordNames = await this.model.distinct('keywords').exec();
+    return this.addFallbackString(keywordNames, CustomFieldFallback.KEYWORDS);
+  }
+
+  async getLegalities(): Promise<string[]> {
+    const documents = await this.model.find({}, { legalities: 1 }).lean();
+    const legalFormats = new Set<string>();
+
+    for (const doc of documents) {
+      const legalities = doc.legalities;
+      if (!legalities) continue;
+
+      for (const format in legalities) {
+        if (legalities[format] === 'legal') {
+          legalFormats.add(format);
+        }
+      }
+    }
+
+    return this.addFallbackString(
+      Array.from(legalFormats),
+      CustomFieldFallback.LEGAL_FORMATS,
+    );
+  }
+
+  async getArtists(): Promise<string[]> {
+    const artistNames = await this.model.distinct('artist').exec();
+    return this.addFallbackString(artistNames, CustomFieldFallback.ARTIST);
+  }
+  async getBorderColors(): Promise<string[]> {
+    const borderColorNames = await this.model.distinct('borderColor').exec();
+    return this.addFallbackString(
+      borderColorNames.map((name) => translateColors(name)),
+      CustomFieldFallback.BORDER_COLOR,
+    );
+  }
+  async getFullArt(): Promise<boolean[]> {
+    const fullArtNames = await this.model.distinct('fullArt').exec();
+    return fullArtNames;
+  }
+  async getTextless(): Promise<boolean[]> {
+    const textlessNames = await this.model.distinct('textless').exec();
+    return textlessNames;
+  }
+  async getTypeLines(): Promise<{
+    typeLines: string[];
+    subTypeLines: string[];
+  }> {
+    const typeLines = await this.model.distinct('typeLine').exec();
+
+    const typeLineSet = new Set<string>();
+    const subTypeLineSet = new Set<string>();
+
+    for (const line of typeLines) {
+      const [typeLine, subTypeLine] = line.split('—'); // guion largo (em dash)
+      const trimmedTypeLine = typeLine.trim();
+      const trimmedSubTypeLine = subTypeLine ? subTypeLine.trim() : '';
+
+      if (trimmedTypeLine) typeLineSet.add(trimmedTypeLine);
+      if (trimmedSubTypeLine) subTypeLineSet.add(trimmedSubTypeLine);
+    }
+    return {
+      typeLines: this.addFallbackString(
+        Array.from(typeLineSet),
+        CustomFieldFallback.TYPE_LINE,
+      ),
+      subTypeLines: this.addFallbackString(
+        Array.from(subTypeLineSet),
+        CustomFieldFallback.SUB_TYPE_LINE,
+      ),
+    };
+  }
+
+  async getAllCustomFieldsCollection(): Promise<MapCFCollection> {
+    const mappedFields: MapCFCollection = {
+      setNames: {
+        name: CustomField.SET_NAME,
+        values: await this.getSetNames(),
+      },
+      colors: {
+        name: CustomField.COLOR,
+        values: await this.getColors(),
+      },
+      gameChangers: {
+        name: CustomField.GAME_CHANGER,
+        values: await this.getGameChangers(),
+      },
+      rarities: {
+        name: CustomField.RARITY,
+        values: await this.getRarities(),
+      },
+      setTypes: {
+        name: CustomField.SET_TYPE,
+        values: await this.getSetTypes(),
+      },
+      manaCosts: {
+        name: CustomField.MANA_COST,
+        values: await this.getManaCosts(),
+      },
+      cmcs: {
+        name: CustomField.CMC,
+        values: await this.getCmcs(),
+      },
+      powers: {
+        name: CustomField.POWER,
+        values: await this.getPowers(),
+      },
+      toughness: {
+        name: CustomField.TOUGHNESS,
+        values: await this.getToughness(),
+      },
+      colorIdentities: {
+        name: CustomField.COLOR_IDENTITY,
+        values: await this.getColorIdentities(),
+      },
+      keywords: {
+        name: CustomField.KEYWORDS,
+        values: await this.getKeywords(),
+      },
+      legalities: {
+        name: CustomField.LEGAL_FORMATS,
+        values: await this.getLegalities(),
+      },
+      artists: {
+        name: CustomField.ARTIST,
+        values: await this.getArtists(),
+      },
+      borderColors: {
+        name: CustomField.BORDER_COLOR,
+        values: await this.getBorderColors(),
+      },
+      fullArt: {
+        name: CustomField.FULL_ART,
+        values: await this.getFullArt(),
+      },
+      textless: {
+        name: CustomField.TEXTLESS,
+        values: await this.getTextless(),
+      },
+      typeLines: {
+        name: CustomField.TYPE_LINE,
+        values: (await this.getTypeLines()).typeLines,
+      },
+      subTypeLines: {
+        name: CustomField.SUB_TYPE_LINE,
+        values: (await this.getTypeLines()).subTypeLines,
+      },
+    };
+    return mappedFields;
+  }
+
+  private addFallbackString(values: string[], fallback: string): string[] {
+    const cleaned = values.map((v) => (v === '' ? fallback : v));
+    if (!cleaned.includes(fallback)) {
+      cleaned.push(fallback);
+    }
+    return cleaned;
   }
 }

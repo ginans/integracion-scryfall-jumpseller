@@ -1,10 +1,10 @@
 import { Type } from 'class-transformer';
 import { TypeEnum } from '../../prices/base-prices/enums/create-base-price.enum';
 export enum CustomField {
+  SET_NAME = 'Edición',
   COLOR = 'Color',
   GAME_CHANGER = 'Game Changer',
   RARITY = 'Rareza',
-  SET_NAME = 'Edición',
   SET_TYPE = 'Tipo de edición',
   MANA_COST = 'Coste de maná',
   CMC = 'Coste de maná convertido',
@@ -28,12 +28,20 @@ export enum CustomFieldTextBoolean {
 export enum CustomFieldFallback {
   COLOR = 'Sin color',
   MANA_COST = 'Sin coste de maná',
+  SET_NAME = 'Sin nombre de set',
+  SET_TYPE = 'Sin tipo de set',
+  RARITY = 'Sin rareza',
+  BORDER_COLOR = 'Sin color de borde',
   CMC = 'Sin coste de maná convertido',
+  ARTIST = 'Dibujante desconocido',
   POWER = 'Sin poder',
   TOUGHNESS = 'Sin resistencia',
   COLOR_IDENTITY = 'Sin identidad',
   KEYWORDS = 'Sin palabras claves',
   LEGAL_FORMATS = 'Ningún formato legal',
   TYPE_LINE = 'Sin tipo de carta',
-  SUB_TYPE_LINE = 'Sin subtipo'
+  SUB_TYPE_LINE = 'Sin subtipo',
+  FULL_ART = 'Desconocido',
+  TEXTLESS = 'Desconocido',
+  GAME_CHANGER = 'Desconocido',
 }

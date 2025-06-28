@@ -23,7 +23,13 @@ import { ProcessModule } from '../process/process.module';
     forwardRef(() => StagingProductVariantModule), 
   ],
   controllers: [MagicCardsController],
-  providers: [MagicCardsService, JumpsellerMapperService, CustomFieldsMapperService],
-  exports:[ScryfallModule, MagicCardsService, MongooseModule, CustomFieldsMapperService]
+  providers: [
+    MagicCardsService, JumpsellerMapperService, CustomFieldsMapperService],
+  exports:[
+    ScryfallModule,
+    MagicCardsService, 
+    MongooseModule, 
+    CustomFieldsMapperService
+  ]
 })
 export class MagicCardsModule {}

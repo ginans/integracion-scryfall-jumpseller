@@ -7,6 +7,7 @@ import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.
 import { MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
 import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
+import { MapCFCollection } from '../jumpseller/interfaces/map-CF-collection.interface';
 
 @Controller('magic-cards')
 export class MagicCardsController {
@@ -51,8 +52,12 @@ export class MagicCardsController {
     return this.magicCardsService.findCardByOracleId(oracleId);
   }
   @Get('sets')
-  async getAllSetName() : Promise<{sets: {setName: string, setPrefix: string}[]}> {
-    return this.magicCardsService.getAllSetName();
+  async getAllSets() : Promise<{sets: {setName: string, setPrefix: string}[]}> {
+    return this.magicCardsService.getAllSets();
+  }
+  @Get('customFieldData')
+  async getAllCustomFieldData() : Promise<MapCFCollection> {
+    return this.magicCardsService.getAllCustomFieldsCollection();
   }
   
   @Post("createNewCardAndVariant")

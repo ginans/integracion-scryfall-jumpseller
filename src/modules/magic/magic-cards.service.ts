@@ -690,7 +690,7 @@ export class MagicCardsService {
     const mappedFields: MapCFCollection = {
       setNames: {
         label: CustomField.SET_NAME,
-        type: 'selection',
+        type: 'selection',//TODO: PASAR A ENUM
         values: await this.getSetNames(),
       },
       colors: {

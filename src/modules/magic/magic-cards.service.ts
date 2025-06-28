@@ -689,79 +689,102 @@ export class MagicCardsService {
   async getAllCustomFieldsCollection(): Promise<MapCFCollection> {
     const mappedFields: MapCFCollection = {
       setNames: {
-        name: CustomField.SET_NAME,
+        label: CustomField.SET_NAME,
+        type: 'selection',
         values: await this.getSetNames(),
       },
       colors: {
-        name: CustomField.COLOR,
+        label: CustomField.COLOR,
+        type: 'selection',
         values: await this.getColors(),
       },
       gameChangers: {
-        name: CustomField.GAME_CHANGER,
+        label: CustomField.GAME_CHANGER,
+        type: 'selection',  
         values: await this.getGameChangers(),
       },
       rarities: {
-        name: CustomField.RARITY,
+        label: CustomField.RARITY,
+        type: 'selection',
         values: await this.getRarities(),
       },
       setTypes: {
-        name: CustomField.SET_TYPE,
+        label: CustomField.SET_TYPE,
+        type: 'selection',  
         values: await this.getSetTypes(),
       },
       manaCosts: {
-        name: CustomField.MANA_COST,
+        label: CustomField.MANA_COST,
+        type: 'selection',
         values: await this.getManaCosts(),
       },
       cmcs: {
-        name: CustomField.CMC,
+        label: CustomField.CMC,
+        type: 'selection',  
         values: await this.getCmcs(),
       },
       powers: {
-        name: CustomField.POWER,
+        label: CustomField.POWER,
+        type: 'selection',
         values: await this.getPowers(),
       },
       toughness: {
-        name: CustomField.TOUGHNESS,
+        label: CustomField.TOUGHNESS,
+        type: 'selection',  
         values: await this.getToughness(),
       },
       colorIdentities: {
-        name: CustomField.COLOR_IDENTITY,
+        label: CustomField.COLOR_IDENTITY,
+        type: 'selection',
         values: await this.getColorIdentities(),
       },
       keywords: {
-        name: CustomField.KEYWORDS,
+        label: CustomField.KEYWORDS,
+        type: 'selection', 
         values: await this.getKeywords(),
       },
       legalities: {
-        name: CustomField.LEGAL_FORMATS,
+        label: CustomField.LEGAL_FORMATS,
+        type: 'selection',
         values: await this.getLegalities(),
       },
       artists: {
-        name: CustomField.ARTIST,
+        label: CustomField.ARTIST,
+        type: 'selection',
         values: await this.getArtists(),
       },
       borderColors: {
-        name: CustomField.BORDER_COLOR,
+        label: CustomField.BORDER_COLOR,
+        type: 'selection',
         values: await this.getBorderColors(),
       },
       fullArt: {
-        name: CustomField.FULL_ART,
+        label: CustomField.FULL_ART,
+        type: 'selection',  
         values: await this.getFullArt(),
       },
       textless: {
-        name: CustomField.TEXTLESS,
+        label: CustomField.TEXTLESS,
+        type: 'selection',
         values: await this.getTextless(),
       },
       typeLines: {
-        name: CustomField.TYPE_LINE,
+        label: CustomField.TYPE_LINE,
+        type: 'selection',  
         values: (await this.getTypeLines()).typeLines,
       },
       subTypeLines: {
-        name: CustomField.SUB_TYPE_LINE,
+        label: CustomField.SUB_TYPE_LINE,
+        type: 'selection',
         values: (await this.getTypeLines()).subTypeLines,
       },
     };
     return mappedFields;
+  }
+
+  //TODO: PROBAR ENVIAR A JUMPSELLER 
+  private async sendToJumpseller(data: any): Promise<void> {
+    // Implement the logic to send data to Jumpseller
   }
 
   private addFallbackString(values: string[], fallback: string): string[] {

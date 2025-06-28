@@ -2,75 +2,93 @@ import { CustomField } from 'src/modules/magic/enums/custom-fields.enum';
 
 export interface MapCFCollection {
   setNames: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   colors: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   gameChangers: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: boolean[];
   };
   rarities: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   setTypes: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   manaCosts: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   cmcs: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: number[] | null | string[]; // Puede ser null si no hay CMC
   };
   powers: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   toughness: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   colorIdentities: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   keywords: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   legalities: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   artists: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   borderColors: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   textless: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: boolean[];
   };
   fullArt: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: boolean[];
   };
   typeLines: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
   subTypeLines: {
-    name: CustomField;
+    label: CustomField;
+    type: string;
     values: string[];
   };
 }

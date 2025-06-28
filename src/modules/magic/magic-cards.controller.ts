@@ -68,5 +68,4 @@ export class MagicCardsController {
     return this.magicCardsService.createNewMagicCardAndVariantToJumpseller(card, condition); 
   }
 
- 
 }

@@ -9,7 +9,6 @@ import {
   MapCFCollection,
 } from 'src/modules/jumpseller/interfaces/map-CF-collection.interface';
 import { createCustomFieldRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/createCustomfieldRequest.interface';
-import { map } from 'rxjs';
 import {
   translateColors,
   spanishRarities,
@@ -70,14 +69,18 @@ export class CustomFieldsMapperService {
           return CustomFieldFallback.COLOR;
         return card.colors.map((color) => translateColors(color));
       case CustomField.GAME_CHANGER:
+        if (!card.gameChanger) return CustomFieldFallback.GAME_CHANGER;
         return card?.gameChanger
           ? CustomFieldTextBoolean.YES
           : CustomFieldTextBoolean.NO;
       case CustomField.RARITY:
+        if (!card.rarity) return CustomFieldFallback.RARITY;
         return spanishRarities(card.rarity || 'common');
       case CustomField.SET_NAME:
+        if (!card.setName) return CustomFieldFallback.SET_NAME;
         return card.setName;
       case CustomField.SET_TYPE:
+        if (!card.setType) return CustomFieldFallback.SET_TYPE;
         return card.setType;
       case CustomField.MANA_COST:
         return card.manaCost ? card.manaCost : CustomFieldFallback.MANA_COST;
@@ -102,14 +105,18 @@ export class CustomFieldsMapperService {
           return CustomFieldFallback.LEGAL_FORMATS;
         }
       case CustomField.ARTIST:
+        if (!card.artist) return CustomFieldFallback.ARTIST;
         return card.artist;
       case CustomField.BORDER_COLOR:
+        if (!card.borderColor) return CustomFieldFallback.BORDER_COLOR;
         return translateColors(card.borderColor);
       case CustomField.TEXTLESS:
+        if (!card.textless) return CustomFieldFallback.TEXTLESS;
         return card.textless
           ? CustomFieldTextBoolean.YES
           : CustomFieldTextBoolean.NO;
       case CustomField.FULL_ART:
+        if (!card.typeLine) return CustomFieldFallback.TYPE_LINE;
         return card.fullArt
           ? CustomFieldTextBoolean.YES
           : CustomFieldTextBoolean.NO;

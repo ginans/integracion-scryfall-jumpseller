@@ -47,20 +47,29 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
         requestType: RequestTypeEnum;
         thereIsSpanishVersion?: boolean;
         productId?: number;
-        lang?: Language[]
+        lang?: Language[];
       },
       string,
       string
     >,
   ) {
-    const { body, requestType, enCard, esCard, thereIsSpanishVersion, productId, lang } = job.data;
+    const {
+      body,
+      requestType,
+      enCard,
+      esCard,
+      thereIsSpanishVersion,
+      productId,
+      lang,
+    } = job.data;
 
     try {
       switch (requestType) {
         case RequestTypeEnum.PRODUCTS:
-          const createdProduct : JumpsellerProductResponse = await this.magicCardsService.createProductJumpseller(
-            body as JumpsellerProductRequest,
-          );
+          const createdProduct: JumpsellerProductResponse =
+            await this.magicCardsService.createProductJumpseller(
+              body as JumpsellerProductRequest,
+            );
           // Validar que el producto se creó correctamente
           if (!createdProduct) {
             throw new Error(
@@ -75,7 +84,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           );
 
           //enviar al job 7
-           await this.JumpsellerRequestCoordinatorQueue.add(
+          await this.JumpsellerRequestCoordinatorQueue.add(
             `Coordinator Job`, //nombre del job
             {
               enCard: enCard,
@@ -85,16 +94,25 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
               lang: lang,
             },
             {
-              delay: 500 , // Esperar 500 ms antes de procesar
-            }
+              delay: 500, // Esperar 500 ms antes de procesar
+            },
           );
           break;
         case RequestTypeEnum.CUSTOM_FIELDS:
           if (body as AddAnExistingCustomFieldToAProductRequest) {
-            await this.jumpsellerService.addCustomFieldInProduct(
-              productId,
-              body as AddAnExistingCustomFieldToAProductRequest,
+            console.log(
+              `🔧 Enviando CUSTOMFIELDS al BAZINGA final ✨: ${JSON.stringify(body)}`,
             );
+            const response =
+              await this.jumpsellerService.addCustomFieldInProduct(
+                productId,
+                body as AddAnExistingCustomFieldToAProductRequest,
+              );
+            if (!response) {
+              throw new Error(
+                `❌ No se pudo enviar el custom field ${enCard.id} - ${enCard.name}. Respuesta: ${JSON.stringify(response)}`,
+              );
+            }
           } else {
             throw new Error(
               `Faltan datos para crear el campo personalizado en el producto con id: ${productId}`,
@@ -125,10 +143,12 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           if (!variant || !variant.sku) {
             throw new Error(`Missing variant data for product ID ${productId}`);
           }
-          console.log (
-            `🔧 Enviando VARIANTE al BAZINGA ✨: ${JSON.stringify(variant)}`)
-          console.log (
-            `🔧 Enviando VARIANTE al BAZINGA DE JUMPSELLER ✨: ${JSON.stringify({variant})} - ID ${productId}`)
+          console.log(
+            `🔧 Enviando VARIANTE al BAZINGA ✨: ${JSON.stringify(variant)}`,
+          );
+          console.log(
+            `🔧 Enviando VARIANTE al BAZINGA DE JUMPSELLER ✨: ${JSON.stringify({ variant })} - ID ${productId}`,
+          );
 
           const variantResponse =
             await this.magicCardsService.createJumpsellerVariant(productId, {

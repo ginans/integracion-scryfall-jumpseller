@@ -607,11 +607,14 @@ export class MagicCardsService {
       CustomFieldFallback.COLOR,
     );
   }
-  async getGameChangers(): Promise<boolean[]> {
+  async getGameChangers(): Promise<string[]> {
     const gameChangers = await this.model.distinct('gameChanger').exec();
     const uniqueGameChangers = new Set(gameChangers);
-    return Array.from(uniqueGameChangers);
-  }
+    // Convertir a string y agregar fallback
+    return Array.from(uniqueGameChangers).map((name) => {
+      return name ? 'Sí' : 'No';
+    }) ;
+  } 
   async getRarities(): Promise<string[]> {
     const rarityNames = await this.model.distinct('rarity').exec();
     return this.addFallbackString(
@@ -627,9 +630,16 @@ export class MagicCardsService {
     const manaCostNames = await this.model.distinct('manaCost').exec();
     return this.addFallbackString(manaCostNames, CustomFieldFallback.MANA_COST);
   }
-  async getCmcs(): Promise<number[]> {
+  async getCmcs(): Promise<string[]> {
     const cmcNames = await this.model.distinct('cmc').exec();
-    return cmcNames;
+    //convertir a string
+    const cmcNamesAsString = cmcNames.map((name) => String(name));
+    //agregar el fallback
+   const response = this.addFallbackString(
+      cmcNamesAsString,
+      CustomFieldFallback.CMC,
+    );
+    return response;
   }
   async getPowers(): Promise<string[]> {
     const powerNames = await this.model.distinct('power').exec();
@@ -688,13 +698,33 @@ export class MagicCardsService {
       CustomFieldFallback.BORDER_COLOR,
     );
   }
-  async getFullArt(): Promise<boolean[]> {
+  async getFullArt(): Promise<string[]> {
     const fullArtNames = await this.model.distinct('fullArt').exec();
-    return fullArtNames;
+    //si es true que ponga si, si es false, que ponga no
+    const uniqueFullArtNames = new Set(fullArtNames);
+    const fullArtNamesAsString = Array.from(uniqueFullArtNames).map((name) => {
+      return name ? 'Sí' : 'No';
+    });
+    //agregar el fallback
+   const response = this.addFallbackString(
+      fullArtNamesAsString,
+      CustomFieldFallback.FULL_ART,
+    );
+    return response;
   }
-  async getTextless(): Promise<boolean[]> {
+  async getTextless(): Promise<string[]> {
     const textlessNames = await this.model.distinct('textless').exec();
-    return textlessNames;
+    //si es true que ponga si, si es false, que ponga no
+    const uniqueTextlessNames = new Set(textlessNames);
+    const textlessNamesAsString = Array.from(uniqueTextlessNames).map((name) => {
+      return name ? 'Sí' : 'No';
+    });
+    //agregar el fallback
+    const response = this.addFallbackString(
+      textlessNamesAsString,
+      CustomFieldFallback.TEXTLESS,
+    );
+    return response;
   }
   async getTypeLines(): Promise<{
     typeLines: string[];

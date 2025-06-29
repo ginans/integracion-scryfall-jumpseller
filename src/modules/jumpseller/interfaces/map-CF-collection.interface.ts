@@ -1,7 +1,7 @@
 import { CustomField } from 'src/modules/magic/enums/custom-fields.enum';
 export interface CleanMapCFCollection {
   label: CustomField;
-  values: string[] | boolean[] | number[] | null;
+  values: string[];
 }
 
 export interface MapCFCollection {
@@ -15,7 +15,7 @@ export interface MapCFCollection {
   };
   gameChangers: {
     label: CustomField;
-    values: boolean[];
+    values: string[];
   };
   rarities: {
     label: CustomField;
@@ -31,7 +31,7 @@ export interface MapCFCollection {
   };
   cmcs: {
     label: CustomField;
-    values: number[] | null;
+    values: string[];
   };
   powers: {
     label: CustomField;
@@ -63,11 +63,11 @@ export interface MapCFCollection {
   };
   textless: {
     label: CustomField;
-    values: boolean[];
+    values: string[];
   };
   fullArt: {
     label: CustomField;
-    values: boolean[];
+    values: string[];
   };
   typeLines: {
     label: CustomField;
@@ -83,11 +83,11 @@ export interface MapCFCollection {
 export interface CustomFieldValues {
   setNames: string[];
   colors: string[];
-  gameChangers: boolean[];
+  gameChangers: string[];
   rarities: string[];
   setTypes: string[];
   manaCosts: string[];
-  cmcs: number[] | null;
+  cmcs: string[];
   powers: string[];
   toughness: string[];
   colorIdentities: string[];
@@ -95,8 +95,8 @@ export interface CustomFieldValues {
   legalities: string[];
   artists: string[];
   borderColors: string[];
-  textless: boolean[];
-  fullArt: boolean[];
+  textless: string[];
+  fullArt: string[];
   typeLines: string[];
   subTypeLines: string[];
 }

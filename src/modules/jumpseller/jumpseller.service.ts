@@ -160,12 +160,13 @@ export class JumpsellerService {
   async addCustomFieldInProduct(
     productId: number,
     customFields: AddAnExistingCustomFieldToAProductRequest,
-  ): Promise<void> {
+  ): Promise<AddAnExistingCustomFieldToAProductResponse> {
     try {
-      await this.client.post(
+      const { data } = await this.client.post(
         `${JumpsellerEndpoints.PRODUCT}/${productId}/${JumpsellerEndpoints.FIELDS}`,
         customFields,
       );
+      return data as AddAnExistingCustomFieldToAProductResponse;
     } catch (error) {
       this.logger.error(
         `❌ Error al crear campos personalizados en Jumpseller: ${error.message}`,

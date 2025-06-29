@@ -57,9 +57,7 @@ export class CreateCustomFieldsRequestProcessor extends WorkerHost {
       // Usar cache de custom fields
       const fetchedCustomFields = await this.getCachedCustomFields();
       if (!fetchedCustomFields || fetchedCustomFields.length === 0) return;
-      console.log(
-        `🔧 Enviando CUSTOMFIELDS al MAPEO POZOLE ✨: ${JSON.stringify(fetchedCustomFields)}`,
-      );
+      
       const requestsCustomFields =
         await this.customFieldsMapperService.mappedCustomFields(
           enCard,

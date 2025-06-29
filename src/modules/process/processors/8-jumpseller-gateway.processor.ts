@@ -90,23 +90,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
               delay: 500 , // Esperar 500 ms antes de procesar
             }
           );
-          
-          
           break;
-
-        case RequestTypeEnum.CREATE_CUSTOM_FIELDS:
-          if (!(body as createCustomFieldRequest)) {
-            throw new Error(`Missing product data for custom field creation`);
-          }
-          const req =  body as createCustomFieldRequest;
-          const customFieldResponse = await this.jumpsellerService.createCustomField(
-            req,
-          );
-          if (!customFieldResponse) {
-            throw new Error(
-              `❌ No se pudo crear el campo personalizado en la tienda Respuesta: ${JSON.stringify(customFieldResponse)}`,
-            );
-          }
         case RequestTypeEnum.CUSTOM_FIELDS:
           if (body as AddAnExistingCustomFieldToAProductRequest) {
             await this.jumpsellerService.addCustomFieldInProduct(

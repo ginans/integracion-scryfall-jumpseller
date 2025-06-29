@@ -5,87 +5,47 @@ import { ScryfallCardResponse } from 'src/modules/magic/submodules/scryfall/inte
 import { MagicCardDocument } from '../../magic/entities/magic-card.entity';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 
+
 @Processor('2-save-magic-cards', { concurrency: 80 })
 export class SaveMagicCardsProcessor extends WorkerHost {
   constructor(
     private readonly magicCardsService: MagicCardsService,
-    @InjectQueue('3-create-product-request')
-    private readonly createProductJumpsellerQueue: Queue<
-      {
-        enCard: MagicCardDocument;
-        esCard?: MagicCardDocument | null;
-        thereIsSpanishVersion: boolean;
-      },
-      string,
-      string
-    >,
-    @InjectQueue('3.5-create-or-update-CF')
-    private readonly createOrUpdateCustomFieldsQueue: Queue<
-      {
-        isCardCreated: boolean;
-        totalExpected: number;
-      },
-      string,
-      string
-    >,
-  ) {
-    super();
-  }
-  async process(
-    job: Job<
-      { card: ScryfallCardResponse; totalCards: number },
-      string,
-      string
-    >,
-  ): Promise<any> {
-    let thereIsSpanishVersion = false;
-    const versionES = await this.magicCardsService.getCardInOtherLang(
-      ILangUrlEnum.ES,
-      job.data.card.oracle_id,
-      job.data.card.collector_number,
-      job.data.card.set,
-    );
+    @InjectQueue('3-create-product-request') private readonly createProductJumpsellerQueue: Queue<{ enCard: MagicCardDocument, esCard?: MagicCardDocument | null, thereIsSpanishVersion: boolean }, string, string>,
+  ) { super() }
+  async process(job: Job<{ card: ScryfallCardResponse }, string, string>): Promise<any> {
+    let thereIsSpanishVersion = false
+     const versionES = await this.magicCardsService.getCardInOtherLang(ILangUrlEnum.ES, job.data.card.oracle_id, job.data.card.collector_number, job.data.card.set);
     try {
       const { card } = job.data;
       await job.updateProgress(25);
       //crea en base de datos
       await this.magicCardsService.createMagicCards(job.data.card);
-      const cardInDB = await this.magicCardsService.findCardByScryfallId(
-        card.id,
-      );
+      const cardInDB = await this.magicCardsService.findCardByScryfallId(card.id);
       if (!cardInDB) {
         throw new Error('Card not found in database after creation');
       }
       await job.updateProgress(40);
-
-      // Enviar a la cola de creación de custom fields
-      const cfJob = await this.createOrUpdateCustomFieldsQueue.add(
-        `DB CF: ${cardInDB.id}`, //nombre del job
-        { isCardCreated: true, totalExpected: job.data.totalCards }, //datos del job
-        { jobId: String(cardInDB.id) }, //identificador único del job
-      );
-
       // Si la carta existe en español, crea la versión en español
-      let newEsCard = null;
+      let newEsCard = null
       if (card && versionES) {
         //crear la versión en español si existe
         newEsCard = await this.magicCardsService.createMagicCards(versionES);
         if (newEsCard) {
-          thereIsSpanishVersion = true;
+          thereIsSpanishVersion = true
         }
       }
       await job.updateProgress(50);
       // Enviar a la cola de creación de productos en Jumpseller
       await this.createProductJumpsellerQueue.add(
-        `DB product: ${cardInDB.id}`, //nombre del job
-        { enCard: cardInDB, esCard: newEsCard, thereIsSpanishVersion }, //datos del job
-        { jobId: String(cardInDB.id) }, //identificador único del job
+        `DB product: ${cardInDB.id}`,//nombre del job
+        { enCard: cardInDB, esCard: newEsCard, thereIsSpanishVersion },//datos del job
+        { jobId: String(cardInDB.id) } //identificador único del job
       );
       await job.updateProgress(100);
       return {
         enCardId: cardInDB.id,
-        cfJobId: cfJob.id,
-      };
+        spanishVersion: thereIsSpanishVersion,
+      }
     } catch (error) {
       throw new Error(`Job failed at step: ${error.message}`);
     }

@@ -10,7 +10,6 @@ import { RequestTypeEnum } from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
-import { createCustomFieldRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/createCustomfieldRequest.interface';
 
 @Processor('8-jumpseller-gateway', {
   concurrency: 15,
@@ -44,8 +43,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           | JumpsellerProductRequest
           | JumpsellerCreateVariantRequestForBD
           | ICreateImageRequest
-          | AddAnExistingCustomFieldToAProductRequest
-          | createCustomFieldRequest;
+          | AddAnExistingCustomFieldToAProductRequest;
         requestType: RequestTypeEnum;
         thereIsSpanishVersion?: boolean;
         productId?: number;

@@ -10,6 +10,7 @@ import { RequestTypeEnum } from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
+import { createCustomFieldRequest } from 'src/modules/jumpseller/interfaces/custom-fields-jumpseller/createCustomfieldRequest.interface';
 
 @Processor('8-jumpseller-gateway', {
   concurrency: 15,
@@ -43,7 +44,8 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           | JumpsellerProductRequest
           | JumpsellerCreateVariantRequestForBD
           | ICreateImageRequest
-          | AddAnExistingCustomFieldToAProductRequest;
+          | AddAnExistingCustomFieldToAProductRequest
+          | createCustomFieldRequest;
         requestType: RequestTypeEnum;
         thereIsSpanishVersion?: boolean;
         productId?: number;
@@ -91,6 +93,20 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           
           
           break;
+
+        case RequestTypeEnum.CREATE_CUSTOM_FIELDS:
+          if (!(body as createCustomFieldRequest)) {
+            throw new Error(`Missing product data for custom field creation`);
+          }
+          const req =  body as createCustomFieldRequest;
+          const customFieldResponse = await this.jumpsellerService.createCustomField(
+            req,
+          );
+          if (!customFieldResponse) {
+            throw new Error(
+              `❌ No se pudo crear el campo personalizado en la tienda Respuesta: ${JSON.stringify(customFieldResponse)}`,
+            );
+          }
         case RequestTypeEnum.CUSTOM_FIELDS:
           if (body as AddAnExistingCustomFieldToAProductRequest) {
             await this.jumpsellerService.addCustomFieldInProduct(

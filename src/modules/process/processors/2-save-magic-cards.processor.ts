@@ -22,8 +22,8 @@ export class SaveMagicCardsProcessor extends WorkerHost {
     @InjectQueue('3.5-create-or-update-CF')
     private readonly createOrUpdateCustomFieldsQueue: Queue<
       {
-        enCard: MagicCardDocument;
         isCardCreated: boolean;
+        totalExpected: number;
       },
       string,
       string
@@ -32,7 +32,11 @@ export class SaveMagicCardsProcessor extends WorkerHost {
     super();
   }
   async process(
-    job: Job<{ card: ScryfallCardResponse }, string, string>,
+    job: Job<
+      { card: ScryfallCardResponse; totalCards: number },
+      string,
+      string
+    >,
   ): Promise<any> {
     let thereIsSpanishVersion = false;
     const versionES = await this.magicCardsService.getCardInOtherLang(
@@ -55,9 +59,9 @@ export class SaveMagicCardsProcessor extends WorkerHost {
       await job.updateProgress(40);
 
       // Enviar a la cola de creación de custom fields
-      await this.createOrUpdateCustomFieldsQueue.add(
+      const cfJob = await this.createOrUpdateCustomFieldsQueue.add(
         `DB CF: ${cardInDB.id}`, //nombre del job
-        { enCard: cardInDB, isCardCreated: true }, //datos del job
+        { isCardCreated: true, totalExpected: job.data.totalCards }, //datos del job
         { jobId: String(cardInDB.id) }, //identificador único del job
       );
 
@@ -80,7 +84,7 @@ export class SaveMagicCardsProcessor extends WorkerHost {
       await job.updateProgress(100);
       return {
         enCardId: cardInDB.id,
-        spanishVersion: thereIsSpanishVersion,
+        cfJobId: cfJob.id,
       };
     } catch (error) {
       throw new Error(`Job failed at step: ${error.message}`);

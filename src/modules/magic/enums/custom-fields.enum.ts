@@ -45,3 +45,9 @@ export enum CustomFieldFallback {
   TEXTLESS = 'Desconocido',
   GAME_CHANGER = 'Desconocido',
 }
+
+export enum CustomFieldTypeEnum {
+  SELECTION = 'selection',
+  TEXT = 'text',
+  INPUT = 'input',
+}

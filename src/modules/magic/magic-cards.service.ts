@@ -48,9 +48,13 @@ import {
 } from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { JumpsellerCreateVariantResponse } from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
-import { MapCFCollection } from '../jumpseller/interfaces/map-CF-collection.interface';
+import { CustomFieldValues, MapCFCollection } from '../jumpseller/interfaces/map-CF-collection.interface';
 import { CustomField, CustomFieldFallback } from './enums/custom-fields.enum';
 import {spanishRarities, translateColors} from '../../common/utils/traduction.util';
+import { createCustomFieldRequest } from '../jumpseller/interfaces/custom-fields-jumpseller/createCustomfieldRequest.interface';
+import { CreateCustomFieldResponse } from '../jumpseller/interfaces/custom-fields-jumpseller/createCustomFieldResponse.interface';
+import { UpdateCustomFieldRequest } from '../jumpseller/interfaces/custom-fields-jumpseller/updateCustomFieldRequest.interface';
+import { UpdateCustomFieldResponse } from '../jumpseller/interfaces/custom-fields-jumpseller/updateCustomFieldResponse.interface';
 
 @Injectable()
 export class MagicCardsService {
@@ -561,6 +565,34 @@ export class MagicCardsService {
     }
   }
 
+  async createCustomFields(
+    customField: createCustomFieldRequest,
+  ): Promise<CreateCustomFieldResponse> {
+    try {
+      const response = await this.jumpsellerService.createCustomField(
+        customField,
+      );
+      return response;
+    } catch (error) {
+      this.logger.error('Error creando los custom fields', error);
+      throw error;
+    }
+  }
+  async updateCustomFields(
+    customField: UpdateCustomFieldRequest,
+    productId: number,
+  ): Promise<UpdateCustomFieldResponse> {
+    try {
+      const response = await this.jumpsellerService.updateCustomField(
+        customField,
+        productId,
+      );
+      return response;
+    } catch (error) {
+      this.logger.error('Error actualizando los custom fields', error);
+      throw error;
+    }
+  }
   //para crear campos personalizados en jumpseller vamos a traer todos los campos necesarios desde la bd para armar la creacion
   async getSetNames(): Promise<string[]> {
     const setNames = await this.model.distinct('setName').exec();
@@ -602,7 +634,6 @@ export class MagicCardsService {
       CustomFieldFallback.TOUGHNESS,
     );
   }
-
   async getColorIdentities(): Promise<string[]> {
     const colorIdentityNames = await this.model
       .distinct('colorIdentity')
@@ -686,101 +717,29 @@ export class MagicCardsService {
     };
   }
 
-  async getAllCustomFieldsCollection(): Promise<MapCFCollection> {
-    const mappedFields: MapCFCollection = {
-      setNames: {
-        label: CustomField.SET_NAME,
-        type: 'selection',//TODO: PASAR A ENUM
-        values: await this.getSetNames(),
-        //TODO: AGREGAR VISIBILIDAD EN JUMPSELLER
-      },
-      colors: {
-        label: CustomField.COLOR,
-        type: 'selection',
-        values: await this.getColors(),
-      },
-      gameChangers: {
-        label: CustomField.GAME_CHANGER,
-        type: 'selection',  
-        values: await this.getGameChangers(),
-      },
-      rarities: {
-        label: CustomField.RARITY,
-        type: 'selection',
-        values: await this.getRarities(),
-      },
-      setTypes: {
-        label: CustomField.SET_TYPE,
-        type: 'selection',  
-        values: await this.getSetTypes(),
-      },
-      manaCosts: {
-        label: CustomField.MANA_COST,
-        type: 'selection',
-        values: await this.getManaCosts(),
-      },
-      cmcs: {
-        label: CustomField.CMC,
-        type: 'selection',  
-        values: await this.getCmcs(),
-      },
-      powers: {
-        label: CustomField.POWER,
-        type: 'selection',
-        values: await this.getPowers(),
-      },
-      toughness: {
-        label: CustomField.TOUGHNESS,
-        type: 'selection',  
-        values: await this.getToughness(),
-      },
-      colorIdentities: {
-        label: CustomField.COLOR_IDENTITY,
-        type: 'selection',
-        values: await this.getColorIdentities(),
-      },
-      keywords: {
-        label: CustomField.KEYWORDS,
-        type: 'selection', 
-        values: await this.getKeywords(),
-      },
-      legalities: {
-        label: CustomField.LEGAL_FORMATS,
-        type: 'selection',
-        values: await this.getLegalities(),
-      },
-      artists: {
-        label: CustomField.ARTIST,
-        type: 'selection',
-        values: await this.getArtists(),
-      },
-      borderColors: {
-        label: CustomField.BORDER_COLOR,
-        type: 'selection',
-        values: await this.getBorderColors(),
-      },
-      fullArt: {
-        label: CustomField.FULL_ART,
-        type: 'selection',  
-        values: await this.getFullArt(),
-      },
-      textless: {
-        label: CustomField.TEXTLESS,
-        type: 'selection',
-        values: await this.getTextless(),
-      },
-      typeLines: {
-        label: CustomField.TYPE_LINE,
-        type: 'selection',  
-        values: (await this.getTypeLines()).typeLines,
-      },
-      subTypeLines: {
-        label: CustomField.SUB_TYPE_LINE,
-        type: 'selection',
-        values: (await this.getTypeLines()).subTypeLines,
-      },
-    };
-    return mappedFields;
+  async getAllCFValues(): Promise<CustomFieldValues> {
+   const setNames = await this.getSetNames();
+   const colors = await this.getColors();
+   const gameChangers = await this.getGameChangers();
+   const rarities = await this.getRarities();
+   const setTypes = await this.getSetTypes();
+   const manaCosts = await this.getManaCosts();
+   const cmcs = await this.getCmcs();
+   const powers = await this.getPowers();
+   const toughness = await this.getToughness();
+   const colorIdentities = await this.getColorIdentities();
+   const keywords = await this.getKeywords();
+   const legalities = await this.getLegalities();
+   const artists = await this.getArtists();
+   const borderColors = await this.getBorderColors();
+   const fullArt = await this.getFullArt();
+   const textless = await this.getTextless();
+   const typeLines = (await this.getTypeLines()).typeLines;
+   const subTypeLines = (await this.getTypeLines()).subTypeLines;
+   return {
+    setNames, colors, gameChangers, rarities, setTypes, manaCosts, cmcs, powers, toughness,
+    colorIdentities, keywords, legalities, artists, borderColors, fullArt, textless, typeLines, subTypeLines
+   }
   }
 
   //TODO: PROBAR ENVIAR A JUMPSELLER 

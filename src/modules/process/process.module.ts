@@ -66,6 +66,16 @@ import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller
       name: '3-create-product-request',
       adapter: BullMQAdapter,
     }),
+    BullModule.registerQueue({
+      name: '3.5-create-or-update-CF',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '3.5-create-or-update-CF',
+      adapter: BullMQAdapter,
+    }),
     //Job Check Variants Cards
     BullModule.registerQueue({
       name: '4-create-images-request',
@@ -217,7 +227,8 @@ import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller
     JumpsellerGatewayProcessor,
     UpdateStockSalesProcessor,
     SaveOrderProcessor,
-    JumpsellerRequestCoordinatorProcessor
+    JumpsellerRequestCoordinatorProcessor,
+    CreateCustomFieldsRequestProcessor
   ],
 })
 export class ProcessModule {}

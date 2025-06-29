@@ -1,94 +1,102 @@
 import { CustomField } from 'src/modules/magic/enums/custom-fields.enum';
+export interface CleanMapCFCollection {
+  label: CustomField;
+  values: string[] | boolean[] | number[] | null;
+}
 
 export interface MapCFCollection {
   setNames: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   colors: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   gameChangers: {
     label: CustomField;
-    type: string;
     values: boolean[];
   };
   rarities: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   setTypes: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   manaCosts: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   cmcs: {
     label: CustomField;
-    type: string;
-    values: number[] | null | string[]; // Puede ser null si no hay CMC
+    values: number[] | null;
   };
   powers: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   toughness: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   colorIdentities: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   keywords: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   legalities: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   artists: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   borderColors: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   textless: {
     label: CustomField;
-    type: string;
     values: boolean[];
   };
   fullArt: {
     label: CustomField;
-    type: string;
     values: boolean[];
   };
   typeLines: {
     label: CustomField;
-    type: string;
     values: string[];
   };
   subTypeLines: {
     label: CustomField;
-    type: string;
     values: string[];
   };
+}
+
+// Interfaz para valores de custom fields
+export interface CustomFieldValues {
+  setNames: string[];
+  colors: string[];
+  gameChangers: boolean[];
+  rarities: string[];
+  setTypes: string[];
+  manaCosts: string[];
+  cmcs: number[] | null;
+  powers: string[];
+  toughness: string[];
+  colorIdentities: string[];
+  keywords: string[];
+  legalities: string[];
+  artists: string[];
+  borderColors: string[];
+  textless: boolean[];
+  fullArt: boolean[];
+  typeLines: string[];
+  subTypeLines: string[];
 }

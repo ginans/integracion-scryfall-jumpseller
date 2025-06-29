@@ -27,10 +27,11 @@ import { OrdersModule } from '../orders/orders.module';
 import { CreateImagesRequestProcessor } from './processors/4-create-images-request.processor';
 import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request.processor';
 import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller-request-coordinator.processor';
+import { RedisCacheService } from 'src/common/services/redis-cache.service';
 
 @Module({
   imports: [
-    forwardRef(()=> MagicCardsModule),
+    forwardRef(() => MagicCardsModule),
     JumpsellerModule,
     StagingProductVariantModule,
     BasePricesModule,
@@ -144,56 +145,56 @@ import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller
     }),
     //recalcular precios por precios base
     BullModule.registerQueue({
-      name: "queues-recalculate-prices-by-base",
+      name: 'queues-recalculate-prices-by-base',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "queues-recalculate-prices-by-base",
+      name: 'queues-recalculate-prices-by-base',
       adapter: BullMQAdapter,
     }),
     //recalcular precios por precios del dolar
     BullModule.registerQueue({
-      name: "queues-recalculate-prices-by-usd",
+      name: 'queues-recalculate-prices-by-usd',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "queues-recalculate-prices-by-usd",
+      name: 'queues-recalculate-prices-by-usd',
       adapter: BullMQAdapter,
     }),
     //actualizar precios desde el front, individuales y masivos
     BullModule.registerQueue({
-      name: "update-prices-from-front",
+      name: 'update-prices-from-front',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "update-prices-from-front",
+      name: 'update-prices-from-front',
       adapter: BullMQAdapter,
     }),
     //recibir y guardar orden desde el webhook de jumpseller
     BullModule.registerQueue({
-      name: "save-order",
+      name: 'save-order',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "save-order",
+      name: 'save-order',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: "update-stock-sales",
+      name: 'update-stock-sales',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "update-stock-sales",
+      name: 'update-stock-sales',
       adapter: BullMQAdapter,
     }),
   ],
@@ -201,8 +202,9 @@ import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller
   exports: [ProcessService, BullModule],
   providers: [
     ProcessService,
+    RedisCacheService,
     QueuesStock,
-    QueuesApiPrices, 
+    QueuesApiPrices,
     QueuesRecalculatePricesByBase,
     QueuesRecalculatePricesByUds,
     QueuesPricesFromFront,

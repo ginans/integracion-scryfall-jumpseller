@@ -6,10 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
-import {
-  MagicCard,
-  MagicCardDocument,
-} from './entities/magic-card.entity';
+import { MagicCard, MagicCardDocument } from './entities/magic-card.entity';
 import { Model, set, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import {
@@ -48,9 +45,15 @@ import {
 } from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { JumpsellerCreateVariantResponse } from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
-import { CustomFieldValues, MapCFCollection } from '../jumpseller/interfaces/map-CF-collection.interface';
+import {
+  CustomFieldValues,
+  MapCFCollection,
+} from '../jumpseller/interfaces/map-CF-collection.interface';
 import { CustomField, CustomFieldFallback } from './enums/custom-fields.enum';
-import {spanishRarities, translateColors} from '../../common/utils/traduction.util';
+import {
+  spanishRarities,
+  translateColors,
+} from '../../common/utils/traduction.util';
 import { createCustomFieldRequest } from '../jumpseller/interfaces/custom-fields-jumpseller/createCustomfieldRequest.interface';
 import { CreateCustomFieldResponse } from '../jumpseller/interfaces/custom-fields-jumpseller/createCustomFieldResponse.interface';
 import { UpdateCustomFieldRequest } from '../jumpseller/interfaces/custom-fields-jumpseller/updateCustomFieldRequest.interface';
@@ -569,9 +572,8 @@ export class MagicCardsService {
     customField: createCustomFieldRequest,
   ): Promise<CreateCustomFieldResponse> {
     try {
-      const response = await this.jumpsellerService.createCustomField(
-        customField,
-      );
+      const response =
+        await this.jumpsellerService.createCustomField(customField);
       return response;
     } catch (error) {
       this.logger.error('Error creando los custom fields', error);
@@ -600,7 +602,10 @@ export class MagicCardsService {
   }
   async getColors(): Promise<string[]> {
     const colorNames = await this.model.distinct('colors').exec();
-    return this.addFallbackString(colorNames.map((name) => translateColors(name)), CustomFieldFallback.COLOR);
+    return this.addFallbackString(
+      colorNames.map((name) => translateColors(name)),
+      CustomFieldFallback.COLOR,
+    );
   }
   async getGameChangers(): Promise<boolean[]> {
     const gameChangers = await this.model.distinct('gameChanger').exec();
@@ -609,7 +614,10 @@ export class MagicCardsService {
   }
   async getRarities(): Promise<string[]> {
     const rarityNames = await this.model.distinct('rarity').exec();
-    return this.addFallbackString(rarityNames.map((name) => spanishRarities(name)), CustomFieldFallback.RARITY);
+    return this.addFallbackString(
+      rarityNames.map((name) => spanishRarities(name)),
+      CustomFieldFallback.RARITY,
+    );
   }
   async getSetTypes(): Promise<string[]> {
     const setTypeNames = await this.model.distinct('setType').exec();
@@ -718,33 +726,144 @@ export class MagicCardsService {
   }
 
   async getAllCFValues(): Promise<CustomFieldValues> {
-   const setNames = await this.getSetNames();
-   const colors = await this.getColors();
-   const gameChangers = await this.getGameChangers();
-   const rarities = await this.getRarities();
-   const setTypes = await this.getSetTypes();
-   const manaCosts = await this.getManaCosts();
-   const cmcs = await this.getCmcs();
-   const powers = await this.getPowers();
-   const toughness = await this.getToughness();
-   const colorIdentities = await this.getColorIdentities();
-   const keywords = await this.getKeywords();
-   const legalities = await this.getLegalities();
-   const artists = await this.getArtists();
-   const borderColors = await this.getBorderColors();
-   const fullArt = await this.getFullArt();
-   const textless = await this.getTextless();
-   const typeLines = (await this.getTypeLines()).typeLines;
-   const subTypeLines = (await this.getTypeLines()).subTypeLines;
-   return {
-    setNames, colors, gameChangers, rarities, setTypes, manaCosts, cmcs, powers, toughness,
-    colorIdentities, keywords, legalities, artists, borderColors, fullArt, textless, typeLines, subTypeLines
-   }
+    const setNames = await this.getSetNames();
+    const colors = await this.getColors();
+    const gameChangers = await this.getGameChangers();
+    const rarities = await this.getRarities();
+    const setTypes = await this.getSetTypes();
+    const manaCosts = await this.getManaCosts();
+    const cmcs = await this.getCmcs();
+    const powers = await this.getPowers();
+    const toughness = await this.getToughness();
+    const colorIdentities = await this.getColorIdentities();
+    const keywords = await this.getKeywords();
+    const legalities = await this.getLegalities();
+    const artists = await this.getArtists();
+    const borderColors = await this.getBorderColors();
+    const fullArt = await this.getFullArt();
+    const textless = await this.getTextless();
+    const typeLines = (await this.getTypeLines()).typeLines;
+    const subTypeLines = (await this.getTypeLines()).subTypeLines;
+    return {
+      setNames,
+      colors,
+      gameChangers,
+      rarities,
+      setTypes,
+      manaCosts,
+      cmcs,
+      powers,
+      toughness,
+      colorIdentities,
+      keywords,
+      legalities,
+      artists,
+      borderColors,
+      fullArt,
+      textless,
+      typeLines,
+      subTypeLines,
+    };
   }
 
-  //TODO: PROBAR ENVIAR A JUMPSELLER 
-  private async sendToJumpseller(data: any): Promise<void> {
-    // Implement the logic to send data to Jumpseller
+  //TODO: PROBAR ENVIAR A JUMPSELLER
+  async createCFBody(): Promise<createCustomFieldRequest[]> {
+    const values = await this.getAllCFValues();
+    //mapear los valores y labels
+    const CF: MapCFCollection =
+      await this.customFieldsMapperService.mappedCFLabelAndValues(values);
+    const {
+      setNames,
+      colors,
+      gameChangers,
+      rarities,
+      setTypes,
+      artists,
+      borderColors,
+      fullArt,
+      textless,
+      typeLines,
+      subTypeLines,
+      cmcs,
+      colorIdentities,
+      manaCosts,
+      powers,
+      toughness,
+      keywords,
+      legalities,
+    } = CF;
+    //retornar el resultado mapeado para jumpseller
+    const req = this.customFieldsMapperService.mapCreateCustomFieldsRequest([
+      setNames,
+      colors,
+      gameChangers,
+      rarities,
+      setTypes,
+      artists,
+      borderColors,
+      fullArt,
+      textless,
+      typeLines,
+      subTypeLines,
+      cmcs,
+      colorIdentities,
+      manaCosts,
+      powers,
+      toughness,
+      keywords,
+      legalities,
+    ]);
+    return req;
+  }
+
+  async sentCreateCFInJumpseller(): Promise<CreateCustomFieldResponse[]> {
+    const customFields = await this.createCFBody();
+    const responses: CreateCustomFieldResponse[] = [];
+    for (const customField of customFields) {
+      try {
+        const response = await this.createCustomFields(customField);
+        //DELAY
+        await this.delay(300);
+        responses.push(response);
+      } catch (error) {
+        this.logger.error(
+          `Error creando el custom field: ${customField.custom_field.label} - ${error.message}`,
+        );
+      }
+    }
+    this.logger.log(`Se crearon ${responses.length} custom fields en Jumpseller`);
+    return responses;
+  }
+
+  //TODO: CORREGIR MAPEO
+  async sentUpdateCFInJumpseller(): Promise<UpdateCustomFieldRequest[]> {
+    const createdCustomFields: JumpsellerCustomField[] = await this.getAllCustomFields();
+    //si no hay custom fields creados, retornar
+    if (!createdCustomFields || createdCustomFields.length === 0) {
+      this.logger.warn(`No hay custom fields creados en Jumpseller`);
+      return [];
+    }
+    const customFields = await this.createCFBody();
+    const responses: UpdateCustomFieldResponse[] = [];
+    for (const customField of customFields) {
+      try {
+        for (const createdCF of createdCustomFields) {
+          await this.logger.log(
+            `Actualizando el custom field: ${JSON.stringify(customField)} - ${createdCF.id}`,
+          );
+          const response = await this.updateCustomFields(customField, createdCF.id);
+          //DELAY
+          await this.delay(300);
+          responses.push(response);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error actualizando el custom field: ${customField.custom_field.label} - ${error.message}`,
+        );
+      }
+    }
+    this.logger.log(`Se actualizaron ${responses.length} custom fields en Jumpseller`);
+    return responses;
   }
 
   private addFallbackString(values: string[], fallback: string): string[] {

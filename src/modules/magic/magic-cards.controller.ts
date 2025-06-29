@@ -61,54 +61,13 @@ export class MagicCardsController {
   }> {
     return this.magicCardsService.getAllSets();
   }
-  @Get('test')
-  async getAllCFValues() {
-    //obtener values
-    const values = await this.magicCardsService.getAllCFValues();
-    //mapear los valores y labels
-    const CF: MapCFCollection =
-      await this.customFieldsMapperService.mappedCFLabelAndValues(values);
-    const {
-      setNames,
-      colors,
-      gameChangers,
-      rarities,
-      setTypes,
-      artists,
-      borderColors,
-      fullArt,
-      textless,
-      typeLines,
-      subTypeLines,
-      cmcs,
-      colorIdentities,
-      manaCosts,
-      powers,
-      toughness,
-      keywords,
-      legalities,
-    } = CF;
-    //retornar el resultado mapeado para jumpseller
-    return this.customFieldsMapperService.mapCreateCustomFieldsRequest([
-      setNames,
-      colors,
-      gameChangers,
-      rarities,
-      setTypes,
-      artists,
-      borderColors,
-      fullArt,
-      textless,
-      typeLines,
-      subTypeLines,
-      cmcs,
-      colorIdentities,
-      manaCosts,
-      powers,
-      toughness,
-      keywords,
-      legalities,
-    ]);
+  @Get('customField/create')
+  async createCustomFieldsInJumpseller() {
+    return this.magicCardsService.sentCreateCFInJumpseller();
+  }
+  @Get('customField/update')
+  async updateCustomFieldsInJumpseller() {
+    return this.magicCardsService.sentUpdateCFInJumpseller();
   }
 
   @Post('createNewCardAndVariant')

@@ -4,12 +4,15 @@ import { BasePricesController } from './base-prices.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BasePrice, BasePriceSchema } from './entities/base-price.entity';
 import { StagingProductVariantModule } from 'src/modules/staging-product-variant/staging-product-variant.module';
+import { RedisCacheService } from 'src/common/services/redis-cache.service';
 
 @Module({
   controllers: [BasePricesController],
-  providers: [BasePricesService],
+  providers: [BasePricesService, RedisCacheService],
   imports: [
-    MongooseModule.forFeature([{ name: BasePrice.name, schema: BasePriceSchema }]),
+    MongooseModule.forFeature([
+      { name: BasePrice.name, schema: BasePriceSchema },
+    ]),
   ],
   exports: [BasePricesService, MongooseModule],
 })

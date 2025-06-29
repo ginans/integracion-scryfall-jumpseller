@@ -14,22 +14,27 @@ import { ProcessModule } from '../process/process.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: MagicCard.name, schema: magicCardSchema }]),
+    MongooseModule.forFeature([
+      { name: MagicCard.name, schema: magicCardSchema },
+    ]),
     ScryfallModule,
     JumpsellerModule,
     UsdPricesModule,
     BasePricesModule,
     forwardRef(() => ProcessModule),
-    forwardRef(() => StagingProductVariantModule), 
+    forwardRef(() => StagingProductVariantModule),
   ],
   controllers: [MagicCardsController],
   providers: [
-    MagicCardsService, JumpsellerMapperService, CustomFieldsMapperService],
-  exports:[
+    MagicCardsService,
+    JumpsellerMapperService,
+    CustomFieldsMapperService,
+  ],
+  exports: [
     ScryfallModule,
-    MagicCardsService, 
-    MongooseModule, 
-    CustomFieldsMapperService
-  ]
+    MagicCardsService,
+    MongooseModule,
+    CustomFieldsMapperService,
+  ],
 })
 export class MagicCardsModule {}

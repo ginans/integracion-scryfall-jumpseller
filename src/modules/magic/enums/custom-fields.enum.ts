@@ -22,7 +22,7 @@ export enum CustomField {
 
 }
 export enum CustomFieldTextBoolean {
-  YES = 'Sí',
+  YES = 'Si',
   NO = 'No',
 }
 export enum CustomFieldFallback {

@@ -59,7 +59,45 @@ export class CustomFieldsMapperService {
     card: MagicCard,
     customFieldLabel: string,
   ): string | string[] {
+    //     Ediciones necesarias
+    // Legal en commander
+    // Legal en legacy
+    // Legal en modern
+    // Legal en oathbreaker
+    // Legal en pauper
+    // Legal en pioneer
+    // Legal en premodern
+    // Legal en standard
+    // Legal en vintage
+
+    // No Necesarias
+    // Legal en alchemy
+    // Legal en brawl
+    // Legal en duel
+    // Legal en explorer
+    // Legal en future
+    // Legal en gladiator
+    // Legal en historic
+    // Legal en oldschool
+    // Legal en penny
+    // Legal en predh
+    // Legal en standardbrawl
+    // Legal en timeless
     const legalFormats = Object.entries(card.legalities) // convierte en array de pares [key, value]
+      .filter(([key, _]) => {
+        return (
+          //TODO:filtrar en el momento en que las cartas de guardan en db
+          key === 'commander' ||
+          key === 'legacy' ||
+          key === 'modern' ||
+          key === 'oathbreaker' ||
+          key === 'pauper' ||
+          key === 'pioneer' ||
+          key === 'premodern' ||
+          key === 'standard' ||
+          key === 'vintage'
+        );
+      })
       .filter(([_, value]) => value === 'legal') // filtra los que tengan valor 'legal'
       .map(([key]) => key); // extrae solo las keys y los mete en un array
 

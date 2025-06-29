@@ -94,7 +94,12 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
               lang: lang,
             },
             {
-              delay: 500, // Esperar 500 ms antes de procesar
+              delay: 500,
+              attempts: 5,
+              backoff: {
+                type: 'exponential',
+                delay: 1000,
+              },
             },
           );
           break;
@@ -110,8 +115,8 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
                 productId,
                 requestTypeCustomFields,
               );
-              //delay parche
-              await new Promise((resolve) => setTimeout(resolve, 300));
+            //delay parche
+            await new Promise((resolve) => setTimeout(resolve, 300));
             if (!response.product) {
               throw new Error(
                 `❌ No se pudo enviar el custom field ${enCard.id} - ${enCard.name}. Respuesta: ${JSON.stringify(response)}`,

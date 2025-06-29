@@ -92,6 +92,7 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
       name: '6-create-variants-request',
       defaultJobOptions: {
         lifo: true,
+
       },
     }),
     BullBoardModule.forFeature({
@@ -114,6 +115,11 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
       name: '8-jumpseller-gateway',
       defaultJobOptions: {
         lifo: true,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },        
       },
     }),
     BullBoardModule.forFeature({

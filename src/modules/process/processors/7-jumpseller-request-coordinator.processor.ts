@@ -54,13 +54,13 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
     >,
   ) {
     try {
-      const { enCard, esCard, thereIsSpanishVersion, productId, lang } = job.data; // Enviar todos los jobs hijos en paralelo, manejando errores individualmente
+      const { enCard, esCard, thereIsSpanishVersion, productId, lang } =
+        job.data; // Enviar todos los jobs hijos en paralelo, manejando errores individualmente
       const results = await Promise.allSettled([
-        // Custom fields temporalmente deshabilitado para testing
-        this.CreateCustomFieldsRequestQueue.add(
-          'create-custom-fields',
-          { enCard: enCard, productId: productId },
-        ),
+        this.CreateCustomFieldsRequestQueue.add('create-custom-fields', {
+          enCard: enCard,
+          productId: productId,
+        }),
 
         this.CreateImagesRequestQueue.add('create-images', {
           enCard: enCard,
@@ -73,7 +73,7 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
           esCard: esCard || null,
           thereIsSpanishVersion: thereIsSpanishVersion,
           productId: productId,
-          lang: lang ,
+          lang: lang,
         }),
       ]);
 

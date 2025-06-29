@@ -1,8 +1,7 @@
 export enum RequestTypeEnum {
     PRODUCTS = 1,
-    CREATE_CUSTOM_FIELDS = 2, 
-    VARIANTS = 3,
-    IMAGES = 4,
-    CUSTOM_FIELDS = 5,
-    PRICES = 6, 
+    VARIANTS = 2,
+    IMAGES = 3,
+    CUSTOM_FIELDS = 4,
+    PRICES = 5, 
 }

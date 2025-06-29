@@ -36,7 +36,7 @@ export class CustomFieldsMapperService {
             field: {
               id: customField.id,
               value: String(value),
-              variants: [],
+              // variants: [],
             },
           });
         }
@@ -46,7 +46,7 @@ export class CustomFieldsMapperService {
           field: {
             id: customField.id,
             value: String(values),
-            variants: [],
+            // variants: [],
           },
         });
       }
@@ -69,7 +69,7 @@ export class CustomFieldsMapperService {
           return CustomFieldFallback.COLOR;
         return card.colors.map((color) => translateColors(color));
       case CustomField.GAME_CHANGER:
-        if (!card.gameChanger) return CustomFieldFallback.GAME_CHANGER;
+        // if (!card.gameChanger) return CustomFieldFallback.GAME_CHANGER;
         return card?.gameChanger
           ? CustomFieldTextBoolean.YES
           : CustomFieldTextBoolean.NO;
@@ -111,12 +111,12 @@ export class CustomFieldsMapperService {
         if (!card.borderColor) return CustomFieldFallback.BORDER_COLOR;
         return translateColors(card.borderColor);
       case CustomField.TEXTLESS:
-        if (!card.textless) return CustomFieldFallback.TEXTLESS;
+        // if (!card.textless) return CustomFieldFallback.TEXTLESS;
         return card.textless
           ? CustomFieldTextBoolean.YES
           : CustomFieldTextBoolean.NO;
       case CustomField.FULL_ART:
-        if (!card.typeLine) return CustomFieldFallback.TYPE_LINE;
+        // if (!card.typeLine) return CustomFieldFallback.TYPE_LINE;
         return card.fullArt
           ? CustomFieldTextBoolean.YES
           : CustomFieldTextBoolean.NO;

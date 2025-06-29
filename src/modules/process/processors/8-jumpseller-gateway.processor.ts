@@ -99,16 +99,20 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           );
           break;
         case RequestTypeEnum.CUSTOM_FIELDS:
-          if (body as AddAnExistingCustomFieldToAProductRequest) {
+          const requestTypeCustomFields =
+            body as AddAnExistingCustomFieldToAProductRequest;
+          if (requestTypeCustomFields) {
             console.log(
               `🔧 Enviando CUSTOMFIELDS al BAZINGA final ✨: ${JSON.stringify(body)}`,
             );
             const response =
               await this.jumpsellerService.addCustomFieldInProduct(
                 productId,
-                body as AddAnExistingCustomFieldToAProductRequest,
+                requestTypeCustomFields,
               );
-            if (!response) {
+              //delay parche
+              await new Promise((resolve) => setTimeout(resolve, 300));
+            if (!response.product) {
               throw new Error(
                 `❌ No se pudo enviar el custom field ${enCard.id} - ${enCard.name}. Respuesta: ${JSON.stringify(response)}`,
               );

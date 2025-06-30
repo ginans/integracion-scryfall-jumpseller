@@ -51,6 +51,12 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
       name: '2-save-magic-cards',
       defaultJobOptions: {
         lifo: true,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: true,
       },
     }),
     BullBoardModule.forFeature({

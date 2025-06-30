@@ -14,20 +14,24 @@ import { BasePricesModule } from '../prices/base-prices/base-prices.module';
 import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
 import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
-import { CreateMagicCardsProcessor } from './processors/create-magic-cards.processor';
-import { SyncMagicCardsProcessor } from './processors/sync-magic-cards.processor';
-import { CreateProductJumpsellerProcessor } from './processors/create-product-jumpseller.processor';
+import { SaveMagicCardsProcessor } from './processors/2-save-magic-cards.processor';
+import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.processor';
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
-import { CreateVariantsRequestProcessor } from './processors/create-variants-request.processor';
-import { CreateVariantJumpsellerProcessor } from './processors/create-variant-jumpseller.processor';
+import { UpdateStockSalesProcessor } from './processors/update-stock-sales.processor';
+import { CreateVariantsRequestProcessor } from './processors/6-create-variants-request.processor';
+import { JumpsellerGatewayProcessor } from './processors/8-jumpseller-gateway.processor';
+import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
 import { SaveOrderProcessor } from './processors/save-order.processor';
 import { OrdersModule } from '../orders/orders.module';
-import { UpdateStockSalesProcessor } from './processors/update-stock-sales.processor';
+import { CreateImagesRequestProcessor } from './processors/4-create-images-request.processor';
+import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request.processor';
+import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller-request-coordinator.processor';
+import { RedisCacheService } from 'src/common/services/redis-cache.service';
 
 @Module({
   imports: [
-    forwardRef(()=> MagicCardsModule),
+    forwardRef(() => MagicCardsModule),
     JumpsellerModule,
     StagingProductVariantModule,
     BasePricesModule,
@@ -44,54 +48,88 @@ import { UpdateStockSalesProcessor } from './processors/update-stock-sales.proce
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '2-create-magic-cards',
+      name: '2-save-magic-cards',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '2-create-magic-cards',
+      name: '2-save-magic-cards',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '3-create-product-jumpseller',
+      name: '3-create-product-request',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '3-create-product-jumpseller',
+      name: '3-create-product-request',
       adapter: BullMQAdapter,
     }),
-
     //Job Check Variants Cards
     BullModule.registerQueue({
-      name: '4-create-variants-request',
+      name: '4-create-images-request',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '4-create-variants-request',
+      name: '4-create-images-request',
       adapter: BullMQAdapter,
     }),
+    BullModule.registerQueue({
+      name: '5-create-custom-fields-request',
+      defaultJobOptions: {
+        lifo: true,
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '5-create-custom-fields-request',
+      adapter: BullMQAdapter,
+    }),
+    BullModule.registerQueue({
+      name: '6-create-variants-request',
+      defaultJobOptions: {
+        lifo: true,
 
-    //Job Create Variants
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '6-create-variants-request',
+      adapter: BullMQAdapter,
+    }),
+    //job jumpseller gateway
     BullModule.registerQueue({
-      name: '5-create-variant-jumpseller',
+      name: '7-jumpseller-request-coordinator',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '5-create-variant-jumpseller',
+      name: '7-jumpseller-request-coordinator',
       adapter: BullMQAdapter,
     }),
-    // Other queues
+    //job jumpseller gateway
+    BullModule.registerQueue({
+      name: '8-jumpseller-gateway',
+      defaultJobOptions: {
+        lifo: true,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },        
+      },
+    }),
+    BullBoardModule.forFeature({
+      name: '8-jumpseller-gateway',
+      adapter: BullMQAdapter,
+    }),
+    // enviar stock cargado desde el front a jumpseller
     BullModule.registerQueue({
       name: 'queues-stock',
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
@@ -99,7 +137,7 @@ import { UpdateStockSalesProcessor } from './processors/update-stock-sales.proce
       name: 'queues-stock',
       adapter: BullMQAdapter,
     }),
-    //
+    //calcular y enviar precios de api a jumpseller
     BullModule.registerQueue({
       name: 'queues-api-prices',
       defaultJobOptions: {
@@ -111,61 +149,58 @@ import { UpdateStockSalesProcessor } from './processors/update-stock-sales.proce
       name: 'queues-api-prices',
       adapter: BullMQAdapter,
     }),
-    //
+    //recalcular precios por precios base
     BullModule.registerQueue({
-      name: "queues-recalculate-prices-by-base",
+      name: 'queues-recalculate-prices-by-base',
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "queues-recalculate-prices-by-base",
+      name: 'queues-recalculate-prices-by-base',
       adapter: BullMQAdapter,
     }),
-    //
+    //recalcular precios por precios del dolar
     BullModule.registerQueue({
-      name: "queues-recalculate-prices-by-usd",
+      name: 'queues-recalculate-prices-by-usd',
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "queues-recalculate-prices-by-usd",
+      name: 'queues-recalculate-prices-by-usd',
       adapter: BullMQAdapter,
     }),
-    //
+    //actualizar precios desde el front, individuales y masivos
     BullModule.registerQueue({
-      name: "update-prices-from-front",
+      name: 'update-prices-from-front',
       defaultJobOptions: {
-        delay: 3000,
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "update-prices-from-front",
+      name: 'update-prices-from-front',
       adapter: BullMQAdapter,
     }),
     //recibir y guardar orden desde el webhook de jumpseller
     BullModule.registerQueue({
-      name: "save-order",
+      name: 'save-order',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "save-order",
+      name: 'save-order',
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: "update-stock-sales",
+      name: 'update-stock-sales',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: "update-stock-sales",
+      name: 'update-stock-sales',
       adapter: BullMQAdapter,
     }),
   ],
@@ -173,19 +208,24 @@ import { UpdateStockSalesProcessor } from './processors/update-stock-sales.proce
   exports: [ProcessService, BullModule],
   providers: [
     ProcessService,
+    RedisCacheService,
     QueuesStock,
-    QueuesApiPrices, 
+    QueuesApiPrices,
     QueuesRecalculatePricesByBase,
     QueuesRecalculatePricesByUds,
     QueuesPricesFromFront,
     JumpsellerMapperService,
     JumpsellerService,
     SyncMagicCardsProcessor,
-    CreateMagicCardsProcessor,
-    CreateProductJumpsellerProcessor,
+    SaveMagicCardsProcessor,
+    CreateProductRequestProcessor,
+    CreateImagesRequestProcessor,
+    CreateCustomFieldsRequestProcessor,
     CreateVariantsRequestProcessor,
-    CreateVariantJumpsellerProcessor,
+    JumpsellerGatewayProcessor,
+    UpdateStockSalesProcessor,
     SaveOrderProcessor,
-    UpdateStockSalesProcessor  ],
+    JumpsellerRequestCoordinatorProcessor,
+  ],
 })
 export class ProcessModule {}

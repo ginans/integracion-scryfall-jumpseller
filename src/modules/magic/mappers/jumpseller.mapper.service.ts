@@ -1,7 +1,7 @@
 import { MappedMagicCard } from 'src/modules/jumpseller/interfaces/mapped-magic-card.interface';
-import { JumpsellerProductRequest, JumpsellerStatus } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/jumpsellerCreateProductRequest.interface';
-import { JumpsellerUpdateProductRequest } from 'src/modules/jumpseller/interfaces/jumpsellerProducts/JumpsellerUpdateProductRequest.interface';
-import { JumpsellerCreateVariantRequest, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/JumpsellerCreateVariantRequest.interface';
+import { JumpsellerProductRequest, JumpsellerStatus } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
+import { JumpsellerUpdateProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/JumpsellerUpdateProductRequest.interface';
+import { JumpsellerCreateVariantRequest, JumpsellerCreateVariantRequestForBD, JumpsellerOptionType } from 'src/modules/jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { EnumLanguage } from 'src/modules/magic/enums/lang.enum';
 import { EnumGame } from 'src/common/enums/game.enum';
 import { EnumCondition } from '../enums/condition.enum';
@@ -258,7 +258,7 @@ async mapCardFaceImageToJumpseller(card: MagicCard, faceIndex: number): Promise<
 async mapVariantsToJumpseller(
   card: MagicCard,
   languages: Language[],
-  condition: EnumCondition = EnumCondition.NearMint
+  // condition: EnumCondition
 ): Promise<JumpsellerCreateVariantRequest[]> {
      
   const finishes = [
@@ -267,13 +267,11 @@ async mapVariantsToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
   
-  const variants: JumpsellerCreateVariantRequest[] = [];
+  const variants: JumpsellerCreateVariantRequestForBD[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
         if (!finish.available) continue;
-        
-       
         variants.push({
           variant: {
             sku: this.createSku(card, lang, finish.suffix),
@@ -281,7 +279,7 @@ async mapVariantsToJumpseller(
             options: [
               { name: 'Lenguaje', option_type: JumpsellerOptionType.OPTION, value: lang.name },
               { name: 'Acabado', option_type: JumpsellerOptionType.OPTION, value: finish.name },
-              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: condition },
+              { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: EnumCondition.NearMint },
             ],
           },
           finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
@@ -305,7 +303,7 @@ async mapVariantFromNewCardToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
   
-  const variants: JumpsellerCreateVariantRequest[] = [];
+  const variants: JumpsellerCreateVariantRequestForBD[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {

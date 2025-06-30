@@ -1,6 +1,6 @@
 import { Body, Controller, Patch, Post, UseGuards, Logger, Req, UseInterceptors, RawBodyRequest } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
@@ -77,5 +77,4 @@ export class ProcessController {
       };
     }
   }
-
 }

@@ -26,35 +26,4 @@ export class QueuesStock extends WorkerHost {
       throw new Error(`Job failed at step: ${error.message}`);
     }
   }
-
-
-  @OnWorkerEvent('completed')
-  onCompleted(job: Job<any, any, string>) {
-    console.log(`Job completed with result ${job.returnvalue}`);
-  }
-
-  @OnWorkerEvent('failed')
-  onFailed(job: Job<any, any, string>) {
-    console.log(`Job failed with reason ${job.failedReason}`);
-  }
-
-  @OnWorkerEvent('progress')
-  onProgress(job: Job<any, any, string>) {
-    console.log(`Job progress updated to ${job.progress}`);
-  }
-
-  @OnWorkerEvent('paused')
-  onPaused(job: Job<any, any, string>) {
-    console.log(`Job paused`);
-  }
-
-  @OnWorkerEvent('resumed')
-  onResumed(job: Job<any, any, string>) {
-    console.log(`Job resumed`);
-  }
-
-  @OnWorkerEvent('drained')
-  onDrained() {
-    console.log(`Queue stock completada u agotada`);
-  }
 }

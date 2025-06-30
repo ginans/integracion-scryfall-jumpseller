@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
-import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
@@ -97,6 +97,6 @@ export class ProcessService {
   }
 
   async initCardMagic(): Promise<void> {
-    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN });
+    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN }, {priority: 0});
   }
 }

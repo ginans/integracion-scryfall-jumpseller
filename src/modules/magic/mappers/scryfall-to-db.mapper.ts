@@ -44,28 +44,28 @@ import { MagicCard } from '../entities/magic-card.entity';
         } : { small: '', large: '' },
       })) || [],
       legalities: {
-        standard: card.legalities.standard || '',
-        future: card.legalities.future || '',
-        historic: card.legalities.historic || '',
-        timeless: card.legalities.timeless || '',
-        gladiator: card.legalities.gladiator || '',
-        pioneer: card.legalities.pioneer || '',
-        explorer: card.legalities.explorer || '',
-        modern: card.legalities.modern || '',
-        legacy: card.legalities.legacy || '',
-        pauper: card.legalities.pauper || '',
-        vintage: card.legalities.vintage || '',
-        penny: card.legalities.penny || '',
-        commander: card.legalities.commander || '',
-        brawl: card.legalities.brawl || '',
-        standardbrawl: card.legalities.standardbrawl || '',
-        alchemy: card.legalities.alchemy || '',
-        paupercommander: card.legalities.paupercommander || '',
-        duel: card.legalities.duel || '',
-        oldschool: card.legalities.oldschool || '',
-        premodern: card.legalities.premodern || '',
-        predh: card.legalities.predh || '',
-        oathbreaker: card.legalities.oathbreaker || ''
+        standard: card.legalities.standard || '',//n
+        // future: card.legalities.future || '',
+        // historic: card.legalities.historic || '',
+        // timeless: card.legalities.timeless || '',
+        // gladiator: card.legalities.gladiator || '',
+        pioneer: card.legalities.pioneer || '',//n
+        // explorer: card.legalities.explorer || '',
+        modern: card.legalities.modern || '',//n
+        legacy: card.legalities.legacy || '',//n
+        pauper: card.legalities.pauper || '',//n
+        vintage: card.legalities.vintage || '',//n
+        // penny: card.legalities.penny || '',
+        commander: card.legalities.commander || '',//n
+        // brawl: card.legalities.brawl || '',
+        // standardbrawl: card.legalities.standardbrawl || '',
+        // alchemy: card.legalities.alchemy || '',
+        // paupercommander: card.legalities.paupercommander || '',
+        // duel: card.legalities.duel || '',
+        // oldschool: card.legalities.oldschool || '',
+        premodern: card.legalities.premodern || '',//n
+        // predh: card.legalities.predh || '',
+        oathbreaker: card.legalities.oathbreaker || ''//n
       },
       gameChanger: card.game_changer || false,
       rarity: card.rarity || '',

@@ -54,7 +54,6 @@ export class CreateVariantsRequestProcessor extends WorkerHost {
       );
       await Promise.allSettled(
         variantsRequest.map((variant) => {
-          console.log("comprobando la variante SOLITA del pozole 😭", variant);
           this.jumpsellerGatewayQueue.add(
             `Variant request: ${variant.variant.sku}`, //nombre del job
             {

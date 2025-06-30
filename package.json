@@ -27,7 +27,8 @@
     "docker:prod:build": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml build",
     "docker:prod:stop": "docker compose --env-file docker/prod/.env -f docker/prod/compose.yaml down",
     "docker:prod:logs": "./docker-scripts.sh logs prod",
-    "docker:stop:all": "./docker-scripts.sh stop dev && ./docker-scripts.sh stop prod"
+    "docker:stop:all": "./docker-scripts.sh stop dev && ./docker-scripts.sh stop prod",
+    "generate:scryfall-arrays": "ts-node scripts/generate-scryfall-arrays.ts"
   },
   "dependencies": {
     "@bull-board/api": "^6.7.7",
@@ -51,10 +52,12 @@
     "argon2": "^0.41.1",
     "axios": "^1.7.9",
     "body-parser": "^2.2.0",
+    "bottleneck": "^2.19.5",
     "bullmq": "^5.41.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "handlebars": "^4.7.8",
+    "ioredis": "^5.6.1",
     "joi": "^17.13.3",
     "mongoose": "^8.10.1",
     "passport": "^0.7.0",

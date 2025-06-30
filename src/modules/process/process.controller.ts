@@ -1,12 +1,12 @@
-import { Body, Controller, Patch, Post, UseGuards, Logger, Req, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Patch, Post, UseGuards, Logger, Req, UseInterceptors, RawBodyRequest } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
 import { JumpsellerWebhookGuard } from 'src/common/guards/jumpseller-webhook.guard';
-import { RawBodyInterceptor } from 'src/common/interceptors/raw-body.interceptor';
+import { Request } from 'express';
 
 @Controller('process')
 export class ProcessController {
@@ -20,7 +20,6 @@ export class ProcessController {
   async procesarCardMagic(): Promise<void> {
     return this.processService.initCardMagic();
   }
-
   @Post('stock')
   async updateStock(@Body() variants: IStockFromFront[]) {
     try{
@@ -29,7 +28,6 @@ export class ProcessController {
       return error
     }
   }
-  
   @Post('prices/update-from-front')
   async updatePrices(@Body() variants: IPriceFromFront[]){
     try{
@@ -39,7 +37,6 @@ export class ProcessController {
       return error
     }
   }
-
   @Patch('prices/recalculate-prices-by-base')
   async recalculatePricesByBase(
     @Body() basePrices: RecalculatePricesByBaseDto
@@ -59,17 +56,25 @@ export class ProcessController {
     } catch (error) {
       return { error: error.message };
     }
-  }  @Post("webhook/orders")
-  @UseInterceptors(RawBodyInterceptor)
+  }  
+  @Post("webhook/orders")
   @UseGuards(JumpsellerWebhookGuard)
-  async handleOrdersWebhook(@Body() order: ISaleData) {
+  async handleOrdersWebhook(@Req() req: RawBodyRequest<Request<ISaleData>>) {
     try {
       this.logger.log('Webhook recibido correctamente');
-      await this.processService.handleOrdersWebhook(order);
-      return { success: true, status: 200, message: "Orden Procesada Correctamente" };
+      await this.processService.handleOrdersWebhook(req.body);
+      return {
+        success: true,
+        status: 200,
+        message: "OK"
+      };
     } catch (error) {
       this.logger.error('Error procesando webhook:', error);
-      return { error: error.message };
-    }  }
-
+      return {
+        success: false,
+        status: 500,
+        error: error.message
+      };
+    }
+  }
 }

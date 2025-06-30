@@ -53,61 +53,61 @@ export class CardFace {
 @Schema({ _id: false })
 export class Legalities {
   @Prop({ type: String })
-  standard: string;
+  standard?: string;
 
   @Prop({ type: String })
-  future: string;
+  future?: string;
 
   @Prop({ type: String })
-  historic: string;
+  historic?: string;
 
   @Prop({ type: String })
-  timeless: string;
+  timeless?: string;
 
   @Prop({ type: String })
-  gladiator: string;
+  gladiator?: string;
 
   @Prop({ type: String })
-  pioneer: string;
+  pioneer?: string;
 
   @Prop({ type: String })
-  explorer: string;
+  explorer?: string;
 
   @Prop({ type: String })
-  modern: string;
+  modern?: string;
 
   @Prop({ type: String })
-  legacy: string;
+  legacy?: string;
 
   @Prop({ type: String })
-  pauper: string;
+  pauper?: string;
 
   @Prop({ type: String })
-  vintage: string;
+  vintage?: string;
 
   @Prop({ type: String })
-  penny: string;
+  penny?: string;
 
   @Prop({ type: String })
-  commander: string;
+  commander?: string;
 
   @Prop({ type: String })
-  oathbreaker: string;
+  oathbreaker?: string;
 
   @Prop({ type: String })
-  standardbrawl: string;
+  standardbrawl?: string;
 
   @Prop({ type: String })
-  brawl: string;
+  brawl?: string;
 
   @Prop({ type: String })
-  alchemy: string;
+  alchemy?: string;
 
   @Prop({ type: String })
-  paupercommander: string;
+  paupercommander?: string;
 
   @Prop({ type: String })
-  duel: string;
+  duel?: string;
 
   @Prop({ type: String })
   oldschool?: string;

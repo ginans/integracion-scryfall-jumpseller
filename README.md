@@ -1,4 +1,4 @@
-# Magic Forever Backend
+# Magic4ever Backend
 
 Sistema backend desarrollado en NestJS para la **venta de cartas sueltas de Magic: The Gathering**. 
 

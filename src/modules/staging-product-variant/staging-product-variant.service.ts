@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { StockJumpsellerRequest } from 'src/modules/jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,7 +9,7 @@ import { EnumPriceAndStockState } from './enums/price-and-stock-state.enum';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
 import { IStagingProductVariant } from './interfaces/stagingProductVariant.interface';
-import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerUpdateVariantRequest.interface';
+import { JumpsellerUpdateVariantRequest } from 'src/modules/jumpseller/interfaces/variants-jumpseller/jumpsellerUpdateVariantRequest.interface';
 import { UsdPrice } from 'src/modules/prices/usd-prices/entities/usd-price.entity';
 import { MagicCard } from 'src/modules/magic/entities/magic-card.entity';
 import { BasePrice } from 'src/modules/prices/base-prices/entities/base-price.entity';
@@ -18,6 +18,8 @@ import { CreateStockDto } from './dto/stock/create-stock.dto';
 import { CreatePricesDto } from './dto/prices/create-prices.dto';
 import { StockAndSalesHistory, StockAndSalesHistoryDocument } from './entities/stock-discount-and-sales-history.entity';
 import { IOrder } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
+import { Order, OrderDocument } from '../orders/entities/order.entity';
+import e from 'express';
 
 @Injectable()
 export class StagingProductVariantService {
@@ -27,6 +29,7 @@ export class StagingProductVariantService {
     @InjectModel(UsdPrice.name) private usdPriceModel: Model<UsdPrice>,
     @InjectModel(BasePrice.name) private basePriceModel: Model<BasePrice>,
     @InjectModel(StockAndSalesHistory.name) private readonly stockDiscountAndSalesHistoryModel: Model<StockAndSalesHistoryDocument>,
+    @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
     private readonly jumpsellerService: JumpsellerService,
     private readonly logger: LoggerService
   ) {}
@@ -631,7 +634,6 @@ export class StagingProductVariantService {
           EnumPriceAndStockState.COMPLETED,
           nullErrorMsg
         );
-         const jumpsellerProduct = await this.jumpsellerService.getJumpsellerProductById(productVariant.productId);
 
       } else {
         const errorMsg = `Status 400 - ${response?.message || 'Sin detalles'}`;
@@ -678,6 +680,16 @@ export class StagingProductVariantService {
     if (!variant) throw new NotFoundException('Variante no encontrada');
     const variantResponse = variant as unknown as IStagingProductVariant;
     return variantResponse;
+  }
+
+  async findByVariantId(variantId: number): Promise<IStagingProductVariant | null> {
+    try {
+      const variant = await this.stagingProductVariantModel.findOne({ variantId }).exec();
+      return variant as unknown as IStagingProductVariant;
+    } catch (error) {
+      this.logger.error(`Error al buscar variante por ID: ${error.message}`);
+      throw new InternalServerErrorException(`Error al buscar variante por ID: ${error.message}`);
+    }
   }
 
   //actualizar variante por id
@@ -740,12 +752,23 @@ export class StagingProductVariantService {
     const results = []
     for (const webhookProduct of order.products) {
       const variantToUpdate = await this.stagingProductVariantModel.findOne({ productId: webhookProduct.id, variantId: webhookProduct.variant_id }).exec();
-      if (variantToUpdate) {
+      if (!variantToUpdate) {
+        this.logger.warn(`No se encontró la variante para el producto con ID: ${webhookProduct.id} y variantId: ${webhookProduct.variant_id}`);
+        continue; // Si no se encuentra la variante, continuar con el siguiente producto
+      }
+      const existingOrder = await this.orderModel.findOne({ orderId: order.id }).exec();
+      if (existingOrder) {
+        this.logger.warn(`La orden con ID: ${order.id} ya existe en la base de datos`);
+        continue;
+      }
+      //si hay variante para y la orden no existe en la base de datos, actualizar el stock y agregar historial de ventas
+      if (variantToUpdate && !existingOrder ) {
         // calcular el nuevo stock general (stock en bd - cantidad vendida)
-        const newStock =  variantToUpdate.variantStock - webhookProduct.qty;
-        
+        const newStock = variantToUpdate.variantStock > 0 ? variantToUpdate.variantStock - webhookProduct.qty : 0;
+
         // Calcular el nuevo historySales (historial de ventas + cantidad vendida)
         const newHistorySales = (variantToUpdate.salesByCard || 0) + webhookProduct.qty;
+
 
         const stockDiscountAndSalesHistoryEntry = await this.stockDiscountAndSalesHistoryModel.create({
            orderId: order.id,

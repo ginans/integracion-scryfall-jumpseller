@@ -1,6 +1,6 @@
 import { Body, Controller, Patch, Post, UseGuards, Logger, Req, UseInterceptors, RawBodyRequest } from '@nestjs/common';
 import { ProcessService } from './process.service';
-import { IStockFromFront } from '../jumpseller/interfaces/stockToJumpseller/stockJumpsellerRequest.interface';
+import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
 import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
@@ -20,7 +20,6 @@ export class ProcessController {
   async procesarCardMagic(): Promise<void> {
     return this.processService.initCardMagic();
   }
-
   @Post('stock')
   async updateStock(@Body() variants: IStockFromFront[]) {
     try{
@@ -29,7 +28,6 @@ export class ProcessController {
       return error
     }
   }
-  
   @Post('prices/update-from-front')
   async updatePrices(@Body() variants: IPriceFromFront[]){
     try{
@@ -39,7 +37,6 @@ export class ProcessController {
       return error
     }
   }
-
   @Patch('prices/recalculate-prices-by-base')
   async recalculatePricesByBase(
     @Body() basePrices: RecalculatePricesByBaseDto
@@ -80,5 +77,4 @@ export class ProcessController {
       };
     }
   }
-
 }

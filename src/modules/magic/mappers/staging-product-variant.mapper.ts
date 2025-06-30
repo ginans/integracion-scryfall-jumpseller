@@ -1,5 +1,5 @@
 import { EnumGame, EnumGamePrefix } from "src/common/enums/game.enum";
-import { JumpsellerCreateVariantResponse } from "src/modules/jumpseller/interfaces/jumpsellerVariants/jumpsellerCreateVariantResponse.interface";
+import { JumpsellerCreateVariantResponse } from "src/modules/jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface";
 import { MagicCard } from '../entities/magic-card.entity';
 
 // Exportamos la función para que pueda ser usada en otros archivos si es necesario

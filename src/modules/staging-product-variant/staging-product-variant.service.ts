@@ -47,7 +47,6 @@ export class StagingProductVariantService {
       priceUpdateStatus, 
       stockUpdateStatus,
       set,
-      setName
     } = query;
 
     const sort: { [key: string]: 1 | -1 } = {
@@ -152,9 +151,9 @@ export class StagingProductVariantService {
       filters['fatherProduct.set'] = { $regex: `^${set}$`, $options: 'i' };
     }
 
-    if (setName) {
-      filters['fatherProduct.setName'] = { $regex: `^${setName}$`, $options: 'i' };
-    }
+    // if (setName) {
+    //   filters['fatherProduct.setName'] = { $regex: `^${setName}$`, $options: 'i' };
+    // }
 
     try {
       const [variants, total] = await Promise.all([

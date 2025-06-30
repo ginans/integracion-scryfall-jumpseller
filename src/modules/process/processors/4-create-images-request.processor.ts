@@ -46,9 +46,6 @@ export class CreateImagesRequestProcessor extends WorkerHost {
       const allImages = enImages.concat(esImages);
 
       for (const image of allImages) {
-        console.log(
-          `🔧 Enviando IMAGEN al POZOLE ✨: ${JSON.stringify(image)}`,
-        );
         try {
           await this.jumpsellerGatewayQueue.add(
             `Image to gateway`,

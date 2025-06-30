@@ -4,8 +4,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { SortOrder } from 'src/common/enums/query.enum';
-import { okOrderDto } from './dto/ok-order.dto';
 import { StateOrderEnum } from './enums/state-order.enum';
+import { OrderStateDto } from './dto/order-state.dto';
+import { PaginationOrdersQueryDto } from './dto/pagination-query.dto';
 
 @Injectable()
 export class OrdersService {
@@ -31,9 +32,9 @@ export class OrdersService {
     }
   }
 
-  async findAllOrders(query: PaginationQueryDto) {
-     const { limit, page, sortBy, sortOrder, to, from, search } = query;
-    
+  async findAllOrders(query: PaginationOrdersQueryDto) {
+     const { limit, page, sortBy, sortOrder, to, from, search, state } = query;
+
         const sort: { [key: string]: 1 | -1 } = {
           [sortBy]: sortOrder === SortOrder.ASC ? 1 : -1,
         };
@@ -50,22 +51,27 @@ export class OrdersService {
           filters.$or.push({
             $expr: {
               $regexMatch: {
-                input: { $toString: "$name" },
+                input: "$shippingMethodName",
                 regex: searchValue,
                 options: "i"
               }
             }
           });
-        
-
-          // filters.$or.push({
-          //   products: {
-          //     $elemMatch: {
-          //       sku: { $regex: searchValue, $options: "i" }
-          //     }
-          //   }
-          // });
+          filters.$or.push({
+            products: {
+              $elemMatch: {
+                sku: { $regex: searchValue, $options: "i" }
+              }
+            }
+          });
         }
+
+        //filtro por estado
+        if (state) {
+          const stateFilter = { state: { $regex: `^${state}$`, $options: "i" } };
+          filters.$and = filters.$and ? [...filters.$and, stateFilter] : [stateFilter];
+        }
+
     
         if (from && to) {
           filters.$and = [
@@ -110,25 +116,44 @@ export class OrdersService {
     }
   }
 
-  async completedOrder(_id: string, isOrderOk: okOrderDto): Promise<OrderDocument> {
+  async changeOrderStates(_id: string, state: OrderStateDto): Promise<OrderDocument> {
     try {
-      if (isOrderOk.isOrderOk === true) {
-        const order = await this.orderModel.findOneAndUpdate(
-          { _id: new Types.ObjectId(_id) },
-          { $set: { state: StateOrderEnum.COMPLETED } },
-          { new: true }
-        );
-        if (!order) throw new NotFoundException('Order no encontrada');
-        return order;
-      }else{
-        const order = await this.orderModel.findOneAndUpdate(
-          { _id: new Types.ObjectId(_id) },
-          { $set: { state: StateOrderEnum.PENDING } },
-          { new: true }
-        );
-        if (!order) throw new NotFoundException('Order no encontrada');
-        return order;
+      if (!Types.ObjectId.isValid(_id)) {
+        throw new BadRequestException('Formato de ID inválido');
       }
+
+      let newState: StateOrderEnum;
+      switch (state.state) {
+        case StateOrderEnum.PENDING:
+          newState = StateOrderEnum.PENDING;
+          break;
+        case StateOrderEnum.PREPARING:
+          newState = StateOrderEnum.PREPARING;
+          break;
+        case StateOrderEnum.UNDER_REVIEW:
+          newState = StateOrderEnum.UNDER_REVIEW;
+          break;
+        case StateOrderEnum.READY_FOR_PICKUP:
+          newState = StateOrderEnum.READY_FOR_PICKUP;
+          break;
+        case StateOrderEnum.READY_FOR_DISPATCH:
+          newState = StateOrderEnum.READY_FOR_DISPATCH;
+          break;
+        case StateOrderEnum.DELIVERED:
+          newState = StateOrderEnum.DELIVERED;
+          break;
+        default:
+          throw new BadRequestException('Estado de orden no válido');
+      }
+
+      const order = await this.orderModel.findOneAndUpdate(
+        { _id: new Types.ObjectId(_id) },
+        { $set: { state: newState } },
+        { new: true }
+      );
+
+      if (!order) throw new NotFoundException('Order no encontrada');
+      return order;
     } catch (error) {
       throw new InternalServerErrorException(`Error updating Order: ${error.message}`);
     }

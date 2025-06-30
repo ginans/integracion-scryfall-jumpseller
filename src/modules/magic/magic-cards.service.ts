@@ -194,7 +194,19 @@ export class MagicCardsService {
   ): Promise<void> {
     await this.jumpsellerService.insertImages(productId, images);
   }
-
+  async processAndInsertCustomFields(card: MagicCard, idJumpseller: number): Promise<void> {
+    const customFields = await this.getAllCustomFields();
+    if (!customFields || customFields.length === 0) return;
+    const requestsCustomFields = await this.customFieldsMapperService.mappedCustomFields(card, customFields);
+      for (const customField of requestsCustomFields) {
+        try {
+          await this.jumpsellerService.addCustomFieldInProduct(idJumpseller, customField);
+        } catch (error) {
+          this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
+        }
+        await this.delay(300);
+      }
+  }
   //buscar actualizar o crear magic card
   async createMagicCards(
     card: ScryfallCardResponse,

@@ -8,6 +8,7 @@ import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { UsdPricesModule } from 'src/modules/prices/usd-prices/usd-prices.module';
 import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.module';
 import { StockAndSalesHistory, StockAndSalesHistorySchema } from './entities/stock-discount-and-sales-history.entity';
+import { OrdersModule } from '../orders/orders.module';
 
 @Module({
   controllers: [StagingProductVariantController],
@@ -20,6 +21,7 @@ import { StockAndSalesHistory, StockAndSalesHistorySchema } from './entities/sto
     JumpsellerModule,
     UsdPricesModule,
     BasePricesModule,
+    OrdersModule,
     forwardRef(() => MagicCardsModule),
   ],
   exports: [

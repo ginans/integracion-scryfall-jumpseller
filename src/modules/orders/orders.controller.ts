@@ -1,26 +1,25 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { okOrderDto } from './dto/ok-order.dto';
+import { OrderStateDto } from './dto/order-state.dto';
+import { PaginationOrdersQueryDto } from './dto/pagination-query.dto';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
-  findAllFull(@Query() query: PaginationQueryDto) {
+  findAll(@Query() query: PaginationOrdersQueryDto) {
     return this.ordersService.findAllOrders(query);
   }
-
 
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.ordersService.findOneOrder(id);
   }
 
-  @Patch('isOrderOk/:id')
-  patchOrder(@Param('id') id: string, @Body() isOrderOk: okOrderDto) {
-    return this.ordersService.completedOrder(id, isOrderOk);
+  @Patch('change-state/:id')
+  patchOrder(@Param('id') id: string, @Body() state: OrderStateDto) {
+    return this.ordersService.changeOrderStates(id, state);
   }
 
 }

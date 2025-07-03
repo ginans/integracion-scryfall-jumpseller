@@ -107,9 +107,6 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           const requestTypeCustomFields =
             body as AddAnExistingCustomFieldToAProductRequest;
           if (requestTypeCustomFields) {
-            console.log(
-              `🔧 Enviando CUSTOMFIELDS al BAZINGA final ✨: ${JSON.stringify(body)}`,
-            );
             const response =
               await this.jumpsellerService.addCustomFieldInProduct(
                 productId,
@@ -152,13 +149,6 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
           if (!variant || !variant.sku) {
             throw new Error(`Missing variant data for product ID ${productId}`);
           }
-          console.log(
-            `🔧 Enviando VARIANTE al BAZINGA ✨: ${JSON.stringify(variant)}`,
-          );
-          console.log(
-            `🔧 Enviando VARIANTE al BAZINGA DE JUMPSELLER ✨: ${JSON.stringify({ variant })} - ID ${productId}`,
-          );
-
           const variantResponse =
             await this.magicCardsService.createJumpsellerVariant(productId, {
               variant: variant,

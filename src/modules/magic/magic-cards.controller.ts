@@ -4,10 +4,8 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { MagicCard } from './entities/magic-card.entity';
 import { ScryfallCardResponse } from './submodules/scryfall/interfaces/scryfall.interface';
-import { MappedMagicCard } from '../jumpseller/interfaces/mapped-magic-card.interface';
 import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
-import { MapCFCollection } from '../jumpseller/interfaces/map-CF-collection.interface';
 import { CustomFieldsMapperService } from './mappers/jumpseller.customfields.mapper.service';
 
 @Controller('magic-cards')

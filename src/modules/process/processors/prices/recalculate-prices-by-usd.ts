@@ -18,25 +18,15 @@ export class RecalculatePricesByUsdProcessor extends WorkerHost {
   }
   async process(job: Job<any, any, string>): Promise<any> {
     try {
-      const { _id, name, recalcTimestamp, game, newUsdPrice } = job.data;
-
-      this.logger.log(
-        `Processing variant ${_id} (${name}) for game ${game} - USD: $${newUsdPrice} - timestamp: ${recalcTimestamp}`,
-      );
 
       // Calcular precios del dolar por variante
       await job.updateProgress(25);
 
-      // ✅ Para USD no necesitamos rareza, solo la variante
       await this.stagingProductVariantService.calculatePricesByVariant(
         job.data,
       );
 
       await job.updateProgress(100);
-
-      this.logger.log(
-        `Successfully processed variant ${_id} with USD $${newUsdPrice}`,
-      );
       return 'done';
     } catch (error) {
       this.logger.error(

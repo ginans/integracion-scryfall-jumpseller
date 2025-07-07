@@ -103,11 +103,6 @@ export class ProcessService {
             `Background recalculation failed: ${error.message}`,
           );
         });
-
-      this.logger.log(
-        `USD price updated and recalculation initiated for game: ${usdPrices.gameID}`,
-      );
-
       return {
         success: true,
         message: `USD price updated to ${usdPrices.usdPrice}. Previous recalculations canceled, new one started in background.`,

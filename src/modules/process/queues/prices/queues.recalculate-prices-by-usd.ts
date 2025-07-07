@@ -24,6 +24,8 @@ export class QueuesRecalculatePricesByUsd {
 
   //recalcular precios al cambiar el precio del dolar
   async recalculatePricesByUsd(newUsdPrice: IUsdPrice) {
+    //NOTE: MUTEX NO FUNCIONA COMO TAL PERO FUNCIONA PARA ELIMINAR LA COLA ANTERIOR
+    //NO TOCAR JAJAJAJAJA
     // 🔒 MUTEX: Si ya está procesando, esperar a que termine
     if (this.isProcessing) {
       this.logger.log('⏳ Another recalculation is in progress, waiting...');
@@ -36,13 +38,6 @@ export class QueuesRecalculatePricesByUsd {
     this.isProcessing = true; // 🔒 Lockear
 
     try {
-      this.logger.log(
-        `Starting USD recalculation for game: ${newUsdPrice.game}`,
-      );
-
-      // CANCELACIÓN: Obliterar toda la queue si llega un nuevo precio USD
-      this.logger.log('OBLITERATING ALL previous recalculation jobs...');
-
       try {
         await this.QueuesRecalculatePricesByUsd.obliterate({ force: true });
         this.logger.log('✅ Queue obliterated successfully');
@@ -66,8 +61,6 @@ export class QueuesRecalculatePricesByUsd {
         undefined,
       );
 
-      this.logger.log(`Found ${obtainedVariants.length} variants to process`);
-
       // Encolar nuevos jobs con timestamp para identificación
       const timestamp = Date.now();
 
@@ -77,9 +70,8 @@ export class QueuesRecalculatePricesByUsd {
           'recalculate-prices-by-usd',
           {
             ...variant,
-            recalcTimestamp: timestamp,
             game: newUsdPrice.game,
-            newUsdPrice: newUsdPrice.usdPrice, //Agregar el nuevo precio USD al nombre para identificar el precio que se esta procesando
+            newUsdPrice: newUsdPrice.usdPrice,
           },
           {
             // Usar ID único que incluya el precio USD para mejor identificación
@@ -87,10 +79,6 @@ export class QueuesRecalculatePricesByUsd {
           },
         );
       }
-
-      this.logger.log(
-        `Successfully queued ${obtainedVariants.length} variants for USD price recalculation (timestamp: ${timestamp})`,
-      );
     } catch (error) {
       this.logger.error(`Error in recalculatePricesByUsd: ${error.message}`);
       throw error;

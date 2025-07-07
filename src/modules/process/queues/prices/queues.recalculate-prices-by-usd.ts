@@ -24,8 +24,7 @@ export class QueuesRecalculatePricesByUsd {
 
   //recalcular precios al cambiar el precio del dolar
   async recalculatePricesByUsd(newUsdPrice: IUsdPrice) {
-    //NOTE: MUTEX NO FUNCIONA COMO TAL PERO FUNCIONA PARA ELIMINAR LA COLA ANTERIOR
-    //NO TOCAR JAJAJAJAJA
+   
     // 🔒 MUTEX: Si ya está procesando, esperar a que termine
     if (this.isProcessing) {
       this.logger.log('⏳ Another recalculation is in progress, waiting...');

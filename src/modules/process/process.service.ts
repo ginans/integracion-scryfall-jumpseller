@@ -1,6 +1,10 @@
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
@@ -12,6 +16,7 @@ import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
 import { ISaleData } from '../jumpseller/interfaces/orders-jumpseller/saleData.interface';
+import { QueuesRecalculatePricesByUsd } from './queues/prices/queues.recalculate-prices-by-usd';
 
 @Injectable()
 export class ProcessService {
@@ -26,77 +31,128 @@ export class ProcessService {
     private readonly variantService: StagingProductVariantService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
-    @InjectQueue('1-sync-magic-cards') private readonly syncMagicCardsQueue: Queue,
+    private readonly queuesRecalculatePricesByUsd: QueuesRecalculatePricesByUsd,
+    @InjectQueue('1-sync-magic-cards')
+    private readonly syncMagicCardsQueue: Queue,
     @InjectQueue('queues-stock') private readonly queuesStock: Queue,
     @InjectQueue('queues-api-prices') private readonly queuesApiPrices: Queue,
-    @InjectQueue('update-prices-from-front') private readonly queuesPricesFromFront: Queue,
-    @InjectQueue("queues-recalculate-prices-by-usd") private readonly QueuesRecalculatePricesByUsd: Queue,
-    @InjectQueue("queues-recalculate-prices-by-base") private readonly QueuesRecalculatePricesByBase: Queue,
+    @InjectQueue('update-prices-from-front')
+    private readonly queuesPricesFromFront: Queue,
+    @InjectQueue('queues-recalculate-prices-by-base')
+    private readonly QueuesRecalculatePricesByBase: Queue,
     @InjectQueue('save-order') private readonly SaveOrderProcessor: Queue,
-    @InjectQueue('update-stock-sales') private readonly UpdateStockSalesProcessor: Queue,
-  ) { }
+    @InjectQueue('update-stock-sales')
+    private readonly UpdateStockSalesProcessor: Queue,
+  ) {}
 
-   async handleOrdersWebhook(order: ISaleData) {
+  async handleOrdersWebhook(order: ISaleData) {
     try {
-      await this.SaveOrderProcessor.add('save-order', order );
-      
+      await this.SaveOrderProcessor.add('save-order', order);
+
       await this.UpdateStockSalesProcessor.add('update-stock-sales', order);
     } catch (error) {
       this.logger.error('Error procesando el webhook de la orden', error);
-      throw new InternalServerErrorException('Error procesando el webhook de la orden');
+      throw new InternalServerErrorException(
+        'Error procesando el webhook de la orden',
+      );
     }
   }
 
   async updateStockQueue(variants: IStockFromFront[]) {
-    for(const variant of variants){
+    for (const variant of variants) {
       await this.queuesStock.add('update-stock', variant);
     }
   }
 
   //actualizar precios de las variantes desde el front
   async updatePricesFromFrontQueue(variants: IPriceFromFront[]) {
-    for(const variant of variants){
+    for (const variant of variants) {
       await this.queuesPricesFromFront.add('update-prices-from-front', variant);
     }
   }
 
   //actualizar precios de las variantes desde el api
   async updateApiPricesQueue(idsJumpseller: IdsJumpseller) {
-      const variant = await this.variantService.obtainVariantforPrices(idsJumpseller.variantId, idsJumpseller.productId, undefined, undefined);
-      await this.queuesApiPrices.add('queues-api-prices', variant[0]);
-  }
-
-  //recalcular precios al cambiar el precio base (rareza)
-  async recalculatePricesByBase(basePrices: RecalculatePricesByBaseDto ) {
-    //actualizo el precio base
-
-    //devolver un status 200 para que no quede cargando
-    const newBasePrice = await this.basePricesService.updateBasePrices(basePrices.id, basePrices.subId, basePrices.price);
-    
-    //obtengo los variantes
-    const obtainedVariants =await this.variantService.obtainVariantforPrices( undefined, undefined, newBasePrice.game, newBasePrice.details.label);
-
-    //las proceso una a una para que se actualicen los precios
-    for(const variant of obtainedVariants){
-      await this.QueuesRecalculatePricesByBase.add("queues-recalculate-prices-by-base", variant);
-    }
+    const variant = await this.variantService.obtainVariantforPrices(
+      idsJumpseller.variantId,
+      idsJumpseller.productId,
+      undefined,
+      undefined,
+    );
+    await this.queuesApiPrices.add('queues-api-prices', variant[0]);
   }
 
   //recalcular precios al cambiar el precio del dolar
-  async recalculatePricesByUsd(usdPrices: RecalculatePricesByUsdDto ) {
-    //actualizo el precio del dolar
-    const newUsdPrice = await this.usdPricesService.updateUsdPriceByGame(usdPrices.gameID, usdPrices.usdPrice);
+  async recalculatePricesByUsd(usdPrices: RecalculatePricesByUsdDto) {
+    try {
+      this.logger.log(
+        `Starting USD price recalculation for game: ${usdPrices.gameID}`,
+      );
+
+      // 1. Actualizar precio USD
+      const newUsdPrice = await this.usdPricesService.updateUsdPriceByGame(
+        usdPrices.gameID,
+        usdPrices.usdPrice,
+      );
+
+      // 2. Iniciar nuevo recálculo
+      this.queuesRecalculatePricesByUsd
+        .recalculatePricesByUsd(newUsdPrice)
+        .catch((error) => {
+          this.logger.error(
+            `Background recalculation failed: ${error.message}`,
+          );
+        });
+
+      this.logger.log(
+        `USD price updated and recalculation initiated for game: ${usdPrices.gameID}`,
+      );
+
+      return {
+        success: true,
+        message: `USD price updated to ${usdPrices.usdPrice}. Previous recalculations canceled, new one started in background.`,
+        usdPrice: newUsdPrice,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error(`Error initiating USD recalculation: ${error.message}`);
+      throw error;
+    }
+  }
+
+  //recalcular precios al cambiar el precio base (rareza)
+  async recalculatePricesByBase(basePrices: RecalculatePricesByBaseDto) {
+    //actualizo el precio base
+
+    //devolver un status 200 para que no quede cargando
+    const newBasePrice = await this.basePricesService.updateBasePrices(
+      basePrices.id,
+      basePrices.subId,
+      basePrices.price,
+    );
 
     //obtengo los variantes
-    const obtainedVariants =await this.variantService.obtainVariantforPrices( undefined, undefined, newUsdPrice.game, undefined );
+    const obtainedVariants = await this.variantService.obtainVariantforPrices(
+      undefined,
+      undefined,
+      newBasePrice.game,
+      newBasePrice.details.label,
+    );
 
     //las proceso una a una para que se actualicen los precios
-    for(const variant of obtainedVariants){
-     await this.QueuesRecalculatePricesByUsd.add("queues-recalculate-prices-by-usd", variant);
-  }
+    for (const variant of obtainedVariants) {
+      await this.QueuesRecalculatePricesByBase.add(
+        'queues-recalculate-prices-by-base',
+        variant,
+      );
+    }
   }
 
   async initCardMagic(): Promise<void> {
-    await this.syncMagicCardsQueue.add('sync-magic-cards', { lang: ILangUrlEnum.EN }, {priority: 0});
+    await this.syncMagicCardsQueue.add(
+      'sync-magic-cards',
+      { lang: ILangUrlEnum.EN },
+      { priority: 0 },
+    );
   }
 }

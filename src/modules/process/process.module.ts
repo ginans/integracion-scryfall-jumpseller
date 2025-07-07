@@ -12,7 +12,6 @@ import { QueuesPricesFromFront } from './queues/prices/queues-prices-from-front'
 import { QueuesRecalculatePricesByBase } from './queues/prices/queues.recalculate-prices-by-base';
 import { BasePricesModule } from '../prices/base-prices/base-prices.module';
 import { UsdPricesModule } from '../prices/usd-prices/usd-prices.module';
-import { QueuesRecalculatePricesByUds } from './queues/prices/queues.recalculate-prices-by-usd';
 import { QueuesApiPrices } from './queues/prices/queues.api-prices';
 import { SaveMagicCardsProcessor } from './processors/2-save-magic-cards.processor';
 import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.processor';
@@ -28,6 +27,8 @@ import { CreateImagesRequestProcessor } from './processors/4-create-images-reque
 import { CreateCustomFieldsRequestProcessor } from './processors/5-create-custom-fields-request.processor';
 import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller-request-coordinator.processor';
 import { RedisCacheService } from 'src/common/services/redis-cache.service';
+import { QueuesRecalculatePricesByUsd } from './queues/prices/queues.recalculate-prices-by-usd';
+import { RecalculatePricesByUsdProcessor } from './processors/prices/recalculate-prices-by-usd';
 
 @Module({
   imports: [
@@ -98,7 +99,6 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
       name: '6-create-variants-request',
       defaultJobOptions: {
         lifo: true,
-
       },
     }),
     BullBoardModule.forFeature({
@@ -125,7 +125,7 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
         backoff: {
           type: 'exponential',
           delay: 2000,
-        },        
+        },
       },
     }),
     BullBoardModule.forFeature({
@@ -168,13 +168,13 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
     }),
     //recalcular precios por precios del dolar
     BullModule.registerQueue({
-      name: 'queues-recalculate-prices-by-usd',
+      name: 'recalculate-prices-by-usd',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: 'queues-recalculate-prices-by-usd',
+      name: 'recalculate-prices-by-usd',
       adapter: BullMQAdapter,
     }),
     //actualizar precios desde el front, individuales y masivos
@@ -218,7 +218,8 @@ import { RedisCacheService } from 'src/common/services/redis-cache.service';
     QueuesStock,
     QueuesApiPrices,
     QueuesRecalculatePricesByBase,
-    QueuesRecalculatePricesByUds,
+    QueuesRecalculatePricesByUsd,
+    RecalculatePricesByUsdProcessor,
     QueuesPricesFromFront,
     JumpsellerMapperService,
     JumpsellerService,

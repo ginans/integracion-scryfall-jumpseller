@@ -70,6 +70,7 @@ export class SaveVariantsInBDProcessor extends WorkerHost {
             `❌ La respuesta de crear variante no contiene 'variant' para carta: ${enCard.id} - ${enCard.name}. Respuesta: ${JSON.stringify(variantResponse)}`,
           );
         }
+        //TODO: AGREGAR RATE LIMIT O PROCESAR LUEGO DE QUE TERMINA TODO EL PROCESO DE CRECION DE VARIANTES
         await this.magicCardsService.calculatePrice(
           createdProduct.product.id,
           createdVariant.variantId,

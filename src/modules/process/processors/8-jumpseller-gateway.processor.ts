@@ -13,7 +13,7 @@ import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 
 @Processor('8-jumpseller-gateway', {
   concurrency: 30,
-  limiter: { max: 28, duration: 1000 },
+  limiter: { max: 18, duration: 1000 },
 })
 export class JumpsellerGatewayProcessor extends WorkerHost {
   constructor(

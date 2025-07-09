@@ -12,8 +12,8 @@ import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/pro
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 
 @Processor('8-jumpseller-gateway', {
-  concurrency: 30,
-  limiter: { max: 18, duration: 1000 },
+  concurrency: 15,
+  limiter: { max: 15, duration: 1000 },
 })
 export class JumpsellerGatewayProcessor extends WorkerHost {
   constructor(
@@ -143,9 +143,9 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
               );
             //delay parche
             await new Promise((resolve) => setTimeout(resolve, 300));
-            if (!response.product) {
+            if (!response?.product) {
               throw new Error(
-                `❌ No se pudo enviar el custom field ${enCard.id} - ${enCard.name}. Respuesta: ${JSON.stringify(response)}`,
+                `❌ No se pudo enviar el custom field ${enCard?.id} - ${enCard?.name}. Respuesta: ${JSON.stringify(response)}`,
               );
             }
           } else {

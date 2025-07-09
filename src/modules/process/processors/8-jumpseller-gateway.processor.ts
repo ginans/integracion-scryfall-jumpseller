@@ -6,16 +6,14 @@ import { JumpsellerCreateVariantRequestForBD } from 'src/modules/jumpseller/inte
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { MagicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
-import {
-  RequestTypeEnum,
-} from '../enums/request-type.enum';
+import { RequestTypeEnum } from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 
 @Processor('8-jumpseller-gateway', {
-  concurrency: 18,
-  limiter: { max: 18, duration: 1000 },
+  concurrency: 30,
+  limiter: { max: 28, duration: 1000 },
 })
 export class JumpsellerGatewayProcessor extends WorkerHost {
   constructor(

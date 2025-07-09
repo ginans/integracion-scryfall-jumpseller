@@ -13,6 +13,8 @@ export interface JumpsellerCreateVariantRequest {
         options?: JumpsellerVariantOption[];
     }
 }
+
+//TODO: BORRAR A FUTURO, TOMAR FINISH Y CONDITION DE JUMSELLERCREATEVARIANRESPONSE PARA CREACION DE VARIANTES INDIVIDUALES
 export interface JumpsellerCreateVariantRequestForBD extends JumpsellerCreateVariantRequest {
     finish?: string;
     condition?: string;

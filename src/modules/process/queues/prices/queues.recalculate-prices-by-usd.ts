@@ -39,7 +39,6 @@ export class QueuesRecalculatePricesByUsd {
     try {
       try {
         await this.QueuesRecalculatePricesByUsd.obliterate({ force: true });
-        this.logger.log('✅ Queue obliterated successfully');
       } catch (error) {
         this.logger.warn(
           `Obliterate failed, trying clean instead: ${error.message}`,

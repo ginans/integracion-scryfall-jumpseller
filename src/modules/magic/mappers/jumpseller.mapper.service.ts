@@ -113,7 +113,7 @@ createSku(card: MagicCard, lang?: Language, finish?: string, condition?: string)
   }${finish ? ("-" + finish) : ""}${condition ? ("-" + condition) : ""}`;
 }
 
-async mapDBProductToJumpseller(card: MagicCard, description: string[]): Promise<JumpsellerProductRequest> {
+async mapDBProductToJumpseller(card: MagicCard, description: string[], variantsRequest: JumpsellerCreateVariantRequest[]): Promise<JumpsellerProductRequest> {
   const cardFacesColors = card.cardFaces?.map(f => f.colors).flat() || [];
   let rarity: string;
   switch (card.rarity) {
@@ -154,6 +154,7 @@ async mapDBProductToJumpseller(card: MagicCard, description: string[]): Promise<
       height: 8.89,
       brand: EnumGame.MAGIC,
       categories: card.setId ? [{ name: card.setName || '', id: 1 }] : [],
+      variants : variantsRequest.length > 0 ? variantsRequest : [], //array con las variantes de esta carta en especifico
     };
   return { product };
 }
@@ -258,7 +259,6 @@ async mapCardFaceImageToJumpseller(card: MagicCard, faceIndex: number): Promise<
 async mapVariantsToJumpseller(
   card: MagicCard,
   languages: Language[],
-  // condition: EnumCondition
 ): Promise<JumpsellerCreateVariantRequest[]> {
      
   const finishes = [
@@ -267,7 +267,7 @@ async mapVariantsToJumpseller(
     { key: 'Etched', name: 'Etched Foil', suffix: 'EF', available: card.finishes?.includes('etched') },
   ];
   
-  const variants: JumpsellerCreateVariantRequestForBD[] = [];
+  const variants: JumpsellerCreateVariantRequest[] = [];
 
   for (const lang of languages) {
     for (const finish of finishes) {
@@ -282,8 +282,6 @@ async mapVariantsToJumpseller(
               { name: 'Condición', option_type: JumpsellerOptionType.OPTION, value: EnumCondition.NearMint },
             ],
           },
-          finish: finish.key === "Non-Foil"? "nonfoil" : finish.key === "Foil"? "foil" : "etched",
-          condition: "NM",
         });
     }
   }

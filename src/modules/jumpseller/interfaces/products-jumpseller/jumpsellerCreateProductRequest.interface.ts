@@ -1,3 +1,5 @@
+import { JumpsellerCreateVariantRequest } from "../variants-jumpseller/JumpsellerCreateVariantRequest.interface";
+
 //Solicitud a Jumpseller
 export interface JumpsellerProductRequest {
   product:{
@@ -29,7 +31,7 @@ export interface JumpsellerProductRequest {
     height?: number; //Altura del producto
     diameter?: number; //Diámetro del producto
     categories?: JumpSellerCategories[];
-    variants?: JumpsellerVariants[];
+    variants?: JumpsellerCreateVariantRequest[];
   }
 }
 
@@ -51,19 +53,19 @@ export interface JumpSellerCategories {
   permalink?: string //Ruta única de URL de la categoría
 }
 
-export interface JumpsellerVariants {
-  price?: number;
-  sku?: string;
-  barcode?: string; //Por defecto: 123456
-  stock?: number //Por defecto: 100
-  stock_unlimited?: boolean
-  stock_threshold?: number //Por defecto: 0
-  stock_notification?: boolean
-  cost_per_item?: number 
-  compare_at_price?: number
-  image_id?: number 
-  options?: JumpsellerOptions[]
-}
+// export interface JumpsellerVariants {
+//   price?: number;
+//   sku?: string;
+//   barcode?: string; //Por defecto: 123456
+//   stock?: number //Por defecto: 100
+//   stock_unlimited?: boolean
+//   stock_threshold?: number //Por defecto: 0
+//   stock_notification?: boolean
+//   cost_per_item?: number 
+//   compare_at_price?: number
+//   image_id?: number 
+//   options?: JumpsellerOptions[]
+// }
 
 export interface JumpsellerOptions {
   name?: string;

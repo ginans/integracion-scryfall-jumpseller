@@ -6,14 +6,16 @@ import { JumpsellerCreateVariantRequestForBD } from 'src/modules/jumpseller/inte
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { MagicCardDocument } from 'src/modules/magic/entities/magic-card.entity';
 import { MagicCardsService } from 'src/modules/magic/magic-cards.service';
-import { RequestTypeEnum } from '../enums/request-type.enum';
+import {
+  RequestTypeEnum,
+} from '../enums/request-type.enum';
 import { JumpsellerProductRequest } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
 import { JumpsellerProductResponse } from 'src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
 import { Language } from 'src/modules/magic/mappers/jumpseller.mapper.service';
 
 @Processor('8-jumpseller-gateway', {
-  concurrency: 15,
-  limiter: { max: 15, duration: 1000 },
+  concurrency: 18,
+  limiter: { max: 18, duration: 1000 },
 })
 export class JumpsellerGatewayProcessor extends WorkerHost {
   constructor(
@@ -27,6 +29,17 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
         productId: number;
         thereIsSpanishVersion: boolean;
         lang?: Language[];
+      },
+      string,
+      string
+    >,
+    @InjectQueue('save-variants-in-bd')
+    private readonly saveVariantsInBDQueue: Queue<
+      {
+        enCard: MagicCardDocument;
+        esCard?: MagicCardDocument | null;
+        createdProduct: JumpsellerProductResponse;
+        thereIsSpanishVersion?: boolean;
       },
       string,
       string
@@ -83,6 +96,24 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
             createdProduct.product.id,
           );
 
+          //enviar al job save variants in bd
+          await this.saveVariantsInBDQueue.add(
+            `Save Variants in BD for ${createdProduct.product.sku}`, //nombre del job
+            {
+              enCard: enCard,
+              esCard: esCard || null,
+              createdProduct: createdProduct,
+              thereIsSpanishVersion: thereIsSpanishVersion,
+            },
+            {
+              attempts: 3,
+              backoff: {
+                type: 'exponential',
+                delay: 1000,
+              },
+            },
+          );
+
           //enviar al job 7
           await this.JumpsellerRequestCoordinatorQueue.add(
             `Coordinator Job`, //nombre del job
@@ -94,7 +125,7 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
               lang: lang,
             },
             {
-              delay: 500,
+              delay: 100,
               attempts: 5,
               backoff: {
                 type: 'exponential',
@@ -141,52 +172,6 @@ export class JumpsellerGatewayProcessor extends WorkerHost {
             );
           }
           break;
-
-        case RequestTypeEnum.VARIANTS:
-          const { variant, condition, finish } =
-            body as JumpsellerCreateVariantRequestForBD;
-
-          if (!variant || !variant.sku) {
-            throw new Error(`Missing variant data for product ID ${productId}`);
-          }
-          const variantResponse =
-            await this.magicCardsService.createJumpsellerVariant(productId, {
-              variant: variant,
-            });
-
-          if (esCard && thereIsSpanishVersion === true && variantResponse) {
-            await this.magicCardsService.updateJumpsellerId(
-              esCard.id,
-              productId,
-            );
-          }
-          //crear la variante en la base de datos
-          if (!variantResponse) {
-            throw new Error(
-              `❌ La respuesta de crear variante no contiene 'variant' para carta: ${enCard.id} - ${enCard.name}. Respuesta: ${JSON.stringify(variantResponse)}`,
-            );
-          }
-
-          const createdProductInBD =
-            await this.magicCardsService.findCardByScryfallId(enCard.id);
-          if (!createdProductInBD) {
-            throw new Error(
-              `❌ No se encontró el producto en la base de datos para la carta: ${enCard.id} - ${enCard.name}`,
-            );
-          }
-          await this.magicCardsService.createVariantInApp(
-            createdProductInBD,
-            variantResponse,
-            condition,
-            finish,
-          );
-
-          await this.magicCardsService.calculatePrice(
-            productId,
-            variantResponse.variant.id,
-          );
-          break;
-
         default:
           console.log('Tipo de solicitud no reconocido:', requestType);
           throw new Error(

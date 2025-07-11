@@ -194,18 +194,28 @@ export class MagicCardsService {
   ): Promise<void> {
     await this.jumpsellerService.insertImages(productId, images);
   }
-  async processAndInsertCustomFields(card: MagicCard, idJumpseller: number): Promise<void> {
+  async processAndInsertCustomFields(
+    card: MagicCard,
+    idJumpseller: number,
+  ): Promise<void> {
     const customFields = await this.getAllCustomFields();
     if (!customFields || customFields.length === 0) return;
-    const requestsCustomFields = await this.customFieldsMapperService.mappedCustomFields(card, customFields);
-      for (const customField of requestsCustomFields) {
-        try {
-          await this.jumpsellerService.addCustomFieldInProduct(idJumpseller, customField);
-        } catch (error) {
-          this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
-        }
-        await this.delay(300);
+    const requestsCustomFields =
+      await this.customFieldsMapperService.mappedCustomFields(
+        card,
+        customFields,
+      );
+    for (const customField of requestsCustomFields) {
+      try {
+        await this.jumpsellerService.addCustomFieldInProduct(
+          idJumpseller,
+          customField,
+        );
+      } catch (error) {
+        this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
       }
+      await this.delay(300);
+    }
   }
   //buscar actualizar o crear magic card
   async createMagicCards(
@@ -243,7 +253,6 @@ export class MagicCardsService {
       status,
       lang,
       set,
-      setName,
     } = query;
 
     const sort: { [key: string]: 1 | -1 } = {
@@ -256,9 +265,10 @@ export class MagicCardsService {
     if (search && search.length > 0) {
       const searchValue = search.trim();
       filters.$or = [];
-      if (!isNaN(Number(searchValue))) {
-        filters.$or.push({ receptionNbr: Number(searchValue) });
-      }
+      filters.$or.push({
+        collectorNumber: { $regex: searchValue, $options: 'i' },
+      });
+
       filters.$or.push({
         $expr: {
           $regexMatch: {
@@ -349,7 +359,7 @@ export class MagicCardsService {
     //     ? [...filters.$and, setNameFilter]
     //     : [setNameFilter];
     // }
-
+this.logger.log(`📋 Filtros aplicados: ${JSON.stringify(filters, null, 2)}`);
     try {
       const [productCards, total] = await Promise.all([
         this.model.find(filters).sort(sort).skip(skip).limit(limit).exec(),
@@ -625,8 +635,8 @@ export class MagicCardsService {
     // Convertir a string y agregar fallback
     return Array.from(uniqueGameChangers).map((name) => {
       return name ? 'Sí' : 'No';
-    }) ;
-  } 
+    });
+  }
   async getRarities(): Promise<string[]> {
     const rarityNames = await this.model.distinct('rarity').exec();
     return this.addFallbackString(
@@ -647,7 +657,7 @@ export class MagicCardsService {
     //convertir a string
     const cmcNamesAsString = cmcNames.map((name) => String(name));
     //agregar el fallback
-   const response = this.addFallbackString(
+    const response = this.addFallbackString(
       cmcNamesAsString,
       CustomFieldFallback.CMC,
     );
@@ -718,7 +728,7 @@ export class MagicCardsService {
       return name ? 'Sí' : 'No';
     });
     //agregar el fallback
-   const response = this.addFallbackString(
+    const response = this.addFallbackString(
       fullArtNamesAsString,
       CustomFieldFallback.FULL_ART,
     );
@@ -728,9 +738,11 @@ export class MagicCardsService {
     const textlessNames = await this.model.distinct('textless').exec();
     //si es true que ponga si, si es false, que ponga no
     const uniqueTextlessNames = new Set(textlessNames);
-    const textlessNamesAsString = Array.from(uniqueTextlessNames).map((name) => {
-      return name ? 'Sí' : 'No';
-    });
+    const textlessNamesAsString = Array.from(uniqueTextlessNames).map(
+      (name) => {
+        return name ? 'Sí' : 'No';
+      },
+    );
     //agregar el fallback
     const response = this.addFallbackString(
       textlessNamesAsString,
@@ -873,13 +885,16 @@ export class MagicCardsService {
         );
       }
     }
-    this.logger.log(`Se crearon ${responses.length} custom fields en Jumpseller`);
+    this.logger.log(
+      `Se crearon ${responses.length} custom fields en Jumpseller`,
+    );
     return responses;
   }
 
   //TODO: CORREGIR MAPEO
   async sentUpdateCFInJumpseller(): Promise<UpdateCustomFieldRequest[]> {
-    const createdCustomFields: JumpsellerCustomField[] = await this.getAllCustomFields();
+    const createdCustomFields: JumpsellerCustomField[] =
+      await this.getAllCustomFields();
     //si no hay custom fields creados, retornar
     if (!createdCustomFields || createdCustomFields.length === 0) {
       this.logger.warn(`No hay custom fields creados en Jumpseller`);
@@ -893,7 +908,10 @@ export class MagicCardsService {
           await this.logger.log(
             `Actualizando el custom field: ${JSON.stringify(customField)} - ${createdCF.id}`,
           );
-          const response = await this.updateCustomFields(customField, createdCF.id);
+          const response = await this.updateCustomFields(
+            customField,
+            createdCF.id,
+          );
           //DELAY
           await this.delay(300);
           responses.push(response);
@@ -904,7 +922,9 @@ export class MagicCardsService {
         );
       }
     }
-    this.logger.log(`Se actualizaron ${responses.length} custom fields en Jumpseller`);
+    this.logger.log(
+      `Se actualizaron ${responses.length} custom fields en Jumpseller`,
+    );
     return responses;
   }
 

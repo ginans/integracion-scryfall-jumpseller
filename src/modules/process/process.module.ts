@@ -18,7 +18,7 @@ import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.process
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
 import { UpdateStockSalesProcessor } from './processors/update-stock-sales.processor';
-import { CreateVariantsRequestProcessor } from './processors/6-create-variants-request.processor';
+// import { CreateVariantsRequestProcessor } from './processors/6-create-variants-request.processor';
 import { JumpsellerGatewayProcessor } from './processors/8-jumpseller-gateway.processor';
 import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
 import { SaveOrderProcessor } from './processors/save-order.processor';
@@ -29,6 +29,7 @@ import { JumpsellerRequestCoordinatorProcessor } from './processors/7-jumpseller
 import { RedisCacheService } from 'src/common/services/redis-cache.service';
 import { QueuesRecalculatePricesByUsd } from './queues/prices/queues.recalculate-prices-by-usd';
 import { RecalculatePricesByUsdProcessor } from './processors/prices/recalculate-prices-by-usd';
+import { SaveVariantsInBDProcessor } from './processors/save-variants-in-bd.processor';
 
 @Module({
   imports: [
@@ -96,16 +97,16 @@ import { RecalculatePricesByUsdProcessor } from './processors/prices/recalculate
       adapter: BullMQAdapter,
     }),
     BullModule.registerQueue({
-      name: '6-create-variants-request',
+      name: 'save-variants-in-bd',
       defaultJobOptions: {
         lifo: true,
       },
     }),
     BullBoardModule.forFeature({
-      name: '6-create-variants-request',
+      name: 'save-variants-in-bd',
       adapter: BullMQAdapter,
     }),
-    //job jumpseller gateway
+    // job jumpseller gateway
     BullModule.registerQueue({
       name: '7-jumpseller-request-coordinator',
       defaultJobOptions: {
@@ -220,6 +221,7 @@ import { RecalculatePricesByUsdProcessor } from './processors/prices/recalculate
     QueuesRecalculatePricesByBase,
     QueuesRecalculatePricesByUsd,
     RecalculatePricesByUsdProcessor,
+    SaveVariantsInBDProcessor,
     QueuesPricesFromFront,
     JumpsellerMapperService,
     JumpsellerService,
@@ -228,7 +230,7 @@ import { RecalculatePricesByUsdProcessor } from './processors/prices/recalculate
     CreateProductRequestProcessor,
     CreateImagesRequestProcessor,
     CreateCustomFieldsRequestProcessor,
-    CreateVariantsRequestProcessor,
+    // CreateVariantsRequestProcessor,
     JumpsellerGatewayProcessor,
     UpdateStockSalesProcessor,
     SaveOrderProcessor,

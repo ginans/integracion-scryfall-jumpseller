@@ -37,12 +37,12 @@ import { mapCardData } from './mappers/scryfall-to-db.mapper';
 import { mappedStaggingProductVariant } from './mappers/staging-product-variant.mapper';
 import { ProcessService } from '../process/process.service';
 import { JumpsellerProductRequest } from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
-import { JumpsellerProductResponse } from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
-import { EnumStatus } from './enums/status.enum';
 import {
-  JumpsellerCreateVariantRequest,
-  JumpsellerCreateVariantRequestForBD,
-} from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
+  JumpsellerProductResponse,
+  ICreateProductVariant,
+} from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
+import { EnumStatus } from './enums/status.enum';
+import { JumpsellerCreateVariantRequest } from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { JumpsellerCreateVariantResponse } from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
 import {
@@ -100,10 +100,12 @@ export class MagicCardsService {
   async mapCardData(
     card: MagicCard,
     description: string[],
+    variantsRequest: JumpsellerCreateVariantRequest[],
   ): Promise<JumpsellerProductRequest> {
     return this.jumpsellerMapperService.mapDBProductToJumpseller(
       card,
       description,
+      variantsRequest,
     );
   }
 
@@ -130,7 +132,7 @@ export class MagicCardsService {
   async createVariantsBody(
     card: MagicCard,
     langs: Language[],
-  ): Promise<JumpsellerCreateVariantRequestForBD[]> {
+  ): Promise<JumpsellerCreateVariantRequest[]> {
     return await this.jumpsellerMapperService.mapVariantsToJumpseller(
       card,
       langs,
@@ -147,7 +149,7 @@ export class MagicCardsService {
   }
   async createVariantInApp(
     card: MagicCard,
-    variant: JumpsellerCreateVariantResponse,
+    variant: ICreateProductVariant,
     condition: string,
     finish: string,
   ): Promise<StagingProductVariantDocument> {
@@ -157,7 +159,31 @@ export class MagicCardsService {
       condition,
       finish,
     );
-    return await this.stagingProductVariantModel.create(stagingVariant);
+    // Verificar si ya existe una variante con el mismo productId y variantId
+    const existingVariant = await this.stagingProductVariantModel.findOne({
+      productId: stagingVariant.productId,
+      variantId: stagingVariant.variantId,
+    });
+    if (existingVariant) {
+      this.logger.warn(
+        `⚠️ Variante ya existe: ProductId=${stagingVariant.productId}, VariantId=${stagingVariant.variantId}`,
+      );
+      return existingVariant; // Retornar la variante existente
+    }
+    // Usar upsert para evitar duplicados basado en productId y variantId
+    const result = await this.stagingProductVariantModel.findOneAndUpdate(
+      {
+        productId: stagingVariant.productId,
+        variantId: stagingVariant.variantId,
+      }, // Buscar por ProductId y VariantId
+      { $set: stagingVariant }, // Actualizar con los nuevos datos
+      {
+        upsert: true, // Crear si no existe
+        new: true, // Retornar el documento actualizado
+        runValidators: true, // Ejecutar validaciones
+      },
+    );
+    return result;
   }
   async findCardByJumpsellerId(idJumpSeller: number): Promise<MagicCard> {
     return await this.model.findOne({ idJumpSeller: idJumpSeller }).exec();
@@ -359,7 +385,9 @@ export class MagicCardsService {
     //     ? [...filters.$and, setNameFilter]
     //     : [setNameFilter];
     // }
-this.logger.log(`📋 Filtros aplicados: ${JSON.stringify(filters, null, 2)}`);
+    this.logger.log(
+      `📋 Filtros aplicados: ${JSON.stringify(filters, null, 2)}`,
+    );
     try {
       const [productCards, total] = await Promise.all([
         this.model.find(filters).sort(sort).skip(skip).limit(limit).exec(),

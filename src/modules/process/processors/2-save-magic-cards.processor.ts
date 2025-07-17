@@ -39,9 +39,6 @@ export class SaveMagicCardsProcessor extends WorkerHost {
       const cardInDB = await this.magicCardsService.createMagicCards(
         job.data.card,
       );
-      // const cardInDB = await this.magicCardsService.findCardByScryfallId(
-      //   card.id,
-      // );
       if (!cardInDB) {
         throw new Error('Card not found in database after creation');
       }

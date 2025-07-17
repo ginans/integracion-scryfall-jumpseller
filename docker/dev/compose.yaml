@@ -1,20 +1,11 @@
-name: "${APP_NAME}-${NODE_ENV}"
+version: "3.8"
 services:
   redis:
-    container_name: "${APP_NAME}-redis-${NODE_ENV}-${DB_NAME}"
-    image: redis:8.0-M02-alpine3.21
-    restart: always
+    image: redis:latest # Or a specific version like redis:6.2.6-alpine
+    container_name: redis_server
     ports:
-      - "${CACHE_PORT}:6379"
-    env_file:
-      - ../../.env
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - CACHE_PORT=${CACHE_PORT}
-      - APP_NAME=${APP_NAME}
-      - DB_NAME=${DB_NAME}
-    networks:
-      - app-network
-networks:
-  app-network:
-    driver: bridge
+      - "6379:6379" # Maps host port 6379 to container port 6379
+    volumes:
+      - redis_data:/data # Mounts a named volume for data persistence
+volumes:
+  redis_data: # Defines the named volume

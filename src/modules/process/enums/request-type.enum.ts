@@ -5,3 +5,9 @@ export enum RequestTypeEnum {
     CUSTOM_FIELDS = 4,
     PRICES = 5, 
 }
+
+export enum VariantOptionsEnum {
+    CONDITION = 'Condición',
+    FINISH = 'Acabado',
+    LANGUAGE = 'Lenguaje'
+}

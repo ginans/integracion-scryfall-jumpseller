@@ -24,19 +24,7 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
       },
       string,
       string
-    >,
-    @InjectQueue('6-create-variants-request')
-    private readonly CreateVariantsRequestQueue: Queue<
-      {
-        enCard: MagicCardDocument;
-        esCard?: MagicCardDocument | null;
-        thereIsSpanishVersion: boolean;
-        productId: number;
-        lang: Language[];
-      },
-      string,
-      string
-    >,
+    >
   ) {
     super();
   }
@@ -54,7 +42,7 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
     >,
   ) {
     try {
-      const { enCard, esCard, thereIsSpanishVersion, productId, lang } =
+      const { enCard, esCard, productId, lang } =
         job.data; // Enviar todos los jobs hijos en paralelo, manejando errores individualmente
       const results = await Promise.allSettled([
         this.CreateCustomFieldsRequestQueue.add('create-custom-fields', {
@@ -66,20 +54,12 @@ export class JumpsellerRequestCoordinatorProcessor extends WorkerHost {
           enCard: enCard,
           esCard: esCard || null,
           productId: productId,
-        }),
-
-        this.CreateVariantsRequestQueue.add('create-variants', {
-          enCard: enCard,
-          esCard: esCard || null,
-          thereIsSpanishVersion: thereIsSpanishVersion,
-          productId: productId,
-          lang: lang,
-        }),
+        })
       ]);
 
       // Verificar resultados individuales
       results.forEach((result, index) => {
-        const jobNames = ['images', 'variants'];
+        const jobNames = ['images', 'custom-fields'];
         if (result.status === 'rejected') {
           console.error(`❌ Error en job ${jobNames[index]}: ${result.reason}`);
         } else {

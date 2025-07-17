@@ -1,6 +1,7 @@
 import { EnumGame, EnumGamePrefix } from "src/common/enums/game.enum";
 import { JumpsellerCreateVariantResponse } from "src/modules/jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface";
 import { MagicCard } from '../entities/magic-card.entity';
+import { ICreateProductVariant } from "src/modules/jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface";
 
 // Exportamos la función para que pueda ser usada en otros archivos si es necesario
 export const getGameFromSku = (sku: string) => {
@@ -14,17 +15,18 @@ export const getGameFromSku = (sku: string) => {
   }
 };
 
-export const mappedStaggingProductVariant = (card: MagicCard, variant: JumpsellerCreateVariantResponse, condition, finish ) => {
+export const mappedStaggingProductVariant = (card: MagicCard, variant: ICreateProductVariant, condition, finish ) => {    
+
     return {
       productId: card.idJumpSeller,
-      variantId: variant.variant.id,
+      variantId: variant.id,
       name: card.name || "",
       anotherLangName: card.printedName || "",//TODO: problema, en carta en inglés no hay printedName, pero en español sí
-      sku: variant.variant.sku,
+      sku: variant.sku,
       finish: finish || "",
       rarity: card.rarity || "",
       condition: condition || "",
-      game: getGameFromSku(variant.variant.sku) || null,
+      game: getGameFromSku(variant.sku) || null,
       imageUrl: {
         large: card.imageUris?.large || null,
         cardFacelarge1: card.cardFaces?.[0]?.imageUris?.large || null,

@@ -37,12 +37,12 @@ import { mapCardData } from './mappers/scryfall-to-db.mapper';
 import { mappedStaggingProductVariant } from './mappers/staging-product-variant.mapper';
 import { ProcessService } from '../process/process.service';
 import { JumpsellerProductRequest } from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductRequest.interface';
-import { JumpsellerProductResponse } from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
-import { EnumStatus } from './enums/status.enum';
 import {
-  JumpsellerCreateVariantRequest,
-  JumpsellerCreateVariantRequestForBD,
-} from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
+  JumpsellerProductResponse,
+  ICreateProductVariant,
+} from '../jumpseller/interfaces/products-jumpseller/jumpsellerCreateProductResponse.interface';
+import { EnumStatus } from './enums/status.enum';
+import { JumpsellerCreateVariantRequest } from '../jumpseller/interfaces/variants-jumpseller/JumpsellerCreateVariantRequest.interface';
 import { JumpsellerCreateVariantResponse } from '../jumpseller/interfaces/variants-jumpseller/jumpsellerCreateVariantResponse.interface';
 import { ICreateImageRequest } from '../jumpseller/interfaces/create-image.interface';
 import {
@@ -100,10 +100,12 @@ export class MagicCardsService {
   async mapCardData(
     card: MagicCard,
     description: string[],
+    variantsRequest: JumpsellerCreateVariantRequest[],
   ): Promise<JumpsellerProductRequest> {
     return this.jumpsellerMapperService.mapDBProductToJumpseller(
       card,
       description,
+      variantsRequest,
     );
   }
 
@@ -130,7 +132,7 @@ export class MagicCardsService {
   async createVariantsBody(
     card: MagicCard,
     langs: Language[],
-  ): Promise<JumpsellerCreateVariantRequestForBD[]> {
+  ): Promise<JumpsellerCreateVariantRequest[]> {
     return await this.jumpsellerMapperService.mapVariantsToJumpseller(
       card,
       langs,
@@ -147,7 +149,7 @@ export class MagicCardsService {
   }
   async createVariantInApp(
     card: MagicCard,
-    variant: JumpsellerCreateVariantResponse,
+    variant: ICreateProductVariant,
     condition: string,
     finish: string,
   ): Promise<StagingProductVariantDocument> {
@@ -157,7 +159,31 @@ export class MagicCardsService {
       condition,
       finish,
     );
-    return await this.stagingProductVariantModel.create(stagingVariant);
+    // Verificar si ya existe una variante con el mismo productId y variantId
+    const existingVariant = await this.stagingProductVariantModel.findOne({
+      productId: stagingVariant.productId,
+      variantId: stagingVariant.variantId,
+    });
+    if (existingVariant) {
+      this.logger.warn(
+        `⚠️ Variante ya existe: ProductId=${stagingVariant.productId}, VariantId=${stagingVariant.variantId}`,
+      );
+      return existingVariant; // Retornar la variante existente
+    }
+    // Usar upsert para evitar duplicados basado en productId y variantId
+    const result = await this.stagingProductVariantModel.findOneAndUpdate(
+      {
+        productId: stagingVariant.productId,
+        variantId: stagingVariant.variantId,
+      }, // Buscar por ProductId y VariantId
+      { $set: stagingVariant }, // Actualizar con los nuevos datos
+      {
+        upsert: true, // Crear si no existe
+        new: true, // Retornar el documento actualizado
+        runValidators: true, // Ejecutar validaciones
+      },
+    );
+    return result;
   }
   async findCardByJumpsellerId(idJumpSeller: number): Promise<MagicCard> {
     return await this.model.findOne({ idJumpSeller: idJumpSeller }).exec();
@@ -194,18 +220,28 @@ export class MagicCardsService {
   ): Promise<void> {
     await this.jumpsellerService.insertImages(productId, images);
   }
-  async processAndInsertCustomFields(card: MagicCard, idJumpseller: number): Promise<void> {
+  async processAndInsertCustomFields(
+    card: MagicCard,
+    idJumpseller: number,
+  ): Promise<void> {
     const customFields = await this.getAllCustomFields();
     if (!customFields || customFields.length === 0) return;
-    const requestsCustomFields = await this.customFieldsMapperService.mappedCustomFields(card, customFields);
-      for (const customField of requestsCustomFields) {
-        try {
-          await this.jumpsellerService.addCustomFieldInProduct(idJumpseller, customField);
-        } catch (error) {
-          this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
-        }
-        await this.delay(300);
+    const requestsCustomFields =
+      await this.customFieldsMapperService.mappedCustomFields(
+        card,
+        customFields,
+      );
+    for (const customField of requestsCustomFields) {
+      try {
+        await this.jumpsellerService.addCustomFieldInProduct(
+          idJumpseller,
+          customField,
+        );
+      } catch (error) {
+        this.logger.error(`❌ Error al agregar custom field: ${error.message}`);
       }
+      await this.delay(300);
+    }
   }
   //buscar actualizar o crear magic card
   async createMagicCards(
@@ -243,7 +279,6 @@ export class MagicCardsService {
       status,
       lang,
       set,
-      setName,
     } = query;
 
     const sort: { [key: string]: 1 | -1 } = {
@@ -256,9 +291,10 @@ export class MagicCardsService {
     if (search && search.length > 0) {
       const searchValue = search.trim();
       filters.$or = [];
-      if (!isNaN(Number(searchValue))) {
-        filters.$or.push({ receptionNbr: Number(searchValue) });
-      }
+      filters.$or.push({
+        collectorNumber: { $regex: searchValue, $options: 'i' },
+      });
+
       filters.$or.push({
         $expr: {
           $regexMatch: {
@@ -349,7 +385,9 @@ export class MagicCardsService {
     //     ? [...filters.$and, setNameFilter]
     //     : [setNameFilter];
     // }
-
+    this.logger.log(
+      `📋 Filtros aplicados: ${JSON.stringify(filters, null, 2)}`,
+    );
     try {
       const [productCards, total] = await Promise.all([
         this.model.find(filters).sort(sort).skip(skip).limit(limit).exec(),
@@ -625,8 +663,8 @@ export class MagicCardsService {
     // Convertir a string y agregar fallback
     return Array.from(uniqueGameChangers).map((name) => {
       return name ? 'Sí' : 'No';
-    }) ;
-  } 
+    });
+  }
   async getRarities(): Promise<string[]> {
     const rarityNames = await this.model.distinct('rarity').exec();
     return this.addFallbackString(
@@ -647,7 +685,7 @@ export class MagicCardsService {
     //convertir a string
     const cmcNamesAsString = cmcNames.map((name) => String(name));
     //agregar el fallback
-   const response = this.addFallbackString(
+    const response = this.addFallbackString(
       cmcNamesAsString,
       CustomFieldFallback.CMC,
     );
@@ -718,7 +756,7 @@ export class MagicCardsService {
       return name ? 'Sí' : 'No';
     });
     //agregar el fallback
-   const response = this.addFallbackString(
+    const response = this.addFallbackString(
       fullArtNamesAsString,
       CustomFieldFallback.FULL_ART,
     );
@@ -728,9 +766,11 @@ export class MagicCardsService {
     const textlessNames = await this.model.distinct('textless').exec();
     //si es true que ponga si, si es false, que ponga no
     const uniqueTextlessNames = new Set(textlessNames);
-    const textlessNamesAsString = Array.from(uniqueTextlessNames).map((name) => {
-      return name ? 'Sí' : 'No';
-    });
+    const textlessNamesAsString = Array.from(uniqueTextlessNames).map(
+      (name) => {
+        return name ? 'Sí' : 'No';
+      },
+    );
     //agregar el fallback
     const response = this.addFallbackString(
       textlessNamesAsString,
@@ -873,13 +913,16 @@ export class MagicCardsService {
         );
       }
     }
-    this.logger.log(`Se crearon ${responses.length} custom fields en Jumpseller`);
+    this.logger.log(
+      `Se crearon ${responses.length} custom fields en Jumpseller`,
+    );
     return responses;
   }
 
   //TODO: CORREGIR MAPEO
   async sentUpdateCFInJumpseller(): Promise<UpdateCustomFieldRequest[]> {
-    const createdCustomFields: JumpsellerCustomField[] = await this.getAllCustomFields();
+    const createdCustomFields: JumpsellerCustomField[] =
+      await this.getAllCustomFields();
     //si no hay custom fields creados, retornar
     if (!createdCustomFields || createdCustomFields.length === 0) {
       this.logger.warn(`No hay custom fields creados en Jumpseller`);
@@ -893,7 +936,10 @@ export class MagicCardsService {
           await this.logger.log(
             `Actualizando el custom field: ${JSON.stringify(customField)} - ${createdCF.id}`,
           );
-          const response = await this.updateCustomFields(customField, createdCF.id);
+          const response = await this.updateCustomFields(
+            customField,
+            createdCF.id,
+          );
           //DELAY
           await this.delay(300);
           responses.push(response);
@@ -904,7 +950,9 @@ export class MagicCardsService {
         );
       }
     }
-    this.logger.log(`Se actualizaron ${responses.length} custom fields en Jumpseller`);
+    this.logger.log(
+      `Se actualizaron ${responses.length} custom fields en Jumpseller`,
+    );
     return responses;
   }
 

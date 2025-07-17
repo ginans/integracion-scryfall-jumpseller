@@ -153,14 +153,14 @@ export class SyncMagicCardsProcessor extends WorkerHost {
 
         process = data.has_more;
         /**
-         * Para probar el flujo de solo 1 página, descomentar la siguiente línea;
+         * Para probar el flujo con una cantidad definida de paginas, descomentar la siguiente línea;
          */
-        if (page == 20) process = false;
+        // if (page == 20) process = false; //prueba de 20 páginas
         page++;
         // Solo aplicar delay si consultamos Scryfall (no desde cache)
         if (!usedCache) {
           // Delay conservador de 1 segundo para evitar soft-ban
-          await new Promise((resolve) => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       } while (process);
 
@@ -177,7 +177,7 @@ export class SyncMagicCardsProcessor extends WorkerHost {
             ).toFixed(1)
           : 0;
 
-      console.log(`🧐 Resumen Final (${lg}) - Total: ${count} cartas`);
+      console.log(`Resumen Final (${lg}) - Total: ${count} cartas`);
       console.log(
         `   📄 Páginas: ${cacheHits}H/${cacheMisses}M (${pageHitRate}%) | 🇪🇸 Español: ${spanishCacheHits}H/${spanishCacheMisses}M (${spanishHitRate}%)`,
       );

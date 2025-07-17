@@ -43,6 +43,7 @@ import { SaveVariantsInBDProcessor } from './processors/save-variants-in-bd.proc
       name: '1-sync-magic-cards',
       defaultJobOptions: {
         lifo: true,
+        attempts: 3,
       },
     }),
     BullBoardModule.forFeature({

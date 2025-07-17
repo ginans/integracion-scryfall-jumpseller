@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:latest # Or a specific version like redis:6.2.6-alpine
+    container_name: redis_server
+    ports:
+      - "6379:6379" # Maps host port 6379 to container port 6379
+    volumes:
+      - redis_data:/data # Mounts a named volume for data persistence
+volumes:
+  redis_data: # Defines the named volume

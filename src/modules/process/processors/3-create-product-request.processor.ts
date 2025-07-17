@@ -56,11 +56,23 @@ export class CreateProductRequestProcessor extends WorkerHost {
         descriptions.push(`Nombre en ${lang}: ${job.data.esCard.printedName}.`);
       }
       await job.updateProgress(20);
+
+       const variantsRequest = await this.magicCardsService.createVariantsBody(
+        enCard,
+        languages
+      );
+
+      if (!variantsRequest || variantsRequest.length === 0) {
+        throw new Error(
+          `No se pudieron crear variantes para la carta con id: ${enCard.id} y nombre: ${enCard.name}`,
+        );
+      }
       
       //mapea la carta a un formato que Jumpseller entienda como producto
       const mappedEnProduct = await this.magicCardsService.mapCardData(
         job.data.enCard,
         descriptions,
+        variantsRequest,
       );
       await job.updateProgress(50);
       // Solo crear producto si no existe y si tenemos los datos mapeados

@@ -43,15 +43,7 @@ export class BasePricesService {
           const basePrices = await this.basePriceModel.find().exec();
           if (basePrices.length === 0) {
             throw new Error('No hay precios base registrados');
-          } else {
-            // Log para debug - muestra los IDs reales
-            console.log(
-              'IDs encontrados:',
-              basePrices.map((bp) => ({
-                id: bp._id.toString(),
-                game: bp.game,
-              })),
-            );
+          } else {       
             return basePrices;
           }
         } catch (error) {
@@ -113,14 +105,9 @@ export class BasePricesService {
           new: true,
         },
       );
-
-      console.log('Respuesta de la actualización:', response);
-
       const updatedItem = response.basePrices.find(
         (item) => item._id.toString() === subId.toString(),
       );
-
-      console.log('Elemento actualizado:', updatedItem);
       return {
         game: response.game,
         details: updatedItem || null,

@@ -7,13 +7,13 @@ import {
   IOrder,
   ISaleData,
 } from 'src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface';
-import { StagingProductVariantService } from 'src/modules/variants/variants.service';
+import { VariantsService } from 'src/modules/variants/variants.service';
 
 @Processor('save-order')
 export class SaveOrderProcessor extends WorkerHost {
   constructor(
     private readonly ordersService: OrdersService,
-    private readonly stagingProductVariantService: StagingProductVariantService,
+    private readonly variantsService: VariantsService,
   ) {
     super();
   }
@@ -28,7 +28,7 @@ export class SaveOrderProcessor extends WorkerHost {
       job.updateProgress(50);
       const orderResponse = await this.ordersService.createOrders(mappedOrder);
       job.updateProgress(75);
-      await this.stagingProductVariantService.updateStock(order);
+      await this.variantsService.updateStock(order);
       job.updateProgress(100);
       return orderResponse;
     } catch (error) {

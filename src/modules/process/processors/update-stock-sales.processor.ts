@@ -1,12 +1,12 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { ISaleData } from 'src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface';
-import { StagingProductVariantService } from 'src/modules/variants/variants.service';
+import { VariantsService } from 'src/modules/variants/variants.service';
 
 @Processor('update-stock-sales')
 export class UpdateStockSalesProcessor extends WorkerHost {
   constructor(
-    private readonly stagingProductVariantService: StagingProductVariantService,
+    private readonly variantsService: VariantsService,
   ) {
     super();
   }
@@ -19,7 +19,7 @@ export class UpdateStockSalesProcessor extends WorkerHost {
       const { order } = job.data;
       job.updateProgress(50);
       const updatedStockAndSales =
-        await this.stagingProductVariantService.updateStock(order);
+        await this.variantsService.updateStock(order);
       job.updateProgress(100);
       return updatedStockAndSales;
     } catch (error) {

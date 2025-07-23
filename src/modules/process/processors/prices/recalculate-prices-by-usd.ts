@@ -1,8 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/variants/variants.service';
-import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
+import { VariantsService } from 'src/modules/variants/variants.service';
 
 @Processor('recalculate-prices-by-usd')
 export class RecalculatePricesByUsdProcessor extends WorkerHost {
@@ -10,8 +9,7 @@ export class RecalculatePricesByUsdProcessor extends WorkerHost {
     timestamp: true,
   });
   constructor(
-    private readonly stagingProductVariantService: StagingProductVariantService,
-    private readonly usdPricesService: UsdPricesService,
+    private readonly variantService: VariantsService,
   ) {
     super();
   }
@@ -20,7 +18,7 @@ export class RecalculatePricesByUsdProcessor extends WorkerHost {
       // Calcular precios del dolar por variante
       await job.updateProgress(25);
 
-      await this.stagingProductVariantService.calculatePricesByVariant(
+      await this.variantService.calculatePricesByVariant(
         job.data,
       );
 

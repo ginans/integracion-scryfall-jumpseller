@@ -1,10 +1,10 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/variants/variants.service';
+import { VariantsService } from 'src/modules/variants/variants.service';
 import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
 import { RecalculatePricesByUsdDto } from '../../dto/recalculate-prices-by-usd.dto';
-import { IStagingProductVariant } from 'src/modules/variants/interfaces/variants.interface';
+import { IVariant } from 'src/modules/variants/interfaces/variants.interface';
 import { IUsdPrice } from 'src/modules/prices/usd-prices/interfaces/usd-prices.interface';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class QueuesRecalculatePricesByUsd {
   private isProcessing = false; // 🔒 Simple mutex
 
   constructor(
-    private readonly variantService: StagingProductVariantService,
+    private readonly variantService: VariantsService,
     private readonly usdPricesService: UsdPricesService,
     @InjectQueue('recalculate-prices-by-usd')
     private readonly QueuesRecalculatePricesByUsd: Queue,

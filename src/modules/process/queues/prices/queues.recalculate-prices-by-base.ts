@@ -1,18 +1,8 @@
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/variants/variants.service';
-import { BasePricesService } from '../../../prices/base-prices/base-prices.service';
-import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
-import { IUsdPrice } from 'src/modules/prices/usd-prices/interfaces/usd-prices.interface';
-import {
-  IBasePrice,
-  IBasePrices,
-  IBasePriceUpdate,
-} from 'src/modules/prices/base-prices/interface/base-prices.interface';
-import { EnumGame } from 'src/common/enums/game.enum';
-import { string } from 'joi';
-import { IStagingProductVariant } from 'src/modules/variants/interfaces/variants.interface';
+import { VariantsService } from 'src/modules/variants/variants.service';
+import { IVariant } from 'src/modules/variants/interfaces/variants.interface';
 
 @Processor('queues-recalculate-prices-by-base')
 export class QueuesRecalculatePricesByBase extends WorkerHost {
@@ -20,12 +10,11 @@ export class QueuesRecalculatePricesByBase extends WorkerHost {
     timestamp: true,
   });
   constructor(
-    private readonly stageingProductVariantService: StagingProductVariantService,
-    private readonly basePricesService: BasePricesService,
+    private readonly variantsService: VariantsService,
   ) {
     super();
   }
-  async process(job: Job<IStagingProductVariant, any, string>): Promise<any> {
+  async process(job: Job<IVariant, any, string>): Promise<any> {
     //TODO: manejar casos para etched
     let rarityFoil;
     if (job.data.rarity === 'common' && job.data.finish === 'nonfoil') {
@@ -53,7 +42,7 @@ export class QueuesRecalculatePricesByBase extends WorkerHost {
 
     try {
       await job.updateProgress(25);
-      await this.stageingProductVariantService.calculatePricesByVariant(
+      await this.variantsService.calculatePricesByVariant(
         job.data,
         rarityFoil,
       );

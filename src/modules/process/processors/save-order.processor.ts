@@ -3,19 +3,21 @@ import { Job } from 'bullmq';
 import { OrdersService } from 'src/modules/orders/orders.service';
 import { mapOrders } from 'src/modules/orders/mappers/orders.mapper';
 import { OrderDocument } from 'src/modules/orders/entities/order.entity';
-import { IOrder, ISaleData } from 'src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface';
-import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
-
+import {
+  IOrder,
+  ISaleData,
+} from 'src/modules/jumpseller/interfaces/orders-jumpseller/saleData.interface';
+import { StagingProductVariantService } from 'src/modules/variants/variants.service';
 
 @Processor('save-order')
 export class SaveOrderProcessor extends WorkerHost {
-  constructor( 
+  constructor(
     private readonly ordersService: OrdersService,
-    private readonly stagingProductVariantService: StagingProductVariantService
+    private readonly stagingProductVariantService: StagingProductVariantService,
   ) {
     super();
   }
-  async process(job: Job<ISaleData , string, string>) {
+  async process(job: Job<ISaleData, string, string>) {
     if (!job.data || !job.data.order) {
       throw new Error('Job data is missing or invalid');
     }

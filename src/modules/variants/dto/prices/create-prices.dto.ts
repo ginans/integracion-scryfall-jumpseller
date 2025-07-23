@@ -1,9 +1,8 @@
-import { IsNotEmpty, IsNumber, IsOptional } from "class-validator";
-import { IPriceFromFront } from "../../interfaces/stagingProductVariant.interface";
+import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IPriceFromFront } from '../../interfaces/variants.interface';
 
 export class CreatePricesDto implements IPriceFromFront {
-   
-  @IsOptional()  
+  @IsOptional()
   @IsNumber()
   variantPrice: number;
 

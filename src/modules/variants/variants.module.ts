@@ -1,21 +1,27 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { StagingProductVariantService } from './staging-product-variant.service';
-import { StagingProductVariantController } from './staging-product-variant.controller';
+import { VariantsService } from './variants.service';
+import { VariantsController } from './variants.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { StagingProductVariant, StagingProductVariantSchema } from './entities/staging-product-variant.entity';
+import {
+  Variants,
+  VariantsSchema,
+} from './entities/variants.entity';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
 import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { UsdPricesModule } from 'src/modules/prices/usd-prices/usd-prices.module';
 import { BasePricesModule } from 'src/modules/prices/base-prices/base-prices.module';
-import { StockAndSalesHistory, StockAndSalesHistorySchema } from './entities/stock-discount-and-sales-history.entity';
+import {
+  StockAndSalesHistory,
+  StockAndSalesHistorySchema,
+} from './entities/stock-discount-and-sales-history.entity';
 import { OrdersModule } from '../orders/orders.module';
 
 @Module({
-  controllers: [StagingProductVariantController],
-  providers: [StagingProductVariantService],
+  controllers: [VariantsController],
+  providers: [VariantsService],
   imports: [
     MongooseModule.forFeature([
-      { name: StagingProductVariant.name, schema: StagingProductVariantSchema },
+      { name: Variants.name, schema: VariantsSchema },
       { name: StockAndSalesHistory.name, schema: StockAndSalesHistorySchema },
     ]),
     JumpsellerModule,
@@ -24,9 +30,6 @@ import { OrdersModule } from '../orders/orders.module';
     OrdersModule,
     forwardRef(() => MagicCardsModule),
   ],
-  exports: [
-    StagingProductVariantService,
-    MongooseModule,
-  ]
+  exports: [VariantsService, MongooseModule],
 })
-export class StagingProductVariantModule {}
+export class VariantsModule {}

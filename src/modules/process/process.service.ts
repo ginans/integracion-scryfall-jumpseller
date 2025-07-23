@@ -8,10 +8,10 @@ import {
 import { ScryfallService } from 'src/modules/magic/submodules/scryfall/scryfall.service';
 import { ILangUrlEnum } from 'src/modules/magic/submodules/scryfall/enums/lang.enum';
 import { IStockFromFront } from '../jumpseller/interfaces/stock-to-jumpseller/stockJumpsellerRequest.interface';
-import { IPriceFromFront } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
+import { IPriceFromFront } from '../variants/interfaces/variants.interface';
 import { RecalculatePricesByUsdDto } from './dto/recalculate-prices-by-usd.dto';
 import { RecalculatePricesByBaseDto } from './dto/recalculate-prices-by-base.dto';
-import { StagingProductVariantService } from '../staging-product-variant/staging-product-variant.service';
+import { VariantsService } from '../variants/variants.service';
 import { UsdPricesService } from '../prices/usd-prices/usd-prices.service';
 import { BasePricesService } from '../prices/base-prices/base-prices.service';
 import { IdsJumpseller } from './interfaces/api-prices.interface';
@@ -28,7 +28,7 @@ export class ProcessService {
    */
   private readonly logger = new Logger(ProcessService.name);
   constructor(
-    private readonly variantService: StagingProductVariantService,
+    private readonly variantService: VariantsService,
     private readonly usdPricesService: UsdPricesService,
     private readonly basePricesService: BasePricesService,
     private readonly queuesRecalculatePricesByUsd: QueuesRecalculatePricesByUsd,

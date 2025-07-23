@@ -1,4 +1,4 @@
-# Magic4ever Backend
+# Integración scryfall-jumpseller-Backend
 
 Sistema backend desarrollado en NestJS para la **venta de cartas sueltas de Magic: The Gathering**. 
 
@@ -44,7 +44,7 @@ Integración completa con **Jumpseller** para e-commerce y **Scryfall** como fue
 1. **Clonar el repositorio**
 ```bash
 git clone <repository-url>
-cd Magic-Forever-Backend
+cd 
 ```
 
 2. **Instalar dependencias**
@@ -66,7 +66,7 @@ cp .env.example .env
 # Base
 NODE_ENV=development
 PORT=8000
-APP_NAME=Magic Forever Backend
+APP_NAME=integracion-scryfall-jumpseller-Backend
 
 # Seguridad
 JWT_SECRET=your-strong-jwt-secret-here
@@ -77,8 +77,8 @@ URL_APP_BACKEND=http://localhost:8000
 URL_APP_FRONTEND=http://localhost:3000
 
 # Base de datos
-DB_NAME=magic-forever
-DB_URI=mongodb://localhost:27017/magic-forever
+DB_NAME=scryfall-jumpseller
+DB_URI=mongodb://localhost:27017/scryfall-jumpseller
 
 # Cache & Queues
 CACHE_URL=redis://localhost:6379
@@ -89,7 +89,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
-MAIL_FROM_NAME=Magic Forever
+MAIL_FROM_NAME=scryfall-jumpseller
 MAIL_FROM_ADDRESS=your-email@gmail.com
 
 # Jumpseller API - Requerido para e-commerce
@@ -251,7 +251,7 @@ POST /backend/v1/auth/new-password   # Cambiar contraseña con token
 ### Ejemplo de login:
 ```json
 {
-  "email": "admin@magicforever.com",
+  "email": "admin@scryfall-jumpseller.com",
   "password": "your-password"
 }
 ```
@@ -385,13 +385,13 @@ const templatePath = path.resolve(__dirname, "../mail/templates/reset-password-m
 docker run -d -p 27017:27017 --name mongodb mongo:latest
 ```
 ```env
-DB_URI=mongodb://localhost:27017/magic-forever
+DB_URI=mongodb://localhost:27017/scryfall-jumpseller
 ```
 
 #### 2. MongoDB Atlas (Recomendado para producción)
 ```env
 # Ejemplo de URI para MongoDB Atlas
-DB_URI=mongodb+srv://username:password@cluster.mongodb.net/magic-forever?retryWrites=true&w=majority
+DB_URI=mongodb+srv://username:password@cluster.mongodb.net/scryfall-jumpseller?retryWrites=true&w=majority
 ```
 
 #### 3. MongoDB local instalado
@@ -400,7 +400,7 @@ DB_URI=mongodb+srv://username:password@cluster.mongodb.net/magic-forever?retryWr
 # Configurar servicio y puerto 27017
 ```
 ```env
-DB_URI=mongodb://localhost:27017/magic-forever
+DB_URI=mongodb://localhost:27017/scryfall-jumpseller
 ```
 
 ### Herramientas de gestión:
@@ -444,8 +444,8 @@ db.users.createIndex({ "email": 1 }, { unique: true })
 ### Configuración para Atlas:
 ```env
 # Variables adicionales para MongoDB Atlas
-DB_URI=mongodb+srv://user:pass@cluster.mongodb.net/magic-forever
-DB_NAME=magic-forever
+DB_URI=mongodb+srv://user:pass@cluster.mongodb.net/scryfall-jumpseller
+DB_NAME=scryfall-jumpseller
 
 # Opcional: Configuración de SSL/TLS
 DB_SSL=true

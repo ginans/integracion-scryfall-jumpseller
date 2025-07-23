@@ -3,7 +3,7 @@ import { EnumPriceAndStockState } from "../enums/price-and-stock-state.enum";
 import { JumpsellerStatus } from "../enums/jumpsellerStatus.enum";
 
 
-export interface IStagingProductVariant {
+export interface IVariant {
     _id: Types.ObjectId;
     productId: number | null;
     variantId: number | null;

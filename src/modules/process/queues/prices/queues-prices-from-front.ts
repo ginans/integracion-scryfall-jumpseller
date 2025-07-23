@@ -1,11 +1,11 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
+import { StagingProductVariantService } from 'src/modules/variants/variants.service';
 
 @Processor('update-prices-from-front')
 export class QueuesPricesFromFront extends WorkerHost {
-  private readonly logger = new Logger("update-prices-from-front", {
+  private readonly logger = new Logger('update-prices-from-front', {
     timestamp: true,
   });
   constructor(
@@ -22,7 +22,7 @@ export class QueuesPricesFromFront extends WorkerHost {
       await job.updateProgress(100);
       return 'done';
     } catch (error) {
-      await job.moveToFailed(new Error(error.message), "true");
+      await job.moveToFailed(new Error(error.message), 'true');
       throw new Error(`Job failed at step: ${error.message}`);
     }
   }

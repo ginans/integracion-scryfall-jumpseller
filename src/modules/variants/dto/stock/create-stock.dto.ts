@@ -1,9 +1,8 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
-import { IStockFromFront } from "../../interfaces/stagingProductVariant.interface";
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
+import { IStockFromFront } from '../../interfaces/variants.interface';
 
 export class CreateStockDto implements IStockFromFront {
-   
-  @IsOptional()  
+  @IsOptional()
   @IsNumber()
   variantStock: number;
 
@@ -28,5 +27,4 @@ export class CreateStockDto implements IStockFromFront {
   @IsOptional()
   @IsBoolean()
   stockUnlimited: boolean;
-
 }

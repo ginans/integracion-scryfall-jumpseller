@@ -7,7 +7,7 @@ import { ProcessController } from './process.controller';
 import { MagicCardsModule } from 'src/modules/magic/magic-cards.module';
 import { QueuesStock } from './queues/queues.stock';
 import { JumpsellerModule } from 'src/modules/jumpseller/jumpseller.module';
-import { StagingProductVariantModule } from '../staging-product-variant/staging-product-variant.module';
+import { VariantsModule } from '../variants/variants.module';
 import { QueuesPricesFromFront } from './queues/prices/queues-prices-from-front';
 import { QueuesRecalculatePricesByBase } from './queues/prices/queues.recalculate-prices-by-base';
 import { BasePricesModule } from '../prices/base-prices/base-prices.module';
@@ -18,7 +18,6 @@ import { SyncMagicCardsProcessor } from './processors/1-sync-magic-cards.process
 import { JumpsellerMapperService } from '../magic/mappers/jumpseller.mapper.service';
 import { JumpsellerService } from '../jumpseller/jumpseller.service';
 import { UpdateStockSalesProcessor } from './processors/update-stock-sales.processor';
-// import { CreateVariantsRequestProcessor } from './processors/6-create-variants-request.processor';
 import { JumpsellerGatewayProcessor } from './processors/8-jumpseller-gateway.processor';
 import { CreateProductRequestProcessor } from './processors/3-create-product-request.processor';
 import { SaveOrderProcessor } from './processors/save-order.processor';
@@ -35,7 +34,7 @@ import { SaveVariantsInBDProcessor } from './processors/save-variants-in-bd.proc
   imports: [
     forwardRef(() => MagicCardsModule),
     JumpsellerModule,
-    StagingProductVariantModule,
+    VariantsModule,
     BasePricesModule,
     UsdPricesModule,
     OrdersModule,

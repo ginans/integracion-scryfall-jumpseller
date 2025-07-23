@@ -12,10 +12,8 @@ import { Payload } from './interface/payload.interface';
 import * as argon2 from 'argon2';
 import { UsersService } from 'src/modules/users/users.service';
 import { ReplacePassDto } from './dto/replace-pass.dto';
-import { MailService } from '../modules/mail/mail.service';
 import { RecoverPassDto } from './dto/recover.dto';
 import { User } from '../modules/users/entities/user.entity';
-import { last } from 'rxjs';
 
 @Injectable()
 export class AuthService {
@@ -25,7 +23,6 @@ export class AuthService {
     private readonly model: Model<Auth>,
     private jwtService: JwtService,
     private readonly userService: UsersService,
-    private readonly mailService: MailService,
   ) {}
   private async createRegister(login: { email: string }) {
     const newDocument = new this.model(login);
@@ -93,7 +90,7 @@ export class AuthService {
       user.rememberToken = rememberToken;
       await this.userService.update(user._id.toHexString(), user);
     }
-    this.mailService.changePassword(user.email, user.name, rememberToken);
+    // this.mailService.changePassword(user.email, user.name, rememberToken);
     return {
       message: 'Enviamos a tu correo el método de recuperación',
     };

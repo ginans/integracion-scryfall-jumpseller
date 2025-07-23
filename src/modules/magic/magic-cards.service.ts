@@ -19,11 +19,11 @@ import { ILangUrlEnum } from './submodules/scryfall/enums/lang.enum';
 import { JumpsellerService } from 'src/modules/jumpseller/jumpseller.service';
 import { ScryfallService } from './submodules/scryfall/scryfall.service';
 import { EnumLanguage } from './enums/lang.enum';
-import { IStagingProductVariant } from '../staging-product-variant/interfaces/stagingProductVariant.interface';
+import { IVariant } from '../variants/interfaces/variants.interface';
 import {
-  StagingProductVariant,
-  StagingProductVariantDocument,
-} from '../staging-product-variant/entities/staging-product-variant.entity';
+  Variants,
+  VariantsDocument,
+} from '../variants/entities/variants.entity';
 import { EnumGame } from '../../common/enums/game.enum';
 import { findByCardByLangDto } from './dto/find-by-collector-number-and-lang.dto';
 import { EnumCondition } from './enums/condition.enum';
@@ -66,8 +66,8 @@ export class MagicCardsService {
   constructor(
     private readonly jumpsellerService: JumpsellerService,
     @InjectModel(MagicCard.name) private readonly model: Model<MagicCard>,
-    @InjectModel(StagingProductVariant.name)
-    private stagingProductVariantModel: Model<StagingProductVariantDocument>,
+    @InjectModel(Variants.name)
+    private VariantModel: Model<VariantsDocument>,
     private readonly scryfallService: ScryfallService,
     private readonly jumpsellerMapperService: JumpsellerMapperService,
     private readonly customFieldsMapperService: CustomFieldsMapperService,
@@ -152,7 +152,7 @@ export class MagicCardsService {
     variant: ICreateProductVariant,
     condition: string,
     finish: string,
-  ): Promise<StagingProductVariantDocument> {
+  ): Promise<VariantsDocument> {
     const stagingVariant = mappedStaggingProductVariant(
       card,
       variant,
@@ -160,7 +160,7 @@ export class MagicCardsService {
       finish,
     );
     // Verificar si ya existe una variante con el mismo productId y variantId
-    const existingVariant = await this.stagingProductVariantModel.findOne({
+    const existingVariant = await this.VariantModel.findOne({
       productId: stagingVariant.productId,
       variantId: stagingVariant.variantId,
     });
@@ -171,7 +171,7 @@ export class MagicCardsService {
       return existingVariant; // Retornar la variante existente
     }
     // Usar upsert para evitar duplicados basado en productId y variantId
-    const result = await this.stagingProductVariantModel.findOneAndUpdate(
+    const result = await this.VariantModel.findOneAndUpdate(
       {
         productId: stagingVariant.productId,
         variantId: stagingVariant.variantId,
@@ -518,7 +518,7 @@ export class MagicCardsService {
       this.logger.log(`crear card magic ${mappedCardData.id}`);
       await this.model.create({ ...mappedCardData });
     }
-    const existingVariant = await this.stagingProductVariantModel.findOne({
+    const existingVariant = await this.VariantModel.findOne({
       condition: condition || EnumCondition.NearMint,
       game: EnumGame.MAGIC,
       'fatherProduct.id': existingCard.id,
@@ -552,9 +552,9 @@ export class MagicCardsService {
         { variant: variantReq[0].variant },
       );
       await this.delay(300);
-      //verificar si esta variante ya existe en el stageProductVariantModel antes de agregarla
-      const cardWithStock: IStagingProductVariant =
-        await this.stagingProductVariantModel.findOne({
+      //verificar si esta variante ya existe en el VariantModel antes de agregarla
+      const cardWithStock: IVariant =
+        await this.VariantModel.findOne({
           productId: existingCard.idJumpSeller,
           sku: varRes.variant.sku,
         });
@@ -563,7 +563,7 @@ export class MagicCardsService {
         this.logger.log(
           `Agregando nueva variante al stock: ${varRes.variant.id}`,
         );
-        await this.stagingProductVariantModel.create({
+        await this.VariantModel.create({
           productId: existingCard.idJumpSeller,
           variantId: varRes.variant.id,
           name: existingCard.name || '',

@@ -1,10 +1,10 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
+import { StagingProductVariantService } from 'src/modules/variants/variants.service';
 import { UsdPricesService } from 'src/modules/prices/usd-prices/usd-prices.service';
 import { RecalculatePricesByUsdDto } from '../../dto/recalculate-prices-by-usd.dto';
-import { IStagingProductVariant } from 'src/modules/staging-product-variant/interfaces/stagingProductVariant.interface';
+import { IStagingProductVariant } from 'src/modules/variants/interfaces/variants.interface';
 import { IUsdPrice } from 'src/modules/prices/usd-prices/interfaces/usd-prices.interface';
 
 @Injectable()
@@ -24,7 +24,6 @@ export class QueuesRecalculatePricesByUsd {
 
   //recalcular precios al cambiar el precio del dolar
   async recalculatePricesByUsd(newUsdPrice: IUsdPrice) {
-   
     // 🔒 MUTEX: Si ya está procesando, esperar a que termine
     if (this.isProcessing) {
       this.logger.log('⏳ Another recalculation is in progress, waiting...');
@@ -81,7 +80,7 @@ export class QueuesRecalculatePricesByUsd {
       this.logger.error(`Error in recalculatePricesByUsd: ${error.message}`);
       throw error;
     } finally {
-      this.isProcessing = false; 
+      this.isProcessing = false;
     }
   }
 }

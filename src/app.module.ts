@@ -8,7 +8,6 @@ import { JoiValidationSchema } from './config/joi.validation';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
-import { MailModule } from './modules/mail/mail.module';
 import { JwtService } from '@nestjs/jwt';
 import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
@@ -18,14 +17,14 @@ import { RequestLoggerInterceptor } from './common/interceptors/request-logger.i
 import { LoggerService } from './common/logger/logger.service';
 import { LoggerModule } from './common/logger/logger.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import {join} from "path";
+import { join } from 'path';
 import { ScryfallModule } from './modules/magic/submodules/scryfall/scryfall.module';
 import { MagicCardsModule } from './modules/magic/magic-cards.module';
 import { JumpsellerModule } from './modules/jumpseller/jumpseller.module';
 import { ProcessModule } from './modules/process/process.module';
 import { BasePricesModule } from './modules/prices/base-prices/base-prices.module';
 import { UsdPricesModule } from './modules/prices/usd-prices/usd-prices.module';
-import { StagingProductVariantModule } from './modules/staging-product-variant/staging-product-variant.module';
+import { VariantsModule } from './modules/variants/variants.module';
 
 @Module({
   imports: [
@@ -49,7 +48,6 @@ import { StagingProductVariantModule } from './modules/staging-product-variant/s
     ScheduleModule.forRoot(),
     UsersModule,
     AuthModule,
-    MailModule,
     LoggerModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads/pdfs'),
@@ -61,7 +59,7 @@ import { StagingProductVariantModule } from './modules/staging-product-variant/s
     ProcessModule,
     UsdPricesModule,
     BasePricesModule,
-    StagingProductVariantModule,
+    VariantsModule,
   ],
   controllers: [AppController],
   providers: [

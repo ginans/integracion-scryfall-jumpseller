@@ -1,7 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { StagingProductVariantService } from 'src/modules/staging-product-variant/staging-product-variant.service';
+import { StagingProductVariantService } from 'src/modules/variants/variants.service';
 
 @Processor('queues-stock')
 export class QueuesStock extends WorkerHost {
@@ -22,7 +22,7 @@ export class QueuesStock extends WorkerHost {
       await job.updateProgress(100);
       return 'done';
     } catch (error) {
-      await job.moveToFailed(new Error(error.message), "true");
+      await job.moveToFailed(new Error(error.message), 'true');
       throw new Error(`Job failed at step: ${error.message}`);
     }
   }

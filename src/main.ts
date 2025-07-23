@@ -3,16 +3,11 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import {NestExpressApplication} from "@nestjs/platform-express";
-import { join } from 'path';
-import {LokiLogger} from "./common/logger/logging.service";
+import { NestExpressApplication } from '@nestjs/platform-express';
+
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule,{
-    logger: new LokiLogger(),
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
-  });
-  app.useStaticAssets(join(__dirname, '..', 'uploads/pdfs'), {
-    prefix: '/pdfs',
   });
   const config = new DocumentBuilder()
     .setTitle('NestJS API')
@@ -24,11 +19,13 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('backend/docs', app, documentFactory);
   const logger = new Logger('NestBootstrap');
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    transformOptions: { enableImplicitConversion: true },
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
   app.enableCors();
   app.setGlobalPrefix('backend');
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });

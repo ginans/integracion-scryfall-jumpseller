@@ -20,7 +20,7 @@ jobs:
           ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
 
           local_path: ./*
-          remote_path: /var/www/magic-forever/
+          remote_path: /var/www/scryfall-jumpseller/
           args: '-o ConnectTimeout=5'
 
       - name: 🐋 Execute Docker commands
@@ -31,7 +31,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22022
           script: |
-            cd /var/www/magic-forever/
+            cd /var/www/scryfall-jumpseller/
             docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml build
             docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml down
             docker compose --env-file docker/prod/.env.production -f docker/prod/compose.yaml up -d
